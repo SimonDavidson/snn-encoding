@@ -1,0 +1,30 @@
+# Decisions log
+
+Append-only. Numbered, dated, one line each. Newest at the bottom.
+This file is authoritative: where any session's reasoning conflicts with an
+entry here, the entry wins. Superseded entries are marked SUPERSEDED BY Dnn
+rather than deleted.
+
+Format: `Dnn | YYYY-MM-DD | who | decision | rationale (one clause)`
+
+---
+
+D01 | 2026-08-20 | OR | Audio encoding only this study; vision kept in mind for future | scope deliverable in the time
+D02 | 2026-08-20 | OR | Speaker identification removed as a probe task | not a target of the multimodal dataset
+D03 | 2026-08-20 | SD+Claude | T2 becomes F0 contour estimation, absorbing the prosody task | probes the same source-retention property, needs no labels, permits speaker-disjoint splits
+D04 | 2026-08-20 | OR | Target venue: Neuromorphic Computing and Engineering (IOP) | fit and open access
+D05 | 2026-08-20 | OR | Channel count is a free swept parameter, not fixed to 700 | no obligation to match SHD tooling
+D06 | 2026-08-20 | OR | Learned/task-trained encoders excluded | would bake a task into a general-purpose release
+D07 | 2026-08-20 | OR | Dataset name: the MANCHESTER Dataset | —
+D08 | 2026-08-20 | OR | SpiNNaker energy measurement out of scope; spike-count and information-per-spike metrics in scope now | staging
+D09 | 2026-08-20 | OR | Oliver and Simon approach Wijekoon directly re Spiketrum; E7 not implemented from published description | avoid reimplementing a colleague's algorithm badly
+D10 | 2026-08-20 | OR | Authors: Simon Davidson, Oliver Rhodes; others added if appropriate | —
+D11 | 2026-08-20 | OR | Twelve-week schedule starts now, in parallel with the TIMIT licence question | Oliver away ~2 weeks; no reason to wait
+D12 | 2026-08-20 | SD+Claude | Implementation runs in Claude Code on the Linux box; design stays in the Claude.ai project session | box runs continuously, laptop does not
+D13 | 2026-08-20 | SD+Claude | Repository is the sole coordination medium; nothing said in either chat is durable unless written to a file here | neither session has memory or can see the other
+D14 | 2026-08-20 | SD+Claude | Known-answer tests and SPEC.md authored by the design session; implementation session may not edit them | preserves the independence the validation protocol requires
+D15 | 2026-08-20 | SD+Claude | Repo public, data never committed; GitHub Issues used as an async queue for Simon, not as a channel to the design session | design session can be read from but cannot be polled
+D16 | 2026-08-20 | SD+Claude | Auto-continuation permitted for mechanical work only, not generative work | validation protocol section 10 caps implementation speed at review speed
+D17 | 2026-09-02 | SD+Claude | LIF membrane potential clamped to reset during absolute refractory, drive discarded; refractory fixed at 0.0 for E1/E4 comparison runs | standard formulation with an exact rate ceiling, while zero refractory keeps E1 a clean non-adapting baseline for P-01
+D18 | 2026-09-02 | SD+Claude | E2 lattice reference held as an integer index, r = r0 + m*C, not accumulated by repeated addition | float drift would erode the equation (16) bound over long utterances
+D19 | 2026-09-02 | SD+Claude | Gammatone group delay uncompensated by default, compensation available as a declared swept option; setting reported in the paper | biologically faithful default, but it biases T3 timing and no test detects it

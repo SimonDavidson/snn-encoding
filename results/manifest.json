@@ -1,0 +1,14 @@
+{
+  "_comment": "Maps every reported figure and table to the exact thing that produced it. Required by section 6 of the validation protocol. One entry per reported result; never edit a past entry.",
+  "_schema": {
+    "id": "figure or table identifier as it appears in the paper",
+    "script": "path to the script that generated it",
+    "config": "path to the config file used",
+    "commit": "git commit hash at time of run",
+    "seed": "integer seed, or list of seeds",
+    "output": "path to the data file holding the numbers",
+    "date": "YYYY-MM-DD",
+    "predictions": "PREDICTIONS.md entries this result bears on"
+  },
+  "entries": []
+}
