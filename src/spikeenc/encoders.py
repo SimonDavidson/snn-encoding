@@ -1,16 +1,22 @@
-"""Encoder stubs — the API surface of SPEC.md section 4.
+"""Encoders — the API surface of SPEC.md section 4.
 
-STATUS: skeleton. Every encode_from_drive raises NotImplementedError.
+STATUS: E1 and E2 implemented. E3-E6 remain skeletons.
 
 Class attributes (NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND) and the
-__init__ signatures are part of the contract and are already correct — the
-known-answer suite reads them. Fill in the method bodies; do not change the
-signatures without raising it in QUESTIONS.md first.
+__init__ signatures are part of the contract — the known-answer suite reads
+them. Do not change the signatures without raising it in QUESTIONS.md first.
 
 Equation numbers refer to docs/proposal_v2.md.
+
+Author:        Simon Davidson & Claude
+Created:       2026-09-02
+Last modified: 2026-09-02
 """
 import numpy as np
 from .spiketrain import SpikeTrain
+
+# A last-spike index far enough in the past that no channel starts refractory.
+_NEVER = -(1 << 40)
 
 
 class Encoder:
@@ -19,16 +25,116 @@ class Encoder:
     RATE_DIRECTION: int = -1
     DRIVE_KIND: str = "envelope"
 
+    #: Optional Filterbank used by `encode`. Left None, `encode` builds one
+    #: with SPEC section 3 defaults at the audio's sample rate. Set it to sweep
+    #: front-end parameters, which are deliberately not encoder constructor
+    #: arguments.
+    filterbank = None
+
     def encode(self, audio, sample_rate, seed=None):
-        """Front end composed with encode_from_drive. SPEC section 4.1."""
-        raise NotImplementedError(f"{self.NAME}.encode")
+        """Front end composed with encode_from_drive, nothing more.
+        SPEC section 4.1."""
+        from .frontend import Filterbank
+
+        fb = self.filterbank
+        if fb is None:
+            fb = Filterbank(self.n_channels, sample_rate=sample_rate)
+        if self.DRIVE_KIND == "subband":
+            drive = fb.subbands(audio)
+        else:
+            drive = fb.compress(fb.envelope(audio))
+        return self.encode_from_drive(drive, 1.0 / sample_rate, seed=seed)
 
     def encode_from_drive(self, drive, dt, seed=None, return_state=False):
         raise NotImplementedError(f"{self.NAME}.encode_from_drive")
 
+    # -- helpers shared by every encoder -----------------------------------
+
+    def _check_drive(self, drive):
+        """Validate shape and return a float64 view. SPEC section 4.1 forbids
+        any filtering, compression, scaling or normalisation here, so this
+        does nothing but check and cast."""
+        d = np.asarray(drive, dtype=np.float64)
+        if d.ndim != 2:
+            raise ValueError(f"drive must be 2-D (n_channels, n_samples), "
+                             f"got shape {d.shape}")
+        if d.shape[0] != self.n_channels:
+            raise ValueError(f"drive has {d.shape[0]} channels, "
+                             f"encoder declares {self.n_channels}")
+        return d
+
+    def _params(self, **extra):
+        """Provenance record for the SpikeTrain, SPEC section 2: encoder name
+        plus every constructor parameter."""
+        p = {"encoder": self.NAME}
+        p.update({k: v for k, v in vars(self).items()
+                  if not k.startswith("_") and k != "filterbank"})
+        p.update(extra)
+        return p
+
+
+def _integrate_and_fire(drive, dt, theta, tau_m, gain, refractory,
+                        want_state=False):
+    """Discrete leaky integrate-and-fire, equations (12)-(13).
+
+        V[n] = beta * V[n-1] * (1 - s[n-1]) + (1 - beta) * g * u[n]
+        s[n] = Theta(V[n] - theta)
+
+    with beta = exp(-dt / tau_m) and a hard reset to zero: the (1 - s[n-1])
+    factor zeroes the carried-over potential on the step after an event.
+
+    Refractory semantics are SPEC section 4.2 / D17: during an absolute
+    refractory period the potential is clamped to the reset value and incoming
+    drive is discarded, so the interspike interval under saturating drive is
+    exactly `refractory` and the rate ceiling exactly 1/refractory.
+
+    Returns (channel_idx, sample_idx, v_trace_or_None), with events in sample
+    order and channel order within a sample.
+    """
+    n_ch, n = drive.shape
+    beta = np.exp(-dt / tau_m)
+
+    v = np.zeros(n_ch, dtype=np.float64)
+    fired = np.zeros(n_ch, dtype=bool)
+    last = np.full(n_ch, _NEVER, dtype=np.int64)
+    trace = np.zeros((n_ch, n), dtype=np.float64) if want_state else None
+
+    chan_out, samp_out = [], []
+    for i in range(n):
+        # Hard reset: potential carried over is zeroed for channels that fired
+        # on the previous step.
+        v = beta * v * ~fired + (1.0 - beta) * gain * drive[:, i]
+
+        if refractory > 0.0:
+            blocked = (i - last) * dt < refractory
+            v = np.where(blocked, 0.0, v)
+            fired = (v >= theta) & ~blocked
+        else:
+            fired = v >= theta
+
+        if trace is not None:
+            trace[:, i] = v
+
+        if fired.any():
+            idx = np.flatnonzero(fired)
+            chan_out.append(idx)
+            samp_out.append(np.full(idx.size, i, dtype=np.int64))
+            last[idx] = i
+
+    if chan_out:
+        return (np.concatenate(chan_out), np.concatenate(samp_out), trace)
+    return (np.empty(0, np.int64), np.empty(0, np.int64), trace)
+
 
 class LIF(Encoder):
-    """E1 — leaky integrate-and-fire. Equations (11)-(13)."""
+    """E1 — leaky integrate-and-fire. Equations (11)-(13).
+
+    The rate-like anchor: for constant input the firing rate is roughly
+    proportional to input amplitude above threshold, so information sits mainly
+    in how many events a channel produces and only weakly in when.
+
+    Unipolar — every event carries polarity +1, so no polarity bit is needed.
+    """
     NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND = "E1", "theta", -1, "envelope"
 
     def __init__(self, n_channels, theta=1.0, tau_m=0.02, gain=1.0,
@@ -37,7 +143,35 @@ class LIF(Encoder):
         self.gain, self.refractory, self.reset = gain, refractory, reset
 
     def encode_from_drive(self, drive, dt, seed=None, return_state=False):
-        raise NotImplementedError("E1: equations (12)-(13), hard reset to zero")
+        """Equations (12)-(13), hard reset to zero. Deterministic: `seed` is
+        accepted for interface uniformity and unused.
+
+        Under constant drive u the interspike interval is the closed form of
+        protocol equation (V1), T = tau_m * ln(V_inf / (V_inf - theta)) with
+        V_inf = gain * u, which is what test_T1_1 asserts.
+        """
+        if self.reset != "hard":
+            raise NotImplementedError(
+                f"reset={self.reset!r}; only 'hard' is implemented. The soft "
+                "reset of proposal section 5.1 is not yet a study variable.")
+
+        d = self._check_drive(drive)
+        n = d.shape[1]
+        chan, samp, trace = _integrate_and_fire(
+            d, dt, self.theta, self.tau_m, self.gain, self.refractory,
+            want_state=return_state)
+
+        train = SpikeTrain.from_events(
+            channel=chan,
+            time=samp * dt,
+            polarity=np.ones(chan.size, dtype=np.int8),
+            n_channels=self.n_channels,
+            duration=n * dt,
+            params=self._params(dt=dt),
+        )
+        if return_state:
+            return train, {"v": trace}
+        return train
 
 
 class SendOnDelta(Encoder):
