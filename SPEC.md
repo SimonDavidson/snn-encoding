@@ -86,6 +86,12 @@ Attributes and methods:
 equation (6) between `f_min` and `f_max` inclusive, so `centre_frequencies[0] ==
 f_min` and `centre_frequencies[-1] == f_max`.
 
+**Compression method strings.** `compress` takes `method="log"` for the
+logarithmic branch of equation (10) and `method="power"` for the power-law
+branch, the latter using `exponent`. `epsilon` applies to the logarithmic
+branch only. `method="none"` returns the envelope unchanged, which is needed
+for E5, whose drive is the subband waveform rather than a compressed envelope.
+
 **Group delay.** Gammatone filters have frequency-dependent group delay: a
 low-frequency channel responds later than a high-frequency one to the same
 acoustic event. This is biologically faithful and is the default

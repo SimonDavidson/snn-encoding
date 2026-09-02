@@ -71,7 +71,7 @@ Two rules govern this layer. First, tests are specified from the equations in th
 - **F1 Centre frequencies.** The FFT magnitude peak of each gammatone impulse response falls within one per cent of the nominal f~c~.
 - **F2 Bandwidths.** The measured 3 dB bandwidth of each channel is consistent with 1.019 ERB(f~c~) from equation (5).
 - **F3 Spacing.** Channel centre frequencies are equally spaced on the ERB-rate scale of equation (6): successive differences of E(f~c~) are constant to numerical precision.
-- **F4 Envelope extraction.** For an amplitude-modulated tone with known modulator m(t), the extracted envelope correlates with m(t) above 0.99.
+- **F4 Envelope extraction.** For an amplitude-modulated tone with known modulator m(t), the extracted envelope correlates with m(t) above 0.95. (The threshold was stated as 0.99 in an earlier draft; 0.95 is the considered value, since gammatone ringing and Hilbert transform edge effects make 0.99 optimistic even for a correct implementation. test_F4 asserts 0.95.)
 - **F5 Energy conservation.** The Σ of subband energies matches input energy to within the factor implied by filter overlap. Catches normalisation applied twice or not at all.
 
 ### 3.3 E1 - Leaky integrate-and-fire

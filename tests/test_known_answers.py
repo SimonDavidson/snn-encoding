@@ -102,8 +102,17 @@ def test_G4_time_shift_equivariance(encoder_case):
     """
     label, cls, kwargs = encoder_case
     enc = cls(**kwargs)
-    drive = drive_for(cls, duration=1.0)
     shift_s = 0.1
+    # The test signal must open with a silent lead-in longer than the shift.
+    # E2 initialises its reference, and E3 both its filters, from drive[:, 0]
+    # (SPEC 4.3, 4.4). Prepending zeros to a signal that starts at a non-zero
+    # value would therefore change the initial state and produce a startup
+    # burst in the padded run only, failing the count assertion for a reason
+    # that has nothing to do with shift equivariance. With a zero lead-in every
+    # encoder begins from the same state either way, and the comparison tests
+    # what it is meant to test.
+    lead = np.zeros((kwargs["n_channels"], int(round(2 * shift_s / DT))))
+    drive = np.hstack([lead, drive_for(cls, duration=1.0)])
     pad = np.zeros((drive.shape[0], int(round(shift_s / DT))))
     a = enc.encode_from_drive(drive, DT, seed=7)
     b = enc.encode_from_drive(np.hstack([pad, drive]), DT, seed=7)

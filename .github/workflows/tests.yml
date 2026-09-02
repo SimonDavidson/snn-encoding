@@ -32,7 +32,19 @@ jobs:
         run: pytest tests/test_known_answers.py -v --tb=short
 
       - name: Everything else
-        run: pytest tests/ -v --tb=short --ignore=tests/test_known_answers.py
+        # test_known_answers.py is currently the only test file, so this step
+        # collects nothing and pytest exits 5. That is not a failure. Exit 5 is
+        # tolerated; any other non-zero status is not.
+        run: |
+          set +e
+          pytest tests/ -v --tb=short --ignore=tests/test_known_answers.py
+          code=$?
+          set -e
+          if [ $code -eq 0 ] || [ $code -eq 5 ]; then
+            echo "exit $code — ok (5 means no tests collected yet)"
+            exit 0
+          fi
+          exit $code
 
   protected-files:
     # tests/test_known_answers.py, tests/conftest.py and SPEC.md are authored by
@@ -56,7 +68,6 @@ jobs:
           BEFORE="${{ github.event.before }}"
           AFTER="${{ github.sha }}"
 
-          # New branch or force push: no usable range, nothing to compare.
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
             echo "No previous commit in range; skipping guard."
             exit 0
