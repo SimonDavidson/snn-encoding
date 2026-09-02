@@ -18,6 +18,21 @@ from .spiketrain import SpikeTrain
 # A last-spike index far enough in the past that no channel starts refractory.
 _NEVER = -(1 << 40)
 
+# Tolerance, in lattice units, on the ">= C" comparison of equations (14)-(15).
+#
+# A drive value landing exactly on a lattice point is measure-zero in theory and
+# routine in practice: test signals with round amplitudes, quantised audio, and
+# any drive whose extremes are an exact multiple of C all hit it. There the
+# comparison is decided by double-rounding noise rather than by the equation --
+# u = 1.0 against r = 0.9 with C = 0.1 evaluates u - r as 0.09999999999999998,
+# so ">= C" is False and the crest event of the excursion is dropped, costing
+# two events per half cycle because the return journey then starts one step in.
+#
+# 1e-9 is ~7 orders above double rounding noise and ~9 below anything the study
+# measures. It can only cause an event to fire marginally early, never late, so
+# the equation (16) bound is tightened by it and never loosened.
+_LATTICE_TOL = 1e-9
+
 
 class Encoder:
     NAME: str = "?"
@@ -189,7 +204,103 @@ class SendOnDelta(Encoder):
         self.refractory, self.reference_update = refractory, reference_update
 
     def encode_from_drive(self, drive, dt, seed=None, return_state=False):
-        raise NotImplementedError("E2: equations (14)-(15)")
+        """Equations (14)-(15). Deterministic: `seed` is accepted for interface
+        uniformity and unused.
+
+        At each sample the channel emits until |u - r| < C, so a transient
+        spanning several thresholds emits several events sharing that
+        timestamp. That is what makes equation (16) hold as a theorem rather
+        than a tolerance, and test_T2_1 asserts it directly.
+
+        Reference representation follows SPEC section 4.3 and D18: in the
+        "lattice" variant the reference is an integer lattice index m with
+        r = r0 + m*C, never accumulated by repeated addition, so rounding error
+        cannot creep into the bound over a long utterance.
+
+        With refractory > 0 a channel emits at most one event per refractory
+        period, and the equation (16) bound degrades accordingly.
+        """
+        if self.C <= 0.0:
+            raise ValueError(f"C must be positive, got {self.C}")
+        if self.reference_update not in ("lattice", "exact"):
+            raise ValueError(f"unknown reference_update "
+                             f"{self.reference_update!r}; "
+                             "expected 'lattice' or 'exact'")
+
+        d = self._check_drive(drive)
+        n_ch, n = d.shape
+        C = float(self.C)
+        lattice = self.reference_update == "lattice"
+
+        if n == 0:
+            train = SpikeTrain.empty(self.n_channels, 0.0,
+                                     self._params(dt=dt))
+            return (train, {"reference": np.zeros((n_ch, 0))}) if return_state \
+                else train
+
+        r0 = d[:, 0].copy()                      # SPEC 4.3: reference init
+        m = np.zeros(n_ch, dtype=np.int64)       # lattice index
+        ref = r0.copy()                          # used by the "exact" variant
+        last = np.full(n_ch, _NEVER, dtype=np.int64)
+        trace = np.zeros((n_ch, n)) if return_state else None
+
+        chan_out, samp_out, pol_out = [], [], []
+        for i in range(n):
+            # Steps outstanding, in lattice units. For the lattice variant this
+            # is measured from r0 rather than from the current reference value:
+            # u - (r0 + m*C) subtracts two nearly equal quantities and loses the
+            # precision the ">= C" comparison needs, whereas (u - r0)/C - m does
+            # not. See _LATTICE_TOL.
+            if lattice:
+                step = (d[:, i] - r0) / C - m
+            else:
+                step = (d[:, i] - ref) / C
+            # Truncation toward zero is what leaves the residual below C, which
+            # is exactly the "emit until within C" rule of SPEC section 4.3.
+            k = np.trunc(step + np.sign(step) * _LATTICE_TOL).astype(np.int64)
+
+            if self.refractory > 0.0:
+                blocked = (i - last) * dt < self.refractory
+                k = np.where(blocked, 0, np.sign(k))
+
+            nz = np.flatnonzero(k)
+            if nz.size:
+                counts = np.abs(k[nz])
+                chan_out.append(np.repeat(nz, counts))
+                samp_out.append(np.full(int(counts.sum()), i, dtype=np.int64))
+                pol_out.append(np.repeat(np.sign(k[nz]).astype(np.int8), counts))
+                last[nz] = i
+
+            if lattice:
+                m += k
+            else:
+                ref = np.where(k != 0, d[:, i], ref)
+
+            if trace is not None:
+                trace[:, i] = r0 + m * C if lattice else ref
+
+        if chan_out:
+            chan = np.concatenate(chan_out)
+            samp = np.concatenate(samp_out)
+            pol = np.concatenate(pol_out)
+        else:
+            chan = np.empty(0, np.int64)
+            samp = np.empty(0, np.int64)
+            pol = np.empty(0, np.int8)
+
+        train = SpikeTrain.from_events(
+            channel=chan,
+            time=samp * dt,
+            polarity=pol,
+            n_channels=self.n_channels,
+            duration=n * dt,
+            params=self._params(dt=dt),
+        )
+        if return_state:
+            # The running reconstruction r(t) after each sample's events, which
+            # is the quantity equation (16) bounds against the drive.
+            return train, {"reference": trace}
+        return train
 
 
 class TemporalContrast(Encoder):

@@ -58,3 +58,44 @@ reference):
 **Blocking?** no — `"hilbert"` is the SPEC section 3 default and every current
 test path uses it. It blocks only the envelope-method sweep.
 **Answer:** (design session)
+
+### Q04 — test_T2_4 asserts a closed loop the fixture signal does not close
+**Raised:** 2026-09-02 by implementation session
+**Context:** E2 implemented. T2.1, T2.2, T2.3 and T2.5 pass. T2.4 fails by
+exactly one event: ON 199 vs OFF 200 out of 399.
+**Question:** `test_T2_4_polarity_balances_over_a_closed_loop` asserts
+`n_on == n_off` for `sine_drive(1.0, 5.0, n_channels=1, duration=2.0)`, on the
+grounds that "a signal returning to its starting value must emit equal ON and
+OFF counts". The fixture signal does not return to its starting value.
+`sine_drive` builds `t = np.arange(n) * dt`, so the last sample sits at
+`t = D - dt`, phase -0.0019635 rad, and `u[-1] = -0.00196349` against
+`u[0] = 0.0`. Its docstring says "starting and ending at zero phase"; it ends
+one sample short of that.
+
+**Why one sample changes the count.** Rising out of the final trough the
+reference reaches lattice index -1 (r = -0.1) and stops, because the rule of
+SPEC 4.3 is "emit until |u - r| < C" and |-0.00196 - (-0.1)| = 0.098 < 0.1
+already holds. Index 0 is also within C (residual 0.00196), so both are legal
+stopping points; the rule as specified stops at the *first* index reached, not
+the nearest, so the net lattice displacement over the run is -1 rather than 0.
+
+**Evidence that the encoder is right and the premise is not.** Same encoder,
+same parameters, signal extended by one sample so it genuinely closes:
+
+| signal | u[-1] | ON | OFF |
+|---|---:|---:|---:|
+| duration D + 1 sample (true zero phase) | -2.45e-15 | 200 | 200 |
+| duration D, as the fixture builds it | -1.96e-03 | 199 | 200 |
+
+**Options considered:**
+1. `sine_drive` uses `t = np.arange(n) * dt` for an open interval, which is the
+   right convention for a sampled signal generally, but leaves T2.4's premise
+   false. T2.4 could build its own closed signal, or assert `abs(n_on - n_off)
+   <= 1`, which is what protocol section 3.4 T2.4 already allows for the
+   non-lattice variant.
+2. Change the encoder to stop at the *nearest* lattice index rather than the
+   first within C. This would balance the counts but contradicts SPEC 4.3 and
+   roughly doubles the event rate, breaking T2.2 and T2.5. Rejected.
+**Blocking?** no — E2 is otherwise complete and its four analytic tests pass.
+It blocks only the T2.4 assertion itself.
+**Answer:** (design session)
