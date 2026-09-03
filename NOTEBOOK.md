@@ -171,3 +171,14 @@ which is D24 not yet implemented.
 `features.featurise` and the four `corrupt` operators are still stubs and gate
 G8 across all six encoders plus the four corruption tests — ten tests for a
 small amount of work, worth doing early.
+
+## 2026-09-03 | session: design
+**Did:** Answered Q03, Q04, Q05 (D21-D25). Added test_F6.
+**Open:** the 2.53x discrepancy between measured and analytic envelope-lowpass
+lag must be resolved before compensation is implemented.
+**Observation for later:** three channel-dependent timing biases in a row were
+found by measurement, not by test failure. Front-end coverage is thin relative
+to the encoders — the maths gives exact answers for encoders and only
+inequalities for the front end. Review once E3 and E4 are green.
+**Next:** E3 TemporalContrast (T3.1-T3.4), then E4 ALIF (T4.1-T4.4).
+
