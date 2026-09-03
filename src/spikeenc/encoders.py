@@ -1,6 +1,6 @@
 """Encoders — the API surface of SPEC.md section 4.
 
-STATUS: E1 and E2 implemented. E3-E6 remain skeletons.
+STATUS: E1, E2 and E3 implemented. E4-E6 remain skeletons.
 
 Class attributes (NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND) and the
 __init__ signatures are part of the contract — the known-answer suite reads
@@ -10,7 +10,7 @@ Equation numbers refer to docs/proposal_v2.md.
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-02
-Last modified: 2026-09-02
+Last modified: 2026-09-03
 """
 import numpy as np
 from .spiketrain import SpikeTrain
@@ -141,6 +141,88 @@ def _integrate_and_fire(drive, dt, theta, tau_m, gain, refractory,
     return (np.empty(0, np.int64), np.empty(0, np.int64), trace)
 
 
+def _reference_lattice(sig, dt, C, refractory, reference_update, r0,
+                       want_state=False):
+    """The reference-reset event rule of SPEC sections 4.3 and 4.4.
+
+    At each sample, emit events until |sig - r| < C, where the reference r sits
+    on a lattice of spacing C anchored at `r0`. A transient spanning several
+    thresholds therefore emits several events sharing that timestamp, which is
+    what makes the equation (16) bound hold as a theorem rather than as a
+    tolerance.
+
+    E2 applies this to the drive with r0 = drive[:, 0]. E3 applies it to the
+    difference of exponentials of equation (20) with r0 = 0 -- the lattice is
+    anchored at d = 0 as a property of the rule, not of the signal (SPEC 4.4,
+    D26).
+
+    One implementation rather than two, deliberately. D26 makes E2 against E3 a
+    single-factor contrast in which equation (20) is the whole of the
+    difference, and that claim is only true of the study if it is true of the
+    code. Two copies of this rule could drift apart without any test noticing,
+    because each encoder would still pass its own block.
+
+    `reference_update="lattice"` holds the reference as an integer index m with
+    r = r0 + m*C, never accumulated by repeated addition of C, so rounding
+    error cannot creep into the bound over a long utterance (D18). `"exact"`
+    sets the reference to the current signal value at event time.
+
+    With refractory > 0 a channel emits at most one event per refractory
+    period, and the equation (16) bound degrades accordingly.
+
+    Returns (channel_idx, sample_idx, polarity, reference_trace_or_None), with
+    events in sample order and channel order within a sample.
+    """
+    n_ch, n = sig.shape
+    lattice = reference_update == "lattice"
+
+    m = np.zeros(n_ch, dtype=np.int64)       # lattice index
+    ref = np.array(r0, dtype=np.float64)     # used by the "exact" variant
+    last = np.full(n_ch, _NEVER, dtype=np.int64)
+    trace = np.zeros((n_ch, n)) if want_state else None
+
+    chan_out, samp_out, pol_out = [], [], []
+    for i in range(n):
+        # Steps outstanding, in lattice units. For the lattice variant this is
+        # measured from r0 rather than from the current reference value:
+        # sig - (r0 + m*C) subtracts two nearly equal quantities and loses the
+        # precision the ">= C" comparison needs, whereas (sig - r0)/C - m does
+        # not. See _LATTICE_TOL.
+        if lattice:
+            step = (sig[:, i] - r0) / C - m
+        else:
+            step = (sig[:, i] - ref) / C
+        # Truncation toward zero is what leaves the residual below C, which is
+        # exactly the "emit until within C" rule of SPEC section 4.3.
+        k = np.trunc(step + np.sign(step) * _LATTICE_TOL).astype(np.int64)
+
+        if refractory > 0.0:
+            blocked = (i - last) * dt < refractory
+            k = np.where(blocked, 0, np.sign(k))
+
+        nz = np.flatnonzero(k)
+        if nz.size:
+            counts = np.abs(k[nz])
+            chan_out.append(np.repeat(nz, counts))
+            samp_out.append(np.full(int(counts.sum()), i, dtype=np.int64))
+            pol_out.append(np.repeat(np.sign(k[nz]).astype(np.int8), counts))
+            last[nz] = i
+
+        if lattice:
+            m += k
+        else:
+            ref = np.where(k != 0, sig[:, i], ref)
+
+        if trace is not None:
+            trace[:, i] = r0 + m * C if lattice else ref
+
+    if chan_out:
+        return (np.concatenate(chan_out), np.concatenate(samp_out),
+                np.concatenate(pol_out), trace)
+    return (np.empty(0, np.int64), np.empty(0, np.int64),
+            np.empty(0, np.int8), trace)
+
+
 class LIF(Encoder):
     """E1 — leaky integrate-and-fire. Equations (11)-(13).
 
@@ -229,8 +311,6 @@ class SendOnDelta(Encoder):
 
         d = self._check_drive(drive)
         n_ch, n = d.shape
-        C = float(self.C)
-        lattice = self.reference_update == "lattice"
 
         if n == 0:
             train = SpikeTrain.empty(self.n_channels, 0.0,
@@ -238,55 +318,10 @@ class SendOnDelta(Encoder):
             return (train, {"reference": np.zeros((n_ch, 0))}) if return_state \
                 else train
 
-        r0 = d[:, 0].copy()                      # SPEC 4.3: reference init
-        m = np.zeros(n_ch, dtype=np.int64)       # lattice index
-        ref = r0.copy()                          # used by the "exact" variant
-        last = np.full(n_ch, _NEVER, dtype=np.int64)
-        trace = np.zeros((n_ch, n)) if return_state else None
-
-        chan_out, samp_out, pol_out = [], [], []
-        for i in range(n):
-            # Steps outstanding, in lattice units. For the lattice variant this
-            # is measured from r0 rather than from the current reference value:
-            # u - (r0 + m*C) subtracts two nearly equal quantities and loses the
-            # precision the ">= C" comparison needs, whereas (u - r0)/C - m does
-            # not. See _LATTICE_TOL.
-            if lattice:
-                step = (d[:, i] - r0) / C - m
-            else:
-                step = (d[:, i] - ref) / C
-            # Truncation toward zero is what leaves the residual below C, which
-            # is exactly the "emit until within C" rule of SPEC section 4.3.
-            k = np.trunc(step + np.sign(step) * _LATTICE_TOL).astype(np.int64)
-
-            if self.refractory > 0.0:
-                blocked = (i - last) * dt < self.refractory
-                k = np.where(blocked, 0, np.sign(k))
-
-            nz = np.flatnonzero(k)
-            if nz.size:
-                counts = np.abs(k[nz])
-                chan_out.append(np.repeat(nz, counts))
-                samp_out.append(np.full(int(counts.sum()), i, dtype=np.int64))
-                pol_out.append(np.repeat(np.sign(k[nz]).astype(np.int8), counts))
-                last[nz] = i
-
-            if lattice:
-                m += k
-            else:
-                ref = np.where(k != 0, d[:, i], ref)
-
-            if trace is not None:
-                trace[:, i] = r0 + m * C if lattice else ref
-
-        if chan_out:
-            chan = np.concatenate(chan_out)
-            samp = np.concatenate(samp_out)
-            pol = np.concatenate(pol_out)
-        else:
-            chan = np.empty(0, np.int64)
-            samp = np.empty(0, np.int64)
-            pol = np.empty(0, np.int8)
+        chan, samp, pol, trace = _reference_lattice(
+            d, dt, float(self.C), self.refractory, self.reference_update,
+            r0=d[:, 0].copy(),                   # SPEC 4.3: reference init
+            want_state=return_state)
 
         train = SpikeTrain.from_events(
             channel=chan,
@@ -308,16 +343,87 @@ class TemporalContrast(Encoder):
 
     Both filters initialise to drive[:, 0], so constant drive gives no startup
     transient and therefore no events at all (test_T3_1).
+
+    The event rule is the reference-lattice rule of SPEC section 4.3 applied to
+    the difference signal d rather than to the drive (SPEC 4.4, D26), and is
+    shared with E2 through `_reference_lattice`. What separates the two
+    encoders is the bandpass of equation (20) and nothing else, which is what
+    makes the E2-against-E3 comparison a single-factor contrast; test_T3_2 is
+    the check that the bandpass is present.
     """
     NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND = "E3", "theta", -1, "envelope"
 
     def __init__(self, n_channels, theta=0.5, tau_fast=0.001, tau_slow=0.05,
-                 refractory=0.0):
+                 refractory=0.0, reference_update="lattice"):
         self.n_channels, self.theta = n_channels, theta
         self.tau_fast, self.tau_slow, self.refractory = tau_fast, tau_slow, refractory
+        self.reference_update = reference_update
 
     def encode_from_drive(self, drive, dt, seed=None, return_state=False):
-        raise NotImplementedError("E3: equations (18)-(21); state key 'd'")
+        """Equations (18)-(21). Deterministic: `seed` is accepted for interface
+        uniformity and unused.
+
+        Two exponential lowpass filters with alpha = exp(-dt/tau) (SPEC section
+        1, D28 — not the Euler pole dt/tau, which would put the peak of the
+        step response about 0.25 per cent high and is what test_T3_5's first
+        assertion is watching for), their difference taken by equation (20),
+        and the SPEC 4.3 lattice rule applied to that difference.
+
+        The lattice is anchored at d = 0 because the anchor is a property of
+        the rule rather than of the signal. Under the initialisation above the
+        two coincide — both filters start at drive[:, 0], so d[:, 0] is zero —
+        but D26 specifies them independently and they are written that way.
+        """
+        if self.theta <= 0.0:
+            raise ValueError(f"theta must be positive, got {self.theta}")
+        if self.tau_slow <= self.tau_fast:
+            raise ValueError(
+                f"tau_slow ({self.tau_slow}) must exceed tau_fast "
+                f"({self.tau_fast}); equation (20) otherwise changes sign, "
+                "which silently exchanges the ON and OFF channels rather than "
+                "failing")
+        if self.reference_update not in ("lattice", "exact"):
+            raise ValueError(f"unknown reference_update "
+                             f"{self.reference_update!r}; "
+                             "expected 'lattice' or 'exact'")
+
+        u = self._check_drive(drive)
+        n_ch, n = u.shape
+
+        if n == 0:
+            train = SpikeTrain.empty(self.n_channels, 0.0,
+                                     self._params(dt=dt))
+            return (train, {"d": np.zeros((n_ch, 0))}) if return_state else train
+
+        # Equations (18)-(20). Both filters initialised to drive[:, 0], so a
+        # constant drive leaves y_fast == y_slow == u at every sample and d
+        # identically zero: no startup transient, and hence no events.
+        alpha_f = np.exp(-dt / self.tau_fast)
+        alpha_s = np.exp(-dt / self.tau_slow)
+        y_fast = u[:, 0].copy()
+        y_slow = u[:, 0].copy()
+        d = np.zeros((n_ch, n))
+        for i in range(n):
+            y_fast = alpha_f * y_fast + (1.0 - alpha_f) * u[:, i]
+            y_slow = alpha_s * y_slow + (1.0 - alpha_s) * u[:, i]
+            d[:, i] = y_fast - y_slow
+
+        # Equation (21): the SPEC 4.3 rule on d, lattice anchored at zero.
+        chan, samp, pol, _ = _reference_lattice(
+            d, dt, float(self.theta), self.refractory, self.reference_update,
+            r0=np.zeros(n_ch), want_state=False)
+
+        train = SpikeTrain.from_events(
+            channel=chan,
+            time=samp * dt,
+            polarity=pol,
+            n_channels=self.n_channels,
+            duration=n * dt,
+            params=self._params(dt=dt),
+        )
+        if return_state:
+            return train, {"d": d}
+        return train
 
 
 class ALIF(Encoder):
