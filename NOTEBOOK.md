@@ -102,3 +102,72 @@ envelope-method sweep. Q04 (T2.4 premise) blocks only that assertion.
 T4.1-T4.4. E4 should wrap `_integrate_and_fire` rather than reimplement it, so
 that the delta_a == 0 reduction of T4.1 is true by construction. `features` and
 `corrupt` are still stubs and gate G8 and the four corruption tests.
+
+## 2026-09-03 | session: implementation
+**Did:** Applied D21 (channel-relative envelope cutoff, `f_cut_c = min(f_cut,
+b_c)`, fourth order, second-order sections; the lowest channels put the
+normalised cutoff near 4e-3 where tf-form coefficients are unreliable). Added
+`envelope(method="none")`. Re-measured the Q03 table as asked and recorded it
+there. Raised Q05, since answered as D24/D25. Reconciled the 2.53x lag ratio
+Simon flagged.
+
+**The 2.53x was my error, not any of the three candidates offered.** The
+"envelope-LPF lag" column in the Q05 table was measured as `fb.envelope(...)`
+against the modulator, so it was the *whole path* — gammatone, rectify,
+lowpass — not the lowpass stage alone. Comparing a total-path measurement
+against a single-stage analytic value produces the factor. Summing the stages
+properly reconciles to within 1 per cent:
+
+| f_c | b_c | gammatone n/(2 pi b) | Butterworth 2.61313/omega_c | analytic total | measured | ratio |
+|---:|---:|---:|---:|---:|---:|---:|
+| 196 | 46.7 | 13.63 | 8.90 | 22.53 | 22.50 | 0.999 |
+| 479 | 77.9 | 8.17 | 5.34 | 13.51 | 13.50 | 0.999 |
+| 953 | 129.9 | 4.90 | 3.20 | 8.10 | 8.12 | 1.003 |
+| 3057 | 361.5 | 1.76 | 1.15 | 2.91 | 2.94 | 1.009 |
+
+Note which gammatone constant that total uses: `n/(2 pi b_c)`, the group delay
+at f_c, which governs a narrowband AM envelope. SPEC 3 specifies
+`(order-1)/(2 pi b_c)`, the impulse-response envelope peak time, which governs
+a click onset. They differ by `1/(2 pi b_c)`, 3.4 ms at 196 Hz. SPEC is right
+for its purpose: test_F6 drives a click, and on the `"hilbert"` path the
+current formula compensates to 0.00 ms residual. No change needed there.
+
+**test_F6 spreads, recorded as D25 asks.** 16 channels, 150-6000 Hz, broadband
+click:
+
+| method | uncompensated | compensated | threshold |
+|---|---:|---:|---:|
+| hilbert | 10.75 ms | 0.00 ms | < 3.58 PASS |
+| rectify_lowpass | 22.63 ms | 11.88 ms | < 7.54 FAIL |
+
+That is Q05 quantified: compensation removes the gammatone lag exactly and
+leaves 52 per cent of the skew on the rectify_lowpass path. The hilbert column
+suggests the eventual threshold could be far tighter than 3.58 ms once D24 is
+implemented; suggest revisiting after.
+
+**Tests:** 31 passed, 50 failed, 1 skipped. Gained T2.4 (passes unchanged,
+confirming E2 was already correct). Lost nothing; the new failure is test_F6,
+which is D24 not yet implemented.
+
+**Results written:** none.
+
+**Blocked on:** nothing.
+
+**Next:** two independent strands.
+1. **D24** — `compensate_group_delay` must advance by the summed declared lag
+   of every stage on the selected path, not the filterbank alone. Concretely:
+   the shift currently happens inside `subbands`, which is upstream of the
+   envelope stage and so cannot remove its lag; it needs to move to after the
+   envelope stage, or `envelope` needs to apply the remainder. Envelope-stage
+   lag is 0 for `"hilbert"` and `"none"`, and `2.61313/(2*pi*f_cut_c)` for
+   `"rectify_lowpass"` (order-4 Butterworth DC group delay; the constant is
+   `sum_k sin((2k-1)*pi/(2N))` for N=4). A stage that cannot declare its lag
+   must raise, per SPEC 3. test_F6 is the check.
+2. **E3 `TemporalContrast`** until T3.1-T3.4 pass, then E4 `ALIF` until
+   T4.1-T4.4. E4 must wrap `_integrate_and_fire` rather than reimplement it, so
+   the delta_a == 0 reduction of T4.1 holds by construction. E3 does not touch
+   the front end, so it can proceed independently of strand 1.
+
+`features.featurise` and the four `corrupt` operators are still stubs and gate
+G8 across all six encoders plus the four corruption tests — ten tests for a
+small amount of work, worth doing early.
