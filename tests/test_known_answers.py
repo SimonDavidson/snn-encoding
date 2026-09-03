@@ -232,6 +232,39 @@ def test_F5_subbands_conserve_energy_approximately():
     assert 0.2 < ratio < 20.0, f"subband/input energy ratio {ratio:.3f}"
 
 
+def test_F6_group_delay_compensation_aligns_onsets():
+    """SPEC 3: compensation aligns onsets across the bank.
+
+    Measured on the envelope path actually selected, because the gammatone
+    delay is only one of the stages contributing channel-dependent lag. A
+    broadband click should emerge from every channel at the same time once
+    compensation is applied; uncompensated it should not.
+
+    Thresholds are deliberately loose. The claim being tested is that
+    compensation substantially removes the skew, not that it removes it to any
+    particular precision — Butterworth group delay is not flat, so exact
+    alignment of a broadband transient is not available. Record the measured
+    spreads in NOTEBOOK.md so this can be tightened later.
+    """
+    n = FS
+    click = np.zeros(n)
+    click[n // 3] = 1.0
+    for method in ("hilbert", "rectify_lowpass"):
+        spread = {}
+        for comp in (False, True):
+            fb = Filterbank(n_channels=16, f_min=150.0, f_max=6000.0,
+                            sample_rate=FS, compensate_group_delay=comp)
+            env = fb.envelope(click, method=method)
+            peaks = np.array([np.argmax(env[c]) for c in range(16)]) / FS
+            spread[comp] = float(peaks.max() - peaks.min())
+        assert spread[False] > 0.004, (
+            f"{method}: uncompensated spread only {spread[False]*1000:.2f} ms — "
+            "expected several ms of skew across the bank")
+        assert spread[True] < spread[False] / 3.0, (
+            f"{method}: compensation reduced onset spread only from "
+            f"{spread[False]*1000:.2f} ms to {spread[True]*1000:.2f} ms")
+
+
 # ===========================================================================
 # E1 — LIF. Closed-form firing period, equation (V1) of the protocol.
 # ===========================================================================

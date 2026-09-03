@@ -86,6 +86,33 @@ Attributes and methods:
 equation (6) between `f_min` and `f_max` inclusive, so `centre_frequencies[0] ==
 f_min` and `centre_frequencies[-1] == f_max`.
 
+**Group-delay compensation applies to the path, not the filterbank.** When
+`compensate_group_delay=True`, each channel is advanced by the sum of the
+declared lags of every stage between the input and the returned envelope:
+
+    lag_c = gammatone_lag_c + envelope_stage_lag_c
+
+with `gammatone_lag_c = (order - 1) / (2 * pi * b_c)` and the envelope-stage
+lag being zero for `method="hilbert"` and `method="none"`, and the lowpass
+group delay at DC for `method="rectify_lowpass"`. Every stage that introduces a
+channel-dependent lag must declare it; a stage that cannot must raise rather
+than allow silent partial compensation.
+
+The reason for stating it this way is that compensation applied inside
+`subbands` cannot remove a lag introduced downstream of it. Under the
+channel-relative cutoff above, the envelope lowpass contributes the *larger* of
+the two lags, and contributes most in the low channels where the gammatone
+delay is already worst. Compensating only the first stage would leave roughly
+two thirds of the onset skew in place while the flag reported alignment, which
+is worse than not compensating at all: an uncompensated bias is a known
+quantity, a partially compensated one is not.
+
+Compensation is exact only for components slow relative to the stage
+bandwidths, since Butterworth group delay is not flat. For T3, where the
+quantity of interest is onset timing, `test_F6` measures the alignment actually
+achieved rather than assuming the analytic value; report the measured residual
+spread alongside any T3 result taken with compensation on.
+
 **Envelope cutoff (equation 9).** The `"rectify_lowpass"` branch uses a
 channel-relative cutoff rather than one value for the whole bank:
 

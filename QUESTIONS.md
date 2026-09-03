@@ -195,4 +195,34 @@ uniform.
 **Blocking?** no — `"hilbert"` is the default and nothing currently sweeps
 either axis. It blocks the envelope-method sweep crossed with the group-delay
 axis.
-**Answer:** (design session)
+**Answer:** Option 1, restated so the flag means what it says, with option 3
+as the fallback. Compensation is a property of the whole envelope path: advance
+each channel by the sum of the declared lags of the stages actually used, and
+raise rather than compensate partially if a stage cannot declare its lag. SPEC
+section 3 amended; D24. A partially compensated bias is worse than an
+uncompensated one, because an uncompensated bias is a known quantity.
+
+Option 2 was rejected for the same reason: a flag documented as aligning onsets
+while removing a third of the skew will be read as the former by anyone using
+the released data.
+
+**One thing to reconcile before implementing.** Your gammatone column matches
+the analytic value exactly (10.22 ms at 196 Hz), but the envelope-lowpass
+column sits a consistent 2.53x above the analytic DC group delay of a
+fourth-order Butterworth at `b_c` — 22.50 against 8.90 ms at 196 Hz, and the
+same factor at all four centre frequencies. A uniform ratio is a definitional
+difference rather than an error, but it needs identifying before it is used as
+a compensation value: applying 2.53x the true lag would overshoot and reskew
+the bank the other way. Order-8 does not explain it (that would be 1.29x).
+Candidates worth checking: whether the lag was measured from a step or peak
+response rather than group delay, whether the filter is applied more than once,
+and whether the cutoff passed to the design function is the one intended.
+Please report which, with the corrected table.
+
+**A test now covers this.** `test_F6` measures onset spread across the bank on
+the selected path, with and without compensation, for both envelope methods.
+Thresholds are loose on purpose — record the measured spreads in NOTEBOOK.md
+and we can tighten them once the numbers are known. This is the third
+channel-dependent timing bias in a row that no test detected (D19, then this),
+which is the argument for having one.
+
