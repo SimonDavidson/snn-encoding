@@ -226,3 +226,103 @@ and we can tighten them once the numbers are known. This is the third
 channel-dependent timing bias in a row that no test detected (D19, then this),
 which is the argument for having one.
 
+
+### Q06 — equation (21) is a level rule, and no test constrains which reading is meant
+**Raised:** 2026-09-03 by implementation session
+**Context:** starting E3 `TemporalContrast`. Surfaced before writing any of it,
+by asking what T3.1-T3.4 actually pin down. They pin down the filters and the
+symmetry; they do not pin down the event rule.
+**Question:** equation (21) is written as a *level* condition — `ON event if
+d_c[n] >= theta_plus` — with no reset and no rearm condition. Read literally, a
+channel whose `d` sits above `theta` emits one event per sample for the whole
+excursion. The prose of proposal section 5.3 one paragraph earlier says events
+are emitted "on threshold *crossings* of d_c", which is a different rule. SPEC
+section 4.4 says only "equations (18)-(21)" and names state key `"d"`, so it
+does not settle it either. Which reading is E3?
+
+**Why no test catches this.** T3.1 and T3.2 assert silence, T3.3 sets
+`theta=1e9` so nothing fires and reads the `"d"` trace directly, and T3.4
+asserts only ON/OFF symmetry under negation. All five candidate rules below
+pass all four T3 tests. The discriminating test is the generic G3, which
+requires event count to be monotonic in the declared RATE_PARAM.
+
+**Measured:** event counts, 4 channels, 2 s of `drive_for`, `tau_fast=0.001`,
+`tau_slow=0.05`, `theta` swept x0.25 to x4 about 0.2 exactly as G3 sweeps it.
+max|d| over this drive is 0.660.
+
+| theta | level | edge, rearm at theta | edge, rearm at 0 | lattice on d | exact on d |
+|---:|---:|---:|---:|---:|---:|
+| 0.05 | 118531 | 85 | 52 | 888 | 870 |
+| 0.10 | 109070 | 104 | 52 | 432 | 432 |
+| 0.20 | 88504 | **117** | 52 | 191 | 191 |
+| 0.40 | 38472 | 114 | 35 | 69 | 69 |
+| 0.80 | 0 | 0 | 0 | 0 | 0 |
+
+**Options considered:**
+1. **Level**, equation (21) read literally. Monotonic in theta, so G3 passes,
+   but it fires on 93 per cent of samples. That makes E3 a rate code, which
+   contradicts proposal section 5.3's "markedly sparser output on sustained
+   sounds", and it is the reading under which E3 is *least* like the
+   onset-sensitive cochlear-nucleus cells it is meant to model. It also
+   collapses to zero events the instant theta exceeds max|d|, so the usable
+   range of the rate parameter is narrow and drive-dependent. The refractory
+   period cannot rescue it: SPEC 4.4 defaults `refractory=0.0`, and SPEC 4.2
+   fixes refractory as a declared constant that is never a swept axis, so it is
+   not available as the rate-limiting mechanism.
+2. **Edge, rearmed when |d| falls back below theta.** The natural reading of
+   "threshold crossings". *Fails G3*: counts go 85, 104, 117, 114, 0 — not
+   monotonic. The mechanism is not subtle. A lower threshold means `d` sits
+   inside the band for longer, so the detector rearms less often, and below
+   some theta the count falls again. A rate parameter that turns over in the
+   middle of its range makes the matched-budget comparison of proposal section
+   6.4 impossible to arrange.
+3. **Edge, rearmed when d returns through zero.** Technically passes G3 —
+   counts are non-increasing and the endpoints differ — but they are 52, 52,
+   52, 35, 0. Flat across an 8x sweep of theta. The event count is set by how
+   many excursions of `d` exceed theta at all, which is a property of the
+   drive; theta only gates. Not usable as a rate parameter even though the
+   test would go green, which is worth noting as a case where a passing G3 is
+   not sufficient evidence.
+4. **Lattice on d.** E2's rule of SPEC 4.3 applied to `d` instead of `u`:
+   reference on a lattice of spacing theta anchored at `d = 0`, emit until
+   `|d - r| < theta`, reference advanced by an integer index with the D20
+   tolerance. Counts go as roughly 1/theta, which is what a RATE_PARAM has to
+   do.
+5. **Exact on d.** As 4 but the reference jumps to `d` at event time, the
+   analogue of E2's `reference_update="exact"`. Differs from 4 by 2 per cent at
+   the smallest theta and not at all elsewhere on this drive.
+
+**Recommendation (implementation session): option 4.** It is the only reading
+that both passes G3 and gives theta a usable, roughly 1/theta relationship to
+event count across the sweep range, which is what proposal section 6.4 needs.
+Options 4 and 5 are near-indistinguishable here; 4 is preferred because it
+reuses machinery already specified, tested and reasoned about in SPEC 4.3
+rather than introducing a second convention.
+
+**This does not make E3 into E2, and the test file's warning should not be read
+as forbidding it.** The header comment above the T3 block says the risk is that
+E3 is accidentally implemented as E2. What separates the two encoders is the
+bandpass of equations (18)-(20), not the event rule. Under option 4, on the
+T3.2 slow ramp E3 emits 0 events where E2 emits 39. Sharing the threshold rule
+does not blur that; equation (20) is the whole difference.
+
+**One correction to the premise of T3.1, flagged rather than smoothed.** Its
+docstring says "E2 would settle; E3 must never fire at all". Measured, E2 emits
+**0** events on `constant_drive(5.0)`, not a settling burst, because SPEC 4.3
+initialises its reference to `drive[:, 0]`. T3.1 therefore does not discriminate
+E3 from E2 at all; T3.2 is the only test in the block that does. T3.1 remains a
+correct and worthwhile assertion about E3 — it just is not evidence for the
+thing its docstring claims it is evidence for.
+
+**Verification already done on option 4**, so the answer can be acted on
+directly: T3.4 holds exactly, not approximately. At theta=0.2 the ON/OFF split
+is 64/63 and negating the drive gives 63/64; at theta=0.05, 289/284 against
+284/289. Event times are bit-identical under negation in both cases. T3.1 and
+T3.2 give 0 events, T3.3 is unaffected since it never fires.
+
+**Blocking?** **Yes** — this blocks E3 entirely, and E3 is on the critical path
+for T3 boundary detection, where proposal section 5.3 predicts it is the
+strongest candidate. It does not block E4, the D24 front-end work, or the
+`features`/`corrupt` stubs, so there is unrelated work to do meanwhile.
+
+**Answer:** (awaiting design session)
