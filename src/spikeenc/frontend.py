@@ -13,10 +13,10 @@ approximation in between.
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-02
-Last modified: 2026-09-02
+Last modified: 2026-09-03
 """
 import numpy as np
-from scipy.signal import butter, fftconvolve, hilbert, lfilter
+from scipy.signal import butter, fftconvolve, hilbert, sosfilt
 
 # Tail of the gammatone envelope retained in the FIR taps, as a multiple of the
 # envelope peak time (order-1)/(2*pi*b). At 8 the residual amplitude is ~4e-7 of
@@ -165,37 +165,54 @@ class Filterbank:
                     out[c] = np.concatenate([out[c, s:], np.zeros(min(s, n))])[:n]
         return out
 
-    def envelope(self, audio, method="hilbert", f_cut=300.0, lowpass_order=4):
+    def envelope(self, audio, method="hilbert", f_cut=1000.0, lowpass_order=4):
         """Subband envelopes, equation (8) or (9).
 
         "hilbert"          : |x_c + j H{x_c}|, the analytic signal magnitude.
-        "rectify_lowpass"  : LPF_fcut(max(x_c, 0)), the cheaper route and the
-                             more plausible model of hair cell transduction.
+        "rectify_lowpass"  : LPF(max(x_c, 0)), the cheaper route and the more
+                             plausible model of hair cell transduction.
+        "none"             : max(x_c, 0) with no lowpass, for callers supplying
+                             their own smoothing.
+
+        Cutoff per SPEC section 3 and D21: channel-relative rather than one
+        value for the whole bank,
+
+            f_cut_c = min(f_cut, b_c)
+
+        with b_c the channel's own bandwidth from equation (5) and `f_cut` a
+        global ceiling. A subband of bandwidth b_c cannot carry envelope
+        modulation faster than b_c, so a cutoff above the channel bandwidth
+        admits carrier without admitting any more envelope. This departs from
+        equation (9) as written in proposal v2, which specifies a single
+        cutoff; SPEC section 3 records why, and proposal 5.0 should carry the
+        channel-relative form at v3.
 
         `f_cut` and `lowpass_order` are not part of the SPEC section 3
-        signature and are ignored by the "hilbert" branch. They are exposed so
-        that the cutoff of equation (9) is a declared value rather than a
-        buried constant.
+        signature and are ignored by the "hilbert" and "none" branches. They
+        are exposed so the cutoff is a declared value rather than a buried
+        constant.
 
-        Caveat on the "rectify_lowpass" branch, which no known-answer test
-        covers (F4 exercises "hilbert" only). Equation (9) specifies a single
-        cutoff for the whole bank, so channels whose centre frequency is not
-        well above `f_cut` retain carrier in their "envelope": measured against
-        a known 5 Hz modulator at these defaults the correlation is 0.996 at
-        3057 Hz and 0.980 at 953 Hz, but 0.25 at 196 Hz. That is inherent to a
-        fixed cutoff, not a bug, and it is why "hilbert" is the SPEC default. A
-        channel-relative cutoff would fix it but departs from equation (9), so
-        it is raised as Q03 rather than adopted here.
+        Second-order sections rather than transfer-function coefficients: the
+        lowest channels put the normalised cutoff near 4e-3, where a fourth-
+        order tf-form filter is numerically unreliable.
         """
         sub = self.subbands(audio)
         if method == "hilbert":
             return np.abs(hilbert(sub, axis=-1))
+        if method == "none":
+            return np.maximum(sub, 0.0)
         if method == "rectify_lowpass":
+            rectified = np.maximum(sub, 0.0)
             nyquist = 0.5 * self.sample_rate
-            b, a = butter(lowpass_order, min(f_cut / nyquist, 0.99), btype="low")
-            return lfilter(b, a, np.maximum(sub, 0.0), axis=-1)
+            cutoffs = np.minimum(float(f_cut), self.bandwidths)
+            out = np.empty_like(rectified)
+            for c, cut in enumerate(cutoffs):
+                sos = butter(lowpass_order, min(cut / nyquist, 0.99),
+                             btype="low", output="sos")
+                out[c] = sosfilt(sos, rectified[c])
+            return out
         raise ValueError(f"unknown envelope method {method!r}; "
-                         "expected 'hilbert' or 'rectify_lowpass'")
+                         "expected 'hilbert', 'rectify_lowpass' or 'none'")
 
     def compress(self, env, method="log", epsilon=1e-8, exponent=0.3):
         """Compressive nonlinearity, equation (10). SPEC section 3.

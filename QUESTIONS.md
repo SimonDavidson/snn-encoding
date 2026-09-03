@@ -76,6 +76,32 @@ and E5 on T2. That contamination would not show up as an error anywhere; it
 would quietly blur the distinction the battery exists to measure.
 
 
+**Re-measured 2026-09-03 (implementation session), as asked.** D21 implemented
+as `f_cut_c = min(f_cut, b_c)`, ceiling 1000 Hz, fourth order, second-order
+sections. Against the same 1 s AM tone and 5 Hz modulator:
+
+| f_c (Hz) | b_c | f_cut_c | raw corr, f_c/4 | raw corr, D21 | lag-corrected, f_c/4 | lag-corrected, D21 | carrier leak, f_c/4 | carrier leak, D21 |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 196 | 46.7 | 46.7 | 0.7688 | 0.7605 | 0.9999 | 0.9999 | 1.74e-04 | 1.20e-04 |
+| 479 | 77.9 | 77.9 | 0.9339 | 0.9114 | 0.9999 | 1.0000 | 1.67e-04 | 5.32e-06 |
+| 953 | 129.9 | 129.9 | 0.9782 | 0.9678 | 0.9999 | 1.0000 | 1.56e-04 | 1.22e-06 |
+| 3057 | 361.5 | 361.5 | 0.9973 | 0.9958 | 0.9999 | 1.0000 | 6.29e-05 | 1.50e-07 |
+
+**Yes, it comes out worse on the metric as originally posed — and that metric
+was the wrong one.** On raw correlation D21 is below f_c/4 at all four
+channels. But b_c is more restrictive than f_c/4 everywhere, not just above
+196 Hz, so D21 lowpasses harder, and a harder lowpass costs group delay. Once
+the filter's own lag is removed, both sit at 0.9999 or better: the envelope
+*shape* is essentially perfect under either cutoff and the raw-correlation
+deficit is delay, not distortion.
+
+The metric that does discriminate is carrier leakage, which is what the change
+was for, and there D21 wins at every channel — by 1.4x at 196 Hz and by 30x,
+128x and 419x above it. The physical argument in the answer holds; my original
+table just measured the wrong thing, because correlation against an
+uncompensated modulator conflates rejection with delay.
+
+
 ### Q04 — test_T2_4 asserts a closed loop the fixture signal does not close
 **Raised:** 2026-09-02 by implementation session
 **Context:** E2 implemented. T2.1, T2.2, T2.3 and T2.5 pass. T2.4 fails by
@@ -132,3 +158,41 @@ as an implementation decision: Layer 3 of the validation protocol calls for an
 independent reimplementation of E2 compared event for event, and one without
 the tolerance would disagree at every excursion crest.
 
+### Q05 — the envelope lowpass adds delay that compensate_group_delay does not remove
+**Raised:** 2026-09-03 by implementation session
+**Context:** measuring D21. Surfaced by the lag analysis above, not looked for.
+**Question:** D19 has `compensate_group_delay=True` advance each channel by its
+gammatone group delay, `(order-1)/(2*pi*b_c)`, and that shift is applied in
+`subbands`. With `method="rectify_lowpass"` the envelope lowpass then adds a
+*second* channel-dependent lag downstream of the compensation, which the
+compensation therefore does not remove. Under D21 that second lag is the larger
+of the two, and it is larger in exactly the low channels where the gammatone
+delay is already worst:
+
+| f_c (Hz) | gammatone GD | envelope-LPF lag | total, uncompensated |
+|---:|---:|---:|---:|
+| 196 | 10.22 ms | 22.50 ms | 32.7 ms |
+| 479 | 6.13 ms | 13.50 ms | 19.6 ms |
+| 953 | 3.67 ms | 8.12 ms | 11.8 ms |
+| 3057 | 1.32 ms | 2.94 ms | 4.3 ms |
+
+So `compensate_group_delay=True` with `"rectify_lowpass"` removes about a third
+of the actual onset skew and leaves 20 ms of it between the lowest and highest
+channel. SPEC section 3 says compensation "aligns onsets across the bank",
+which holds for `"hilbert"` but not for `"rectify_lowpass"`.
+
+This is the same class of problem D19 was raised about, and no test detects it
+either: F4 uses `"hilbert"`, and G4 passes because a uniform input shift stays
+uniform.
+
+**Options considered:**
+1. Compensate the envelope lowpass as well when both are active, advancing by
+   the measured or analytic lag of the Butterworth at `f_cut_c`.
+2. Leave it, and state in the paper that compensation applies to the filterbank
+   only. Defensible but makes the flag mean less than it appears to.
+3. Restrict `compensate_group_delay` to `"hilbert"` and raise on the
+   combination, so the incomplete case cannot arise silently.
+**Blocking?** no — `"hilbert"` is the default and nothing currently sweeps
+either axis. It blocks the envelope-method sweep crossed with the group-delay
+axis.
+**Answer:** (design session)
