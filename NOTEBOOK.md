@@ -256,3 +256,36 @@ implemented, and G3 to be unaffected for E1 and E2 (spans about 16x).
 **Next (implementation session):** E3 under D26 until T3.1-T3.5 pass, then E4
 until T4.1-T4.4. D24 and the `features`/`corrupt` stubs remain unblocked and
 independent.
+
+## 2026-09-03 | session: implementation (second entry this date)
+**Did:** Applied the design session's Q06 patch from `q06_patch.tar` and
+committed it unedited as b9f3988 with the `[spec]` marker; tar left untracked.
+Before committing, verified the unpack destroyed nothing, since an unpack over
+the working tree is indistinguishable at a glance from accidental clobbering:
+HEAD matched `origin`, the diff was 441 insertions against 34 deletions, and
+every one of those deletions was a deliberate replacement — `APPLY.md` rewritten
+as the patch's own instruction sheet, `**Answer:** (awaiting design session)`
+replaced by the answer, equation (21) and proposal 5.3 rewritten per D26, the
+G3 and T3.1 docstrings corrected per D27 and D29. The gitignored paths a
+restore-from-GitHub could not have recovered (`data/`, `.venv/`) were not in the
+tar. Recording this because the reflex to restore was the wrong one and would
+have destroyed D26-D29 and the Q06 answer.
+
+**Tests:** 32 passed, 51 failed, 1 skipped. Gained `test_T2_6`, which passes
+against the existing E2 unchanged; lost nothing; the new failure is `test_T3_5`,
+which is D26 not yet implemented. Both as the patch predicted.
+
+**CI on b9f3988:** `protected-files` **success** — the `[spec]` marker accepted
+the SPEC/test changes. `known-answers` failure at 51 failed, 32 passed, 1
+skipped, *identical to local*. Worth stating rather than dismissing as the
+expected red: a clean runner neither session configured reproduces the local
+counts exactly, so the 51 failures are genuinely unimplemented code (E3-E6,
+`features`, `corrupt`) and not local state propping anything up. It also
+confirms `test_T2_6` passes in a clean environment.
+
+**Results written:** none.
+**Blocked on:** nothing. Q07 open, blocks nothing until packaging.
+**Next:** E3 under D26 until T3.1-T3.5 pass, then E4 wrapping
+`_integrate_and_fire` so the `delta_a == 0` reduction of T4.1 holds by
+construction. D24 and the `features`/`corrupt` stubs remain unblocked and
+independent of both.
