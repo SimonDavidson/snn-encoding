@@ -86,6 +86,37 @@ Attributes and methods:
 equation (6) between `f_min` and `f_max` inclusive, so `centre_frequencies[0] ==
 f_min` and `centre_frequencies[-1] == f_max`.
 
+**Envelope cutoff (equation 9).** The `"rectify_lowpass"` branch uses a
+channel-relative cutoff rather than one value for the whole bank:
+
+    f_cut_c = min(f_cut, b_c)
+
+with `b_c` the channel's own bandwidth from equation (5) and `f_cut` a global
+ceiling, default 1000 Hz. Fourth order.
+
+The reason is physical rather than empirical. A subband of bandwidth `b_c`
+cannot carry envelope modulation faster than `b_c`, so a cutoff above the
+channel bandwidth admits carrier without admitting any more envelope. A single
+fixed cutoff cannot satisfy both ends of the bank at once: 300 Hz sits above
+the carrier in a 196 Hz channel and removes nothing, while a cutoff low enough
+for that channel would discard genuine envelope at 3 kHz.
+
+This departs from equation (9) as written in proposal v2, which specifies one
+cutoff. The equation is underspecified rather than wrong, and proposal 5.0
+should carry the channel-relative form when v3 is issued.
+
+Note for the record why the fixed-cutoff alternative was rejected on more than
+accuracy. Carrier leaking into the low-channel envelope would make E1, E2, E3,
+E4 and E6 partly phase-locking encoders in exactly the channels where F_0 and
+its low harmonics live. E5 exists to be the encoder that carries fine
+structure, and prediction P-03 turns on the contrast between it and the
+envelope encoders on T2. An envelope method that smuggles periodicity into the
+others would not merely lose accuracy; it would blur the distinction the probe
+battery is built to measure, and it would do so invisibly.
+
+`method="none"` returns the rectified subband without lowpass filtering, for
+callers that want to supply their own.
+
 **Compression method strings.** `compress` takes `method="log"` for the
 logarithmic branch of equation (10) and `method="power"` for the power-law
 branch, the latter using `exponent`. `epsilon` applies to the logarithmic
@@ -202,6 +233,25 @@ not accumulated by repeated addition of `C`. Repeated floating-point addition
 accumulates rounding error across a long utterance and can erode the equation
 (16) bound that `test_T2_1` asserts; an integer index keeps the bound exact
 regardless of duration.
+
+**Threshold comparison tolerance.** Outstanding lattice steps are measured as
+`(u - r0)/C - m`, never as `(u - r0 - m*C)/C`, and the comparison against the
+threshold carries a tolerance of `1e-9` lattice units.
+
+This is part of the contract, not an implementation detail, because Layer 3 of
+the validation protocol calls for an independent reimplementation of E2 whose
+output is compared event for event. Two implementations that differ here
+disagree at every excursion crest, and the disagreement would look like a bug
+in one of them.
+
+The reason it is needed: drive landing exactly on a lattice point is routine,
+not exceptional. With `u = 1.0` and `r = 9C = 0.9`, equation (14) asks whether
+`u - r >= C`. In exact arithmetic `0.1 >= 0.1` fires; in doubles the
+subtraction yields `0.09999999999999998` and it does not, so the crest event of
+every excursion is dropped and the descent begins one step in. The tolerance
+can only fire an event early, never late, so the bound of equation (16)
+tightens rather than loosens.
+
 
 ### 4.4 E3 — Temporal contrast
 

@@ -57,7 +57,24 @@ reference):
 
 **Blocking?** no — `"hilbert"` is the SPEC section 3 default and every current
 test path uses it. It blocks only the envelope-method sweep.
-**Answer:** (design session)
+**Answer:** Option 2, with the cutoff tied to the channel's own bandwidth
+rather than to f_c: `f_cut_c = min(f_cut, b_c)`, global ceiling 1000 Hz, fourth
+order. SPEC section 3 amended; D21. A subband of bandwidth b_c cannot carry
+envelope modulation faster than b_c, so a cutoff above it admits carrier and no
+extra envelope. b_c and f_c/4 are within 5 per cent at 196 Hz and b_c is the
+more restrictive above that, so the measured f_c/4 column should be a lower
+bound on what this achieves — please re-measure the table and record it, and
+say so if it comes out worse.
+
+Option 4 was the most interesting of the four and is right about the
+physiology: phase locking below roughly 1 kHz is real, and a rectify-lowpass
+front end that preserves it is not obviously wrong as a model. It is rejected
+on study-design grounds rather than modelling ones. Carrier in the low-channel
+envelope would make E1-E4 and E6 partly phase-locking encoders in precisely the
+channels carrying F_0, and P-03 turns on the contrast between those encoders
+and E5 on T2. That contamination would not show up as an error anywhere; it
+would quietly blur the distinction the battery exists to measure.
+
 
 ### Q04 — test_T2_4 asserts a closed loop the fixture signal does not close
 **Raised:** 2026-09-02 by implementation session
@@ -98,4 +115,20 @@ same parameters, signal extended by one sample so it genuinely closes:
    roughly doubles the event rate, breaking T2.2 and T2.5. Rejected.
 **Blocking?** no — E2 is otherwise complete and its four analytic tests pass.
 It blocks only the T2.4 assertion itself.
-**Answer:** (design session)
+**Answer:** The analysis is right and the encoder is right; the test premise
+was false. Fixed in test_T2_4, which now builds its own closed signal. D22.
+
+One correction to the reasoning, which strengthens rather than weakens it.
+Extending by one sample is not sufficient on its own: `sin(20*pi)` evaluates to
+-2.45e-15, not zero, and with eps even infinitesimally negative both m = 0 and
+m = -1 satisfy |eps - m*C| < C, so the encoder remains entitled to either. The
+200/200 measured for the extended signal therefore depended on the D20
+tolerance rather than on the signal closing. The test now forces `u[-1] = u[0]`
+exactly, which is the only condition under which equation (16) pins m to zero
+and the assertion is a theorem.
+
+This is also why D20 has been promoted into SPEC section 4.3 rather than left
+as an implementation decision: Layer 3 of the validation protocol calls for an
+independent reimplementation of E2 compared event for event, and one without
+the tolerance would disagree at every excursion crest.
+

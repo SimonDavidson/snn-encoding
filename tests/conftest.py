@@ -35,7 +35,12 @@ def ramp_drive(slope, n_channels=4, duration=1.0, dt=DT):
 
 
 def sine_drive(amplitude, frequency, n_channels=4, duration=2.0, dt=DT):
-    """Sinusoidal drive, starting and ending at zero phase."""
+    """Sinusoidal drive over the half-open interval [0, duration).
+
+    Note that this does NOT end at zero phase: the last sample sits at
+    duration - dt. Any test needing a signal that closes exactly must build its
+    own and force the endpoint, as test_T2_4 does.
+    """
     n = int(round(duration / dt))
     t = np.arange(n) * dt
     return np.tile(amplitude * np.sin(2 * np.pi * frequency * t), (n_channels, 1))

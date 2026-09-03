@@ -337,10 +337,25 @@ def test_T2_3_linear_ramp_gives_regular_intervals():
 
 
 def test_T2_4_polarity_balances_over_a_closed_loop():
-    """A signal returning to its starting value must emit equal ON and OFF
-    counts. Follows exactly from equation (16)."""
+    """A signal returning exactly to its starting value must emit equal ON and
+    OFF counts.
+
+    The signal is built here rather than taken from sine_drive, which samples
+    the half-open interval [0, D) and so ends one sample short of closing. That
+    matters more than it looks. Writing the net lattice displacement as m and
+    the endpoint mismatch as eps, equation (16) gives |eps - m*C| < C, which
+    pins m to zero only when eps is exactly zero: at eps = -2e-3, and even at
+    eps = -2e-15, both m = 0 and m = -1 satisfy the bound and the encoder is
+    entitled to either. The endpoint is therefore forced to equal the first
+    sample exactly, which makes the assertion a theorem again rather than a
+    property of floating-point sine.
+    """
+    n = int(round(2.0 / DT)) + 1               # closed interval [0, D]
+    t = np.arange(n) * DT
+    u = np.sin(2 * np.pi * 5.0 * t)
+    u[-1] = u[0]                               # close it exactly
     enc = E.SendOnDelta(n_channels=1, C=0.1, refractory=0.0)
-    train = enc.encode_from_drive(sine_drive(1.0, 5.0, n_channels=1, duration=2.0), DT)
+    train = enc.encode_from_drive(u[None, :], DT)
     n_on = int(np.sum(train.polarity == 1))
     n_off = int(np.sum(train.polarity == -1))
     assert n_on == n_off, f"ON {n_on} vs OFF {n_off}"
