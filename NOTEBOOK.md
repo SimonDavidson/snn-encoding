@@ -182,3 +182,33 @@ to the encoders — the maths gives exact answers for encoders and only
 inequalities for the front end. Review once E3 and E4 are green.
 **Next:** E3 TemporalContrast (T3.1-T3.4), then E4 ALIF (T4.1-T4.4).
 
+## 2026-09-03 | session: implementation
+**Did:** Raised Q06 — equation (21) is written as a level condition with no
+reset, proposal section 5.3 prose says "threshold crossings", and all four T3
+tests pass under either reading. G3 is the discriminator. Measured five
+candidate rules over G3's own theta sweep; only a reference-reset rule on `d`
+gives event count a usable ~1/theta relation to theta. Recommended option 4
+(lattice on `d`, reusing SPEC 4.3), with the T3.4 symmetry verification
+recorded so the answer can be acted on without a round trip. E3 stopped
+pending the answer.
+
+**Correcting the entry above, which crossed with mine.** The design-session
+entry of the same date lists as open: "the 2.53x discrepancy between measured
+and analytic envelope-lowpass lag must be resolved before compensation is
+implemented." That is **closed** — resolved in the implementation entry
+immediately preceding it (commit fd2938a) and recorded in Q05. The 2.53x was
+my measurement error, not a property of the filter: the Q05 column labelled
+"envelope-LPF lag" was measured end to end through `fb.envelope(...)`, so it
+was the whole path — gammatone, rectify, lowpass — compared against a
+single-stage analytic value. Summing the stages reconciles to within 1 per
+cent (22.53 ms analytic against 22.50 ms measured at 196 Hz, same at the other
+three centre frequencies). **D24 is not blocked.** Noted here rather than by
+editing the design entry, which stands as written.
+
+**Tests:** 31 passed, 50 failed, 1 skipped. Unchanged — no source touched this
+session.
+**Results written:** none.
+**Blocked on:** Q06 blocks E3 entirely. Nothing else.
+**Next:** D24 (move group-delay compensation to cover the whole envelope path;
+test_F6 is the check) and the `features`/`corrupt` stubs (ten tests) are both
+unblocked and independent of Q06. E3 resumes when Q06 is answered.
