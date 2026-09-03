@@ -436,3 +436,35 @@ SPEC section 5 is written, since a channel-doubling convention changes what
 **Answer:** (open — to be taken with Oliver, as it is a release-format question
 rather than a methods one)
 
+
+### Q08 — two quoted values in test_T3_5's docstring do not reproduce
+**Raised:** 2026-09-03 by implementation session
+**Context:** implementing E3 under D26. Found while checking the closed form by
+hand before trusting the test, not by a failure — `test_T3_5` passes.
+**Question:** neither number affects an assertion, because the test computes
+the peak from the formula rather than from the literal, and both margins are
+enormous. But they are the values a Layer 3 reimplementer would hand-check
+against, and one of them is quoted to seven digits. Should they be corrected?
+
+**1. The continuous peak.** The docstring says `d_max = 0.9048124 A`. The
+expression in the test body evaluates to **0.9048013**, and the independent
+route `exp(-t*/tau_s) - exp(-t*/tau_f)` at `t* = 3.9919 ms` gives 0.9048013 as
+well. The docstring value is 1.11e-05 high. The sampled value it also quotes,
+0.9048007, is correct and reproduces exactly. The assertion is
+`abs(d_max - d_max_closed_form) < 1e-4` against the *computed* form, so it
+passes with 167x margin either way.
+
+**2. `d` at the end of the signal.** The docstring says "At the 0.30 s used
+here d is still 2.5e-3, seven orders clear." Measured at 0.30 s, `d` is
+**6.74e-03**; `exp(-0.25/0.05) = 6.738e-3` confirms it. 2.5e-3 is the value at
+a total duration of 0.3496 s. The likely explanation is that the docstring was
+written against a 0.35 s signal and the duration later moved to 0.30 s, or the
+reverse. The conclusion is unaffected in either case — the fourth OFF event
+needs `d < 2e-10`, which arrives at 1.167 s total, so the "load-bearing
+duration" warning is right and the stated ~1.12 s after the step is right.
+
+**Blocking?** no. E3 is implemented, T3.1-T3.5 pass, and every margin is
+recorded in NOTEBOOK for 2026-09-03. This blocks nothing at all; it is logged
+here rather than only in NOTEBOOK because the file is the design session's to
+edit and a notebook entry cannot be closed by whoever resolves it.
+**Answer:** (open)

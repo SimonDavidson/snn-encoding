@@ -289,3 +289,62 @@ confirms `test_T2_6` passes in a clean environment.
 `_integrate_and_fire` so the `delta_a == 0` reduction of T4.1 holds by
 construction. D24 and the `features`/`corrupt` stubs remain unblocked and
 independent of both.
+
+## 2026-09-03 | session: implementation (third entry this date)
+**Did:** Implemented E3 `TemporalContrast` under D26 — equations (18)-(20) with
+`alpha = exp(-dt/tau)` per D28, both filters initialised to `drive[:, 0]`, then
+the SPEC 4.3 reference-lattice rule applied to `d` with the lattice anchored at
+`d = 0`. Added the `reference_update` argument SPEC 4.4 specifies and the
+constructor was missing. Committed as 6d69374.
+
+**E2's event loop is now shared with E3 rather than copied**, as
+`_reference_lattice(sig, dt, C, refractory, reference_update, r0)`; E2 passes
+`r0 = drive[:, 0]`, E3 passes `r0 = 0`. The reasoning is D26's own: it makes
+E2-against-E3 a single-factor contrast in which equation (20) is the whole of
+the difference, and that is only true of the study if it is true of the code —
+two copies could drift apart with no test noticing, because each encoder would
+still pass its own block. Logged as D30. The refactor was verified
+bit-identical for E2 before committing: events and reference traces compared
+elementwise across both `reference_update` variants, with and without
+refractory, and on a 155359-event case that stresses the lattice index. Eight
+cases, all identical.
+
+**Margins rather than passes**, since a green test says only that the answer
+was inside the tolerance:
+
+| quantity | measured | required | margin |
+|---|---|---|---|
+| T3.5 `d_max` vs closed form | 5.98e-07 | < 1e-4 | 167x |
+| T3.5 sampled below continuous | 5.98e-07 below | > -1e-9 | correct sign |
+| T3.5 residual at m=4 | 0.104801 | < theta = 0.2 | m=5 would need d >= 1.0 |
+| T3.5 `d` at end of signal | 6.74e-03 | > 2e-10 | 7.5 orders |
+| G3[E3] span | 888, 432, 191, 69, 0 | >= 4x | 12.9x to the lowest non-zero |
+| G4[E3] shift error | 1.4e-16 s | < 2*dt = 1.25e-04 | 12 orders |
+| G7b[E3] min ISI | 16.2 ms | >= 3.94 ms | 4.1x |
+
+An Euler pole would put `d_max` at 0.9070919, which is 22.9x the T3.5
+tolerance, so that assertion does discriminate the discretisation as D28
+intends. The G3 counts reproduce the design session's predicted 888, 432, 191,
+69, 0 exactly.
+
+**One thing added beyond the spec:** `tau_slow <= tau_fast` now raises. Inverted
+time constants flip the sign of equation (20), which exchanges the ON and OFF
+channels silently rather than failing — the shape of error this project has
+been repeatedly bitten by. Flagging it because it is a constraint SPEC 4.4
+states as a condition but does not require to be enforced.
+
+**Two numbers in `test_T3_5`'s docstring do not reproduce.** Raised as Q08, not
+fixed — the file is the design session's. Neither affects an assertion or a
+conclusion; both are values a Layer 3 reimplementer would hand-check against.
+
+**Tests:** 43 passed, 40 failed, 1 skipped, from 32/51/1. The eleven newly
+green are T3.1-T3.5 and G1/G2/G3/G4/G7/G7b for E3. Failure sets were diffed
+before and after, not just counted: nothing that passed before fails now.
+G8[E3] stays red on the `features` stub.
+**Results written:** none.
+**Blocked on:** nothing. Q07 and Q08 are open and block nothing.
+**Next:** E4 `ALIF` wrapping `_integrate_and_fire` so T4.1's `delta_a == 0`
+reduction holds by construction. D24 (whole-path group-delay compensation,
+test_F6 the check) and the `features`/`corrupt` stubs remain unblocked and
+independent of it. Stopping here rather than continuing into E4 so that one
+encoder at a time reaches review, per section 10 of the validation protocol.
