@@ -162,6 +162,29 @@ runs, or would be silently inherited by it. Section 10 of the validation
 protocol is the governing rule: implementation speed is capped by review speed,
 and auto-continuation must not be used to evade it.
 
+## Notebook and question discipline
+
+Two conventions, added after an entry went stale in a way that was avoidable.
+
+**`NOTEBOOK.md` entries are never edited after the session that wrote them.**
+Not by their author, and not by the other session. An entry is a record of what
+was believed at a point in time, and a belief that later turned out to be wrong
+is part of the record, not noise in it. A session that disagrees with an earlier
+entry writes its own entry saying so and saying why, as the 2026-09-03
+implementation entry does. Deleting the superseded entry would leave the
+correction arguing with something no longer there, and a reader — a reviewer,
+or either of us in six weeks — would rightly wonder what else had been tidied
+away. This is the same principle `DECISIONS.md` states for superseded entries,
+applied to a file with a different mechanism.
+
+**Blockers live in `QUESTIONS.md` and nowhere else.** A `NOTEBOOK` entry refers
+to them by number — "blocked on Q05" — and does not restate the substance. A
+blocker restated in the notebook cannot be closed by the session that resolves
+it, because that session must not edit the entry; it therefore goes stale the
+moment it is answered, and it goes stale in the file both sessions read at the
+start of every session. A bare `Q05` reference cannot go stale, because Q05's
+answer is the single place its status is recorded.
+
 ## Decision gates
 
 Weeks 4 and 8 of the schedule are decision gates (see §9 of the proposal). At a

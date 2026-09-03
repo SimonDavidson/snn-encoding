@@ -24,6 +24,18 @@ Fixed throughout, no exceptions:
 Channel 0 is always the lowest frequency. Any encoder that reverses this
 silently will fail `test_F3_erb_spacing_is_uniform` and several others.
 
+**Exponential filter discretisation.** Every first-order exponential filter in
+this package uses the exact-exponential pole
+
+    alpha = exp(-dt / tau)
+
+and never the Euler approximation `dt / tau`. This covers equations (12),
+(18)-(19), (22)-(23) and the kernel of equation (32). It is stated in §5.3 of
+the proposal, but is restated here because this document is the sole contract a
+Layer 3 independent reimplementation works from, and two implementations
+differing on this point disagree everywhere by a small amount — the hardest
+kind of disagreement to diagnose. D28.
+
 ---
 
 ## 2. `spikeenc.SpikeTrain`
@@ -282,13 +294,44 @@ tightens rather than loosens.
 
 ### 4.4 E3 — Temporal contrast
 
-`TemporalContrast(n_channels, theta=0.5, tau_fast=0.001, tau_slow=0.05, refractory=0.0)`
+`TemporalContrast(n_channels, theta=0.5, tau_fast=0.001, tau_slow=0.05, refractory=0.0, reference_update="lattice")`
 
 RATE_PARAM `"theta"`, RATE_DIRECTION `-1`, DRIVE_KIND `"envelope"`.
 
 Equations (18)–(21). Both filters initialised to `drive[:, 0]`, so a constant
 drive produces no startup transient and hence no events. Symmetric thresholds:
 `theta_plus == theta_minus == theta`. State keys: `"d"`.
+
+**Event rule.** Equation (21) is the reference-lattice rule of §4.3 applied to
+`d` instead of to the drive. The reference is `r = m * theta` with integer `m`
+initialised to zero, and at each sample events are emitted until
+`|d - r| < theta`. Every provision of §4.3 carries over unchanged: the integer
+lattice index rather than repeated addition, outstanding steps measured as
+`d/theta - m` rather than `(d - m*theta)/theta`, and the `1e-9` tolerance in
+lattice units. `reference_update="exact"` sets the reference to `d` at event
+time, exactly as in §4.3; it is available for symmetry with E2 but is not a
+swept axis and `"lattice"` is the default. D26.
+
+The lattice is anchored at `d = 0`, not at `d[:, 0]`. Under the initialisation
+above those are the same number, but the anchor is a property of the rule
+rather than of the signal, so it is specified independently.
+
+**Why not a crossing rule.** Any rule emitting at most one event per threshold
+crossing has an event count bounded above by the number of excursions of `d`,
+which is a property of the drive and of `tau_fast`/`tau_slow` and not of
+`theta`. Such a count saturates as `theta` falls instead of growing, so `theta`
+cannot serve as RATE_PARAM and the matched-budget comparison of proposal §6.4
+becomes impossible to arrange. The literal level reading of equation (21) fails
+differently: it emits on roughly 93 per cent of samples, contradicting the
+sparsity claim of proposal §5.3, and `refractory` is not available to rate-limit
+it because §4.2 fixes it as a declared constant that is never swept. The
+measurements are in Q06.
+
+**This does not make E3 into E2.** What separates the two encoders is the
+bandpass of equation (20), not the event rule. Sharing the rule is deliberate:
+it makes the E2-against-E3 comparison a single-factor contrast, so any
+difference between their Pareto fronts is attributable to equation (20) and to
+nothing else. `test_T3_2` is the check that the bandpass is present.
 
 ### 4.5 E4 — Adaptive-threshold LIF
 

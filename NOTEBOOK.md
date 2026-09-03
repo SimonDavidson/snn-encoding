@@ -212,3 +212,47 @@ session.
 **Next:** D24 (move group-delay compensation to cover the whole envelope path;
 test_F6 is the check) and the `features`/`corrupt` stubs (ten tests) are both
 unblocked and independent of Q06. E3 resumes when Q06 is answered.
+
+## 2026-09-03 | session: design (second entry this date)
+**Did:** Answered Q06 (D26-D29). E3's event rule is the SPEC 4.3
+reference-lattice rule applied to `d`; equation (21) and the surrounding prose
+of proposal section 5.3 rewritten accordingly, including an explicit statement
+of the cost — E3's event count now scales with transient amplitude rather than
+transient count. G3 strengthened to require a 4x span in event count, not only
+monotonicity. The `alpha = exp(-dt/tau)` convention restated in SPEC section 1,
+where a Layer 3 reimplementer will actually see it. Added `test_T3_5` (closed
+form step response, 4 ON and 3 OFF) and `test_T2_6` (E2 silent on a constant
+drive); corrected the `test_T3_1` docstring and the T3 block header. Raised Q07
+on ON/OFF channel format, non-blocking. Added two file-discipline conventions
+to CLAUDE.md.
+
+**The stale entry above stands, and was not edited.** The implementation
+session was right that my previous entry listed as open something its own
+preceding entry had already closed; the two crossed. The correction was made in
+the right place and by the right mechanism. What went wrong was mine and is
+now fixed at the cause rather than the symptom: I restated a blocker in
+NOTEBOOK, which is a record of belief at a point in time and cannot be closed
+by the session that resolves the blocker. Blockers belong in QUESTIONS.md,
+referenced from NOTEBOOK by number only. Both conventions are now written into
+CLAUDE.md so this does not depend on either session remembering it.
+
+**Observation, extending the one in my previous entry.** That entry noted three
+channel-dependent timing biases found by measurement rather than by test
+failure. Q06 is a fourth finding of the same shape, but with a different cause
+worth separating out: the front-end cases were thin *coverage*, whereas here
+the coverage existed and the *gate was the wrong shape*. G3 asserted
+monotonicity because monotonicity is easy to assert, when the property the
+study needs is dynamic range. A generic gate that encodes a necessary condition
+will be passed by things that fail the sufficient one, and there is no amount
+of care in writing the implementation that catches that — only re-deriving what
+section 6.4 actually requires. Worth a pass over G1-G8 with that question asked
+of each, once E3 and E4 are green.
+
+**Tests:** none run — no environment here. Expect `test_T2_6` to pass
+immediately against the existing E2, `test_T3_5` to fail until D26 is
+implemented, and G3 to be unaffected for E1 and E2 (spans about 16x).
+**Results written:** none.
+**Blocked on:** nothing. Q07 is open but blocks nothing until packaging.
+**Next (implementation session):** E3 under D26 until T3.1-T3.5 pass, then E4
+until T4.1-T4.4. D24 and the `features`/`corrupt` stubs remain unblocked and
+independent.

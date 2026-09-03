@@ -73,10 +73,28 @@ def test_G2_silence_produces_no_events(encoder_case):
     assert len(train) == 0, f"{label} emitted {len(train)} events on silence"
 
 
-def test_G3_rate_parameter_is_monotonic(encoder_case):
+def test_G3_rate_parameter_is_monotonic_and_spans(encoder_case):
     """Sweeping the declared rate parameter moves the event count monotonically
-    in the declared direction. Without this, matched-budget comparison (§6.4)
-    is not possible."""
+    in the declared direction, AND moves it by at least a factor of four across
+    the sweep. Without both, matched-budget comparison (§6.4) is not possible.
+
+    The span requirement was added as D27 because monotonicity alone is
+    necessary but not sufficient, and the gap is not hypothetical: one of the
+    candidate rules considered for E3 in Q06 gave counts of 52, 52, 52, 35, 0
+    across this sweep. That is monotonic, the endpoints differ, it passes the
+    original form of this test, and it is useless — the event count is set by
+    how many excursions of the internal signal exceed threshold at all, which
+    is a property of the drive, and the rate parameter merely gates them.
+
+    Four is chosen as a factor that any usable rate parameter clears easily
+    (E2 gives about sixteen over this sweep, E3 under D26 about thirteen) while
+    still failing the degenerate case above. An encoder whose event count is
+    structurally fixed — E6 is the foreseeable candidate, if it emits one spike
+    per channel per frame regardless of its parameter — will fail this and
+    should fail it: matched budgets for such an encoder have to come from
+    channel count or frame rate, and that is a design question to raise in
+    QUESTIONS.md, not a threshold to relax here.
+    """
     label, cls, kwargs = encoder_case
     drive = drive_for(cls, duration=2.0)
     base = kwargs[cls.RATE_PARAM]
@@ -89,9 +107,14 @@ def test_G3_rate_parameter_is_monotonic(encoder_case):
     if cls.RATE_DIRECTION < 0:
         assert np.all(np.diff(counts) <= 0), f"{label} not monotonic: {counts}"
         assert counts[0] > counts[-1], f"{label} rate parameter has no effect: {counts}"
+        lo, hi = counts[-1], counts[0]
     else:
         assert np.all(np.diff(counts) >= 0), f"{label} not monotonic: {counts}"
         assert counts[-1] > counts[0], f"{label} rate parameter has no effect: {counts}"
+        lo, hi = counts[0], counts[-1]
+    assert hi >= 4 * max(lo, 1), (
+        f"{label} rate parameter spans only {hi} to {lo} over a 16x sweep: "
+        f"{counts}. Monotonic but too flat to hit matched event budgets (D27).")
 
 
 def test_G4_time_shift_equivariance(encoder_case):
@@ -404,15 +427,43 @@ def test_T2_5_halving_C_doubles_the_event_count():
     assert 1.8 < n_fine / n_coarse < 2.2, f"ratio {n_fine / n_coarse:.3f}"
 
 
+def test_T2_6_constant_drive_is_silent():
+    """E2 emits nothing on a constant drive, because SPEC §4.3 initialises the
+    reference to `drive[:, 0]` and it therefore starts already converged.
+
+    Nothing else in this suite pins that initialisation, and it is exactly the
+    kind of convention an independent reimplementation (protocol Layer 3) would
+    plausibly choose differently: a reference initialised to zero would emit
+    fifty events at the first sample here. Added as D29, prompted by Q06
+    finding that test_T3_1's stated rationale depended on the opposite
+    behaviour.
+    """
+    enc = E.SendOnDelta(n_channels=1, C=0.1, refractory=0.0)
+    train = enc.encode_from_drive(constant_drive(5.0, n_channels=1, duration=1.0), DT)
+    assert len(train) == 0, f"{len(train)} events on constant drive"
+
+
 # ===========================================================================
 # E3 — Temporal contrast. Equations (18)-(21).
-# The risk is that E3 is accidentally implemented as E2; T3.1 and T3.2 exist
-# specifically to detect that.
+# The risk is that E3 is accidentally implemented as E2. T3.2 detects that;
+# T3.1 does not, despite what its docstring used to claim — see below. Under
+# D26 the two encoders share an event rule deliberately, and equation (20) is
+# the whole of the difference, so "not E2" means "is bandpass" and nothing
+# more. T3.5 pins the event rule itself, which nothing else in this block does.
 # ===========================================================================
 
 def test_T3_1_steady_state_is_permanently_silent():
-    """Constant drive: both filters track it, their difference is zero, and no
-    event is ever emitted. E2 would settle; E3 must never fire at all."""
+    """Constant drive: both filters are initialised to `drive[:, 0]`, their
+    difference is identically zero, and no event is ever emitted.
+
+    This does NOT discriminate E3 from E2, contrary to what this docstring said
+    before D29. Measured, E2 emits zero events here too, for the same reason —
+    SPEC §4.3 initialises its reference to `drive[:, 0]` as well, so there is
+    no settling burst to distinguish. `test_T3_2` is the test that separates
+    them, and `test_T2_6` now asserts the E2 half explicitly. The assertion
+    below remains correct and worth making; it is simply not evidence for the
+    thing it was once said to be evidence for.
+    """
     enc = E.TemporalContrast(n_channels=1, theta=0.2,
                              tau_fast=0.001, tau_slow=0.05, refractory=0.0)
     train = enc.encode_from_drive(constant_drive(5.0, n_channels=1, duration=2.0), DT)
@@ -465,6 +516,73 @@ def test_T3_4_negating_the_drive_swaps_on_and_off():
     b = enc.encode_from_drive(-drive, DT)
     assert int(np.sum(a.polarity == 1)) == int(np.sum(b.polarity == -1))
     assert int(np.sum(a.polarity == -1)) == int(np.sum(b.polarity == 1))
+
+
+def test_T3_5_step_response_gives_closed_form_event_counts():
+    """Pins the event rule of equation (21), which T3.1-T3.4 do not.
+
+    For a step from 0 to A with both filters starting from zero, equations
+    (18)-(20) give d(t) = A(exp(-t/tau_s) - exp(-t/tau_f)), which peaks at
+
+        t*      = tau_f tau_s ln(tau_s/tau_f) / (tau_s - tau_f)
+        d_max/A = (tau_f/tau_s)**(tau_f/(tau_s - tau_f))
+                - (tau_f/tau_s)**(tau_s/(tau_s - tau_f))
+
+    With tau_f = 1 ms and tau_s = 50 ms that is t* = 3.9918 ms and
+    d_max = 0.9048124 A. Sampled at 16 kHz the peak falls at n = 63 after the
+    step, value 0.9048007 — the sampled maximum, necessarily at or below the
+    continuous one.
+
+    Under D26, with theta = 0.2 the reference climbs to m = 4 (r = 0.8,
+    residual 0.105 < theta; m = 5 would require d >= 1.0, and d never reaches
+    it). That is 4 ON events, with margin on both sides of the answer.
+
+    Only 3 OFF events follow, not 4. On the decay d approaches zero from above,
+    so |d - 0.2| approaches theta from below and never reaches it, and the run
+    stops at m = 1. This is the "emit until within theta, stopping at the first
+    such index rather than the nearest" rule of SPEC §4.3 — the same asymmetry
+    Q04 identified for E2 and D22 recorded — and checking it here is part of
+    the point of this test.
+
+    THE DURATION IS LOAD-BEARING. The 1e-9 lattice tolerance of SPEC §4.3 does
+    eventually admit that fourth OFF event, once d falls below 2e-10, which
+    happens roughly 1.12 s after the step. At the 0.30 s used here d is still
+    2.5e-3, seven orders clear. Lengthening this signal past about 1.1 s
+    changes the correct answer to 4 and 4. That is not a bug and the test
+    should not be "fixed" by extending it.
+
+    Discriminating power, measured across the five candidate rules of Q06: the
+    literal level reading of equation (21) gives several thousand events; both
+    crossing rules give 1 ON and 0 OFF; the lattice rule of D26 gives 4 and 3.
+    """
+    tau_f, tau_s, theta = 0.001, 0.05, 0.2
+    enc = E.TemporalContrast(n_channels=1, theta=theta,
+                             tau_fast=tau_f, tau_slow=tau_s, refractory=0.0)
+    drive = step_drive(0.0, 1.0, t_step=0.05, n_channels=1, duration=0.30)
+    train, state = enc.encode_from_drive(drive, DT, return_state=True)
+
+    d_max_closed_form = ((tau_f / tau_s) ** (tau_f / (tau_s - tau_f))
+                         - (tau_f / tau_s) ** (tau_s / (tau_s - tau_f)))
+    d_max = float(np.max(state["d"][0]))
+    assert abs(d_max - d_max_closed_form) < 1e-4, (
+        f"d peaked at {d_max:.7f}, closed form predicts {d_max_closed_form:.7f}. "
+        "A discrepancy near 0.25 per cent means the Euler pole dt/tau was used "
+        "instead of exp(-dt/tau); see SPEC §1 and D28.")
+    assert d_max <= d_max_closed_form + 1e-9, (
+        f"sampled peak {d_max:.7f} exceeds the continuous maximum "
+        f"{d_max_closed_form:.7f}, which a sampled signal cannot do")
+
+    n_on = int(np.sum(train.polarity == 1))
+    n_off = int(np.sum(train.polarity == -1))
+    assert n_on == 4, (
+        f"expected 4 ON events, got {n_on}. Thousands means equation (21) was "
+        "read as a level condition; one means it was read as a crossing. See "
+        "Q06 and D26.")
+    assert n_off == 3, (
+        f"expected 3 OFF events, got {n_off}. Four means the reference stops "
+        "at the nearest lattice index rather than the first within theta, "
+        "which contradicts SPEC §4.3 — unless the signal was lengthened, in "
+        "which case read this test's docstring.")
 
 
 # ===========================================================================

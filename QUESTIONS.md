@@ -325,4 +325,114 @@ for T3 boundary detection, where proposal section 5.3 predicts it is the
 strongest candidate. It does not block E4, the D24 front-end work, or the
 `features`/`corrupt` stubs, so there is unrelated work to do meanwhile.
 
-**Answer:** (awaiting design session)
+**Answer:** Option 4, as recommended. D26. SPEC section 4.4 amended, equation
+(21) and the surrounding prose of proposal section 5.3 rewritten, and
+`test_T3_5` added to pin the rule.
+
+**The choice is more forced than the recommendation claims.** Options 2 and 3
+are not two candidates that happen to fail; they are two members of a family
+that cannot work. Any rule emitting at most one event per crossing has an event
+count bounded above by the number of excursions of `d` through the threshold
+band, and that number is a property of the drive and of `tau_fast`/`tau_slow`,
+not of `theta`. As `theta` falls the count therefore saturates rather than
+growing. Option 3's flat 52, 52, 52 is the clean form of this; option 2's
+turnover at 117 is the same ceiling reached less tidily. So the measurement is
+not a property of `drive_for` that a different test signal might overturn — it
+is arithmetic, and it disqualifies the whole crossing family at once.
+
+That leaves the level reading and the reference-reset family. The level reading
+is out on the grounds you give, and the refractory period cannot rescue it: the
+proposal's own prose introduces equation (21) as "subject to a refractory
+period", but SPEC 4.2 fixes `refractory` as a declared constant that is never
+swept, precisely so it cannot confound the matched-budget comparison, and SPEC
+4.4 defaults it to zero. The proposal's rescue mechanism is unavailable by
+prior decision. Within the reference-reset family, 4 over 5 for exactly the
+reason you give — reuse SPEC 4.3 rather than introduce a second convention.
+`reference_update` is exposed on E3 for symmetry with E2, defaulting to
+`"lattice"`, and is not a swept axis.
+
+**Two arguments in favour that did not come up.** First, sharing the event rule
+makes E2 against E3 a *single-factor* contrast: any difference between their
+Pareto fronts is attributable to equation (20) and to nothing else. That is
+better experimental design than differing in both the filtering and the rule,
+where a difference in outcome would be uninterpretable. The header comment
+above the T3 block was aimed at the wrong hazard and has been rewritten.
+Second, the reset is what "temporal contrast" names: the DVS pixel the term is
+borrowed from thresholds change in log intensity against a reference that
+resets at each event. Option 4 is closer to the hardware referent than the
+literal reading of (21) is, not further from it.
+
+**The cost, which now appears in the paper rather than only here.** Under
+option 4 E3's event count on a transient scales with the transient's amplitude
+divided by `theta`, rather than with the number of transients. That is a
+modelling choice made under pressure from an evaluation requirement, and
+section 5.3 now says so. It is defensible on its own terms for T3 — a boundary
+with greater contrast accumulates proportionally more evidence — but it is a
+choice, not a consequence of the difference of exponentials, and it should not
+reach a reviewer looking like one.
+
+**Your correction to T3.1 is accepted and goes further than stated.** The
+docstring is rewritten. Beyond that, the fact it relied on — that E2 is silent
+on a constant drive because SPEC 4.3 initialises the reference to `drive[:, 0]`
+— was pinned by nothing in the suite, and is exactly the kind of convention an
+independent Layer 3 reimplementation would plausibly choose differently; a
+reference initialised to zero emits fifty events at the first sample at
+`C = 0.1`. `test_T2_6` now asserts it.
+
+**The more important half of this question is G3, not E3.** Option 3 passes G3
+while being useless, and you flagged that as "a case where a passing G3 is not
+sufficient evidence". It is worse than that: G3 encoded a *necessary* condition
+when what section 6.4 requires is *sufficient dynamic range*. G3 now also
+requires the count to span at least 4x across the sweep. Option 3 gives 1.5x
+and fails; option 4 gives 12.9x and E2 about 16x, both comfortably. The
+foreseeable casualty is E6 — if time-to-first-spike emits one spike per channel
+per frame its count is structurally fixed and no threshold-like RATE_PARAM will
+span anything, in which case matched budgets for E6 must come from channel
+count or frame rate. That is a design question to raise when you reach it, not
+a threshold to relax. The gate has deliberately not been pre-weakened to
+accommodate it.
+
+**One thing found while reading the proposal to write the replacement.**
+Section 5.3 states `alpha = exp(-dt/tau)` explicitly, so the discretisation was
+never actually ambiguous — but SPEC cites equations by number and does not
+reproduce them, so the convention never reached the only document a Layer 3
+reimplementer works from. Two implementations differing here disagree
+everywhere by about 0.25 per cent, which is the hardest kind of disagreement to
+diagnose. Restated in SPEC section 1; D28.
+
+**On `test_T3_5`, which is new and which you should read before running it.**
+It is derived from the closed-form step response, not from any implementation.
+Expected values are 4 ON and 3 OFF events with `theta = 0.2`, and a `d` peak of
+0.9048124 continuous, 0.9048007 sampled at 16 kHz. Three things about it are
+deliberate and are documented in its docstring: the ON/OFF asymmetry is the
+"first index within theta, not nearest" rule of SPEC 4.3 and is the same
+phenomenon as Q04, not an off-by-one; the 0.30 s duration is load-bearing,
+because the 1e-9 tolerance admits a fourth OFF event once `d` falls below
+2e-10, about 1.12 s after the step; and the 1e-4 tolerance on the peak is tight
+enough to catch an Euler pole, which would read 0.9070919. If it fails, the
+failure messages name the likely cause.
+
+
+### Q07 — ON and OFF as separate channel indices, or as a polarity bit
+**Raised:** 2026-09-03 by design session
+**Context:** reading proposal section 5.3 in full while rewriting equation (21)
+for Q06. Noticed rather than looked for.
+**Question:** section 5.3 offers exposing E3's ON and OFF events as distinct
+channel indices rather than as a polarity field, doubling the channel count and
+letting a downstream user select onsets alone. SPEC section 2 fixes a single
+`polarity` field on `SpikeTrain` and section 4.4 does not mention the
+alternative. Which does the released dataset use, and does the choice apply to
+E2 as well, which is equally bipolar?
+**Options considered:** not yet worked through — this is logged so that it is
+settled deliberately rather than by whatever the writer happens to do first.
+Note that it interacts with R1: the Lauscher/SHD channel convention is
+unipolar, so a doubled channel count is a departure from the interoperability
+reference, while a polarity field is a different departure.
+**Blocking?** no. It changes nothing about the encoders, only how their output
+is written out, and no dataset is written yet. It must be settled before
+anything is packaged for release, and preferably before the featurisation of
+SPEC section 5 is written, since a channel-doubling convention changes what
+`featurise` receives.
+**Answer:** (open — to be taken with Oliver, as it is a release-format question
+rather than a methods one)
+
