@@ -5,7 +5,12 @@ data/*
 *.wav
 *.flac
 *.sph
+
+# Design-session patch drops (see CLAUDE.md, GitHub conventions).
+# Contents are committed on application, so the archive itself is redundant.
 *.tar
+*.tar.gz
+*.tgz
 
 __pycache__/
 *.pyc
