@@ -1,6 +1,6 @@
 """Encoders — the API surface of SPEC.md section 4.
 
-STATUS: E1, E2 and E3 implemented. E4-E6 remain skeletons.
+STATUS: E1, E2, E3 and E4 implemented. E5-E6 remain skeletons.
 
 Class attributes (NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND) and the
 __init__ signatures are part of the contract — the known-answer suite reads
@@ -10,7 +10,7 @@ Equation numbers refer to docs/proposal_v2.md.
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-02
-Last modified: 2026-09-03
+Last modified: 2026-09-04
 """
 import numpy as np
 from .spiketrain import SpikeTrain
@@ -88,34 +88,65 @@ class Encoder:
         return p
 
 
-def _integrate_and_fire(drive, dt, theta, tau_m, gain, refractory,
-                        want_state=False):
-    """Discrete leaky integrate-and-fire, equations (12)-(13).
+def _integrate_and_fire(drive, dt, theta_0, tau_m, gain, refractory,
+                        delta_a=0.0, tau_a=1.0, want_state=False):
+    """Leaky integrate-and-fire with an adaptive threshold. Equations (12)-(13)
+    and (22)-(23).
 
-        V[n] = beta * V[n-1] * (1 - s[n-1]) + (1 - beta) * g * u[n]
-        s[n] = Theta(V[n] - theta)
+        a[n]  = rho * a[n-1] + delta_a * s[n-1]         rho  = exp(-dt / tau_a)
+        th[n] = theta_0 + a[n]
+        V[n]  = beta * V[n-1] * (1 - s[n-1]) + (1 - beta) * g * u[n]
+        s[n]  = Theta(V[n] - th[n])
 
     with beta = exp(-dt / tau_m) and a hard reset to zero: the (1 - s[n-1])
     factor zeroes the carried-over potential on the step after an event.
+    Equation (23) reads s[n-1], the same one-step lag the reset carries, so
+    `fired` serves both and is read before it is overwritten.
+
+    E1 and E4 are one routine here, not two routines that agree, which is what
+    SPEC section 4.5 asks for. With delta_a = 0 the adaptation state stays
+    exactly 0.0 -- rho * 0.0 is 0.0, and delta_a * s is 0.0 for either value of
+    s -- so th[n] is theta_0 + 0.0, which is theta_0 to the bit, and the
+    comparison is the one E1 would have made with a scalar threshold. The
+    bit-identity of test_T4_1 therefore holds by construction rather than by
+    numerical coincidence, and an edit touching one encoder cannot leave the
+    other behind. `tau_a` is immaterial in that case: rho multiplies a state
+    that is exactly zero.
 
     Refractory semantics are SPEC section 4.2 / D17: during an absolute
     refractory period the potential is clamped to the reset value and incoming
     drive is discarded, so the interspike interval under saturating drive is
     exactly `refractory` and the rate ceiling exactly 1/refractory.
 
-    Returns (channel_idx, sample_idx, v_trace_or_None), with events in sample
-    order and channel order within a sample.
+    Adaptation keeps decaying through a refractory period, and is not
+    incremented within it because no event occurs there. Equation (23) has no
+    refractory term, and the threshold is a property of the spike history
+    rather than of the membrane, so clamping the membrane says nothing about
+    it. Simon's ruling, 2026-09-04. Unobservable in the comparison runs, where
+    SPEC section 4.5 fixes refractory at 0.0, but a Layer 3 reimplementation
+    must make the same choice for test_G7b to agree event for event.
+
+    Returns (channel_idx, sample_idx, v_trace_or_None, threshold_trace_or_None),
+    with events in sample order and channel order within a sample.
     """
     n_ch, n = drive.shape
     beta = np.exp(-dt / tau_m)
+    rho = np.exp(-dt / tau_a)
 
     v = np.zeros(n_ch, dtype=np.float64)
+    a = np.zeros(n_ch, dtype=np.float64)      # adaptation state, equation (23)
     fired = np.zeros(n_ch, dtype=bool)
     last = np.full(n_ch, _NEVER, dtype=np.int64)
-    trace = np.zeros((n_ch, n), dtype=np.float64) if want_state else None
+    v_trace = np.zeros((n_ch, n), dtype=np.float64) if want_state else None
+    th_trace = np.zeros((n_ch, n), dtype=np.float64) if want_state else None
 
     chan_out, samp_out = [], []
     for i in range(n):
+        # Equations (23) and (22). a starts at zero, so th[0] is theta_0 and a
+        # constant drive meets no startup transient in the threshold.
+        a = rho * a + delta_a * fired
+        theta = theta_0 + a
+
         # Hard reset: potential carried over is zeroed for channels that fired
         # on the previous step.
         v = beta * v * ~fired + (1.0 - beta) * gain * drive[:, i]
@@ -127,8 +158,9 @@ def _integrate_and_fire(drive, dt, theta, tau_m, gain, refractory,
         else:
             fired = v >= theta
 
-        if trace is not None:
-            trace[:, i] = v
+        if want_state:
+            v_trace[:, i] = v
+            th_trace[:, i] = theta
 
         if fired.any():
             idx = np.flatnonzero(fired)
@@ -137,8 +169,9 @@ def _integrate_and_fire(drive, dt, theta, tau_m, gain, refractory,
             last[idx] = i
 
     if chan_out:
-        return (np.concatenate(chan_out), np.concatenate(samp_out), trace)
-    return (np.empty(0, np.int64), np.empty(0, np.int64), trace)
+        return (np.concatenate(chan_out), np.concatenate(samp_out),
+                v_trace, th_trace)
+    return (np.empty(0, np.int64), np.empty(0, np.int64), v_trace, th_trace)
 
 
 def _reference_lattice(sig, dt, C, refractory, reference_update, r0,
@@ -254,9 +287,11 @@ class LIF(Encoder):
 
         d = self._check_drive(drive)
         n = d.shape[1]
-        chan, samp, trace = _integrate_and_fire(
+        # delta_a = 0.0 makes this the non-adapting case of the E4 routine,
+        # bit for bit -- see _integrate_and_fire and SPEC section 4.5.
+        chan, samp, v_trace, _ = _integrate_and_fire(
             d, dt, self.theta, self.tau_m, self.gain, self.refractory,
-            want_state=return_state)
+            delta_a=0.0, want_state=return_state)
 
         train = SpikeTrain.from_events(
             channel=chan,
@@ -267,7 +302,7 @@ class LIF(Encoder):
             params=self._params(dt=dt),
         )
         if return_state:
-            return train, {"v": trace}
+            return train, {"v": v_trace}
         return train
 
 
@@ -441,7 +476,30 @@ class ALIF(Encoder):
         self.tau_m, self.gain, self.refractory = tau_m, gain, refractory
 
     def encode_from_drive(self, drive, dt, seed=None, return_state=False):
-        raise NotImplementedError("E4: equations (22)-(23); state keys 'v','threshold'")
+        """Equations (22)-(23) over (12)-(13). SPEC section 4.5.
+
+        The whole of E4 is the shared routine with delta_a passed through. The
+        reduction to E1 at delta_a = 0 is therefore not something this method
+        arranges or approximates; it is what the same code does when handed a
+        zero. Deterministic, so `seed` is unused.
+        """
+        d = self._check_drive(drive)
+        n = d.shape[1]
+        chan, samp, v_trace, th_trace = _integrate_and_fire(
+            d, dt, self.theta_0, self.tau_m, self.gain, self.refractory,
+            delta_a=self.delta_a, tau_a=self.tau_a, want_state=return_state)
+
+        train = SpikeTrain.from_events(
+            channel=chan,
+            time=samp * dt,
+            polarity=np.ones(chan.size, dtype=np.int8),
+            n_channels=self.n_channels,
+            duration=n * dt,
+            params=self._params(dt=dt),
+        )
+        if return_state:
+            return train, {"v": v_trace, "threshold": th_trace}
+        return train
 
 
 class PhaseLocked(Encoder):
