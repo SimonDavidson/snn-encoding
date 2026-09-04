@@ -439,3 +439,69 @@ against 6d69374 unchanged. The three docstring corrections change no assertion.
 **Blocked on:** nothing. Q07 and Q09 open, neither blocking.
 **Next:** E4 `ALIF` wrapping `_integrate_and_fire`, as a separate session per
 Simon. D24 and the `features`/`corrupt` stubs remain unblocked and independent.
+
+## 2026-09-04 | session: implementation (second entry this date)
+**Did:** Implemented E4 `ALIF`, equations (22)-(23), by generalising
+`_integrate_and_fire` rather than writing a second neuron. The threshold became
+`theta_0 + a` with `a = rho*a + delta_a*s[n-1]`, reading the same one-step-lagged
+`fired` the hard reset already reads, and E1 now calls that routine with
+`delta_a=0.0`. SPEC 4.5 asks for bit-identity at `delta_a == 0`; routing both
+encoders through one path makes it structural, since `rho*0.0` is `0.0`,
+`delta_a*s` is `0.0` for either `s`, and `theta_0 + 0.0` is `theta_0` to the
+bit. There is no branch on `delta_a` anywhere, so the property cannot be broken
+by an edit that touches only one encoder. Same reasoning as D30 for E2/E3.
+
+**The refactor moved E1's code path, so it was verified rather than asserted.**
+45 cases — nine drives (constant, saturating, ramp, sine, step, noise,
+speechlike, all-zero, negative) crossed with five parameter sets including two
+with `refractory > 0` — dumped before the change and compared after: 180 arrays,
+35708 events, identical bit for bit, `v` traces included. Failure sets were
+diffed before and after as well, not merely counted; nothing that passed before
+fails now.
+
+**Refractory and adaptation:** Simon ruled that `a` keeps decaying through the
+refractory period and is not incremented within it (D34). I had flagged it as
+an implementation judgement call; it is unobservable in the comparison runs
+where SPEC 4.5 fixes `refractory = 0.0`, but `test_G7b[E4]` runs at 4 ms and a
+Layer 3 reimplementation has to make the same choice to agree event for event.
+
+**`test_T4_3` fails and I believe the test is wrong. Raised as Q10, not
+touched.** The encoder reproduces the analytic ALIF: at `delta_a = 0` the ISI is
+8.13 ms against the closed form 8.11 ms, and at `delta_a = 0.5` the first
+post-step ISI is 13.13 ms against a hand-solved crossing of 13.1 ms. Three
+readings of equation (23) — literal, add-then-decay, increment-at-own-sample —
+give *identical* early/late counts, so no implementation choice is in play.
+
+Two separate defects, and the second is the one that matters. The estimator
+`early/max(late,1)` inverts once `late` hits zero: the ratio becomes `early`,
+which falls with `delta_a`, so a neuron firing once at onset and never again
+scores 1.00, exactly what no adaptation scores. But the underlying claim is
+false too. Re-measured on 5 s with 200 ms windows so the counts are adequate
+and the steady state is genuinely reached, onset emphasis `ISI_ss/ISI_1` runs
+1.00, 2.11, 2.38, **2.45**, 2.14, 1.51, 1.16 over `delta_a` = 0, 0.25, 0.5, 1,
+2, 4, 8. It peaks near `delta_a ~ 1` and decays either side, and the test's two
+adapting points, 0.5 and 2.0, straddle the peak. Adaptation from the first
+spike suppresses the second, so strong adaptation lengthens the onset ISI
+(8 ms to 139 ms) as well as the steady-state one and the two rates re-converge.
+Steady-state *suppression* is monotone — that is `test_T4_4`, and it passes —
+but the onset-to-steady-state *contrast* is not.
+
+**This bears on P-01,** which predicts T1 accuracy rising and T2 falling "as
+adaptation strength increases". If the onset emphasis underneath that is
+non-monotone with a peak near `delta_a = 1`, a sweep spanning the peak could
+confirm or contradict P-01 according to which side its points land on. The E4
+sweep range should be chosen with the peak located first. `PREDICTIONS.md` not
+edited — §7 forbids it once a run has started, and the restatement is the
+design session's call in any case.
+
+**Tests:** 53 passed, 31 failed, 1 skipped, from 44/40/1. The nine newly green
+are `T4_1`, `T4_2`, `T4_4` and `G1/G2/G3/G4/G7/G7b[E4]`. `G8[E4]` stays red on
+the `features` stub, as it does for every encoder. `T4_3` red — Q10.
+**Results written:** none.
+**Blocked on:** nothing for implementation. Q10 blocks declaring E4's Layer 1
+complete and blocks choosing the `delta_a` sweep range. Q07 and Q09 open,
+neither blocking.
+**Next:** E5 `PhaseLocked` as a separate session, one encoder per review gate.
+D24 (whole-path group-delay compensation, `test_F6`) and the `features` and
+`corrupt` stubs remain unblocked and independent of it — the `features` stub
+alone is holding six `G8` tests red across all encoders.

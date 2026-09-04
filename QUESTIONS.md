@@ -534,3 +534,97 @@ exactly zero when handed a signal whose first sample is within an ulp of zero �
 rejected, it complicates SPEC §4.3 to fix a non-problem.
 **Blocking?** no. Blocks nothing at all; `test_T3_6` passes and E4 is unaffected.
 **Answer:** (open)
+
+### Q10 — `test_T4_3` asserts a monotonicity the ALIF does not have
+**Raised:** 2026-09-04 by implementation session
+**Context:** implementing E4 under SPEC §4.5. Nine of the ten targeted tests
+went green; `test_T4_3` fails on its third assertion, `ratios[2] > ratios[1]`,
+with `2.0 > 3.0`. Raised rather than worked around, per the precedence rule.
+
+**The implementation is not in doubt.** At `delta_a = 0` the ISI under the
+3.0 step is 8.13 ms against the closed form `tau_m*ln(V_inf/(V_inf-theta))`
+= `0.02*ln(3/2)` = 8.11 ms, and `test_T4_1` confirms bit-identity with E1. At
+`delta_a = 0.5` the first post-step ISI is 13.13 ms, and solving
+`3(1-e^{-t/0.02}) = 1 + 0.5 e^{-t/0.1}` by hand gives 13.1 ms (V = 1.4415,
+theta = 1.4386 at that instant). The encoder is doing what equations (22)-(23)
+say.
+
+**Nor is it the discretisation.** Three readings of equation (23) — the literal
+`a[n] = rho*a[n-1] + delta_a*s[n-1]`, add-then-decay `rho*(a + delta_a*s[n-1])`,
+and increment-at-own-sample `rho*a[n-1] + delta_a*s[n]` — give *identical*
+early/late counts of 6/6, 3/1, 2/0 and identical ratios 1.00, 3.00, 2.00. No
+choice available to an implementer changes the outcome.
+
+**What the estimator does.** `early / max(late, 1)` over 50 ms windows:
+
+| delta_a | early | late | ratio |
+|---:|---:|---:|---:|
+| 0.0 | 6 | 6 | 1.00 |
+| 0.5 | 3 | 1 | 3.00 |
+| 1.0 | 2 | 1 | 2.00 |
+| 2.0 | 2 | 0 | 2.00 |
+| 4.0 | 1 | 1 | 1.00 |
+| 8.0 | 1 | 0 | 1.00 |
+
+The clamp inverts the metric exactly where adaptation is strongest: once `late`
+reaches 0 the ratio is just `early`, and `early` falls monotonically. In the
+limit the neuron fires once at onset and never again — perfect onset emphasis —
+and scores 1.00, the same as no adaptation at all.
+
+**But the claim is also false, independently of the estimator.** This is the
+part worth the design session's attention. Re-measured on a 5 s signal with
+200 ms windows, so counts are adequate and the steady state is genuinely
+reached:
+
+| delta_a | ISI_1 (ms) | ISI_ss (ms) | ISI_ss/ISI_1 |
+|---:|---:|---:|---:|
+| 0.0 | 8.13 | 8.12 | 1.000 |
+| 0.25 | 10.50 | 22.19 | 2.113 |
+| 0.5 | 13.13 | 31.19 | 2.376 |
+| 1.0 | 18.88 | 46.25 | 2.450 |
+| 2.0 | 33.38 | 71.50 | 2.142 |
+| 4.0 | 73.31 | 110.31 | 1.505 |
+| 8.0 | 138.88 | 161.06 | 1.160 |
+
+Onset emphasis peaks near `delta_a ~ 1` and decays on both sides, and the
+test's two adapting points, 0.5 and 2.0, straddle that peak. The mechanism is
+not subtle: adaptation from the first spike suppresses the second, so strong
+adaptation lengthens the onset ISI (8 ms to 139 ms) as well as the steady-state
+one, and the two rates re-converge. Steady-state *suppression* is monotone in
+`delta_a` — `test_T4_4` asserts exactly that and passes — but the onset-to-
+steady-state *contrast* is not.
+
+**Question:** `test_T4_3` as written cannot be satisfied by any correct ALIF.
+What should it assert instead?
+
+**Options considered:**
+1. Keep the windows and the triple, change the statistic to `early/(late+1)`.
+   Gives 0.86, 1.50, 2.00 on `(0.0, 0.5, 2.0)` and passes — but it is not
+   monotone over a wider grid either (it turns over at `delta_a = 4`), so it
+   passes by landing on the rising limb rather than by measuring something
+   true. Cheapest and least honest.
+2. Keep the claim, bound the range: assert monotonicity only for
+   `delta_a <= 1`, where it holds on every estimator measured, and say in the
+   docstring that the property is non-monotone beyond the peak.
+3. Assert what is actually true and is the property the study needs: that
+   `ISI_ss/ISI_1 > 1` for any `delta_a > 0`, and that steady-state count falls
+   monotonically (already `test_T4_4`). Drops the "grows with adaptation
+   strength" clause entirely.
+4. Longer signal and 200 ms windows regardless of which claim is kept — the
+   present 50 ms windows put 0-2 events in a bin at the adapting operating
+   points, which is too few to support any ratio.
+
+**Consequence for P-01,** which is why this is a design question and not a
+tidying job. P-01 predicts T1 accuracy rising and T2 falling "as adaptation
+strength increases". If the onset emphasis that P-01 rests on is non-monotone
+in `delta_a` with a peak near 1.0, then a sweep spanning the peak could confirm
+or contradict P-01 depending only on which side of it the swept points fall.
+The E4 sweep range may need to be chosen with the peak located first, and P-01
+may need restating as a claim about a bounded range. I have not edited
+`PREDICTIONS.md`; §7 of the protocol forbids it once a run has started, and in
+any case this is the design session's call.
+
+**Blocking?** not for implementation — E4 is complete and committed, and the
+other nine tests pass. It blocks declaring E4's Layer 1 complete, since a T4
+test is red, and it blocks choosing the E4 `delta_a` sweep range.
+**Answer:** (open)
