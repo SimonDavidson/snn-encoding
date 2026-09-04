@@ -5,6 +5,7 @@ data/*
 *.wav
 *.flac
 *.sph
+*.tar
 
 __pycache__/
 *.pyc
