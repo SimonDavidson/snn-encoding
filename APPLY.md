@@ -1,92 +1,101 @@
-# Patch: Q06 answered — E3 event rule, and three things found alongside it
+# Patch: Q08 answered, `test_T3_6` added, SPEC 4.4 guard ratified
 
-Answers Q06 and unblocks E3. Raises Q07, which blocks nothing.
+Review of E3 at 6d69374. Nothing here blocks E4; apply it and start.
 
-**What changed and why.** Equation (21) was written as a level condition, the
-prose introducing it said "threshold crossings", and all four T3 tests passed
-under either reading. The implementation session's analysis was right and its
-recommendation is adopted: E3's event rule is the reference-lattice rule of
-SPEC §4.3 applied to `d` instead of to the drive. D26.
+## What changed
 
-The choice is more forced than the Q06 write-up claims. Any rule emitting at
-most one event per crossing has an event count bounded above by the number of
-excursions of `d`, which is a property of the drive and of the time constants
-rather than of `theta`, so the count saturates as `theta` falls instead of
-growing. That disqualifies the whole crossing family at once, not just the two
-members measured. The full argument is in the Q06 answer.
+**Q08 — both corrections accepted, both errors were the design session's.**
+D33. The continuous peak is 0.9048013, not 0.9048124; the error came from
+rounding the two exponentials to seven digits before subtracting them, which is
+the arithmetic the closed form exists to avoid. The residual at 0.30 s is
+6.738e-3 = `exp(-5)`, not 2.5e-3; the diagnosis in Q08 is right, the sentence
+was written against time after the step and the parameter against total
+duration. A third that went unreported: `t*` is 3.99186 ms, written as 3.9918 by
+truncating instead of rounding — the 3.9919 in Q08 is right.
 
-Three things came out of answering it:
+No assertion changes. The corrected docstring now records that those values were
+once wrong, rather than quietly reading correctly, because they exist to be
+hand-checked and a reader is entitled to know they failed that check once.
 
-- **G3 was the wrong shape.** It asserted monotonicity, which is necessary,
-  when §6.4 needs dynamic range, which is sufficient. One rejected candidate
-  gave 52, 52, 52, 35, 0 — monotonic, and useless. G3 now also requires a 4x
-  span. D27.
-- **The discretisation never reached SPEC.** Proposal §5.3 states
-  `alpha = exp(-dt/tau)`, but SPEC cites equations by number and does not
-  reproduce them, so the convention was absent from the only document a Layer 3
-  reimplementation works from. Restated in SPEC §1. D28.
-- **T3.1's rationale was false, as flagged.** Docstring corrected, and the fact
-  it depended on — E2's silence on a constant drive — now has its own
-  assertion, since nothing pinned it. D29.
+**`test_T3_6` added.** D31. E3 at `theta = C` must emit exactly the events E2
+emits at `C` when handed E3's own `d`. This is an identity in the equations: E2
+anchors its lattice at its input's first sample, `d[:, 0]` is zero by the SPEC
+4.4 initialisation, and zero is E3's anchor. D30 makes it true by construction,
+which is the right structure — this is what keeps it true if that structure ever
+changes, since two separate loops would each go on passing their own block while
+drifting apart and D26's single-factor contrast would stop holding with nothing
+noticing.
 
-## Files in this patch
+**SPEC 4.4 now requires the `tau_slow <= tau_fast` raise.** D32. The guard was
+a good addition and correctly within implementation remit, but a Layer 3
+reimplementation works from SPEC alone and would not have it. Note that
+`test_T3_4` does not catch an inverted pair: it checks that negating the drive
+swaps the polarities, which an already-swapped encoder satisfies.
+
+## Read before running: `test_T3_6` was written after sight of the code
+
+Unlike everything else in `tests/test_known_answers.py`, `test_T3_6` was written
+by a design session that had read `src/spikeenc/encoders.py`. It is derived from
+equations (20)-(21) and SPEC 4.3, and as far as its author could tell nothing in
+it came from the implementation — but that is exactly the assurance the no-sight
+rule exists to avoid needing to accept.
+
+The file header has been qualified rather than left as an approximation, the
+test's own docstring says so, and NOTEBOOK records it. Weigh `test_T3_6` as
+weaker independent evidence than its neighbours. The alternative was to withhold
+the test to protect the appearance of the discipline at the cost of its
+substance.
+
+## Files
 
 | File | Change |
 |---|---|
-| `SPEC.md` | §1 discretisation convention; §4.4 rewritten with the event rule |
-| `docs/proposal_v2.md` | §5.3: equation (21) rewritten, rationale and cost stated, Δ~ref~ clarified |
-| `tests/test_known_answers.py` | G3 span assertion; new `test_T3_5`, new `test_T2_6`; `test_T3_1` docstring and T3 block header corrected |
-| `DECISIONS.md` | D26–D29 |
-| `QUESTIONS.md` | Q06 answered; Q07 raised (non-blocking) |
-| `NOTEBOOK.md` | design entry |
-| `CLAUDE.md` | two file-discipline conventions, after the stale-entry incident |
+| `tests/test_known_answers.py` | header qualified; `test_T3_5` docstring corrected; `test_T3_6` added |
+| `SPEC.md` | 4.4 required raise |
+| `QUESTIONS.md` | Q08 answered |
+| `DECISIONS.md` | D31-D33 |
+| `NOTEBOOK.md` | design entry, including the review notes |
 
 ## Apply
 
 From the repository root:
 
-    tar xzf q06_patch.tar.gz
+    tar xzf q08_patch.tar.gz
 
-`SPEC.md`, `tests/test_known_answers.py` and `tests/conftest.py` are guarded by
-CI, so the commit message must contain `[spec]`. `conftest.py` is unchanged;
-`step_drive` was already there and `test_T3_5` uses it as-is.
+`SPEC.md` and `tests/test_known_answers.py` are behind the CI guard, so the
+commit message needs `[spec]`.
 
 ## Expected result
 
-`test_T2_6` should pass immediately against the existing E2 — if it does not,
-the reference is not being initialised to `drive[:, 0]` and that is a real
-finding, not a test to adjust. `test_T3_5` fails until D26 is implemented.
-G3 should be unaffected for E1 and E2, which span roughly 16x.
+`test_T3_6` should pass immediately against 6d69374, since D30 makes it true by
+construction. If it fails, the two encoders have already diverged and that is
+the finding, not a test to adjust. The three docstring corrections change no
+assertion, so the counts should go from 43/40/1 to 44/40/1.
 
-## Read `test_T3_5`'s docstring before running it
+## Notes from the review, for context rather than action
 
-Its expected values are derived from the closed-form step response, not from
-any implementation. Three things in it look like bugs and are not:
+The lattice arithmetic was traced by hand against the T3.5 case rather than
+inferred from the green test. Truncation toward zero is the correct rounding —
+`floor` would overshoot on the OFF side and leave a residual of the wrong sign —
+and applying the tolerance as `sign(step) * tol` widens the emit condition
+symmetrically rather than biasing one polarity. The filter initialisation is
+right in a way that is easy to get subtly wrong: setting `y` to `u[:, 0]` and
+then updating at `i = 0` gives `y[0] == u[0]` exactly. Initialising to zero and
+starting at `i = 0`, or initialising to `u[0]` and starting at `i = 1`, both look
+reasonable and both shift the step response by a sample.
 
-- **4 ON but only 3 OFF.** On the decay `d` approaches zero from above, so
-  `|d - 0.2|` approaches `theta` from below and never reaches it; the run stops
-  at `m = 1`. This is the "first index within `theta`, not the nearest" rule of
-  SPEC §4.3 — the same asymmetry Q04 identified for E2 — and checking it is
-  part of the point.
-- **The 0.30 s duration is load-bearing.** The `1e-9` tolerance does admit that
-  fourth OFF event once `d` falls below 2e-10, roughly 1.12 s after the step.
-  Lengthening the signal changes the correct answer to 4 and 4. Do not extend
-  it.
-- **The peak tolerance is 1e-4, which is tight on purpose.** An Euler pole
-  reads 0.9070919 against the correct 0.9048007, and that assertion is how D28
-  gets enforced rather than merely stated.
-
-If it fails, the assertion messages name the likely cause.
+D30 is endorsed, and the usual objection to sharing an implementation between
+two things being compared does not apply. It runs the other way here: T2 and T3
+are now two independent known-answer blocks aimed at the same routine, so a bug
+in the lattice rule has more chances of being caught, not fewer.
 
 ## Next
 
-E3 under D26 until T3.1–T3.5 pass, then E4 until T4.1–T4.4, with E4 wrapping
-`_integrate_and_fire` as before. D24 and the `features`/`corrupt` stubs remain
-unblocked and independent of this patch.
+E4 `ALIF`, wrapping `_integrate_and_fire` so T4.1's `delta_a == 0` reduction
+holds by construction. D24 and the `features`/`corrupt` stubs remain unblocked
+and independent.
 
-One thing to expect rather than be surprised by: G3 may fail for E6 when it is
-implemented, if time-to-first-spike emits one spike per channel per frame and
-its event count is therefore structurally fixed. That would be a real result —
-matched budgets for E6 would have to come from channel count or frame rate —
-and it should be raised in `QUESTIONS.md`, not accommodated by relaxing the
-threshold.
+E3's Layer 1 is complete. Its Layer 2 and Layer 3 are not, `G8[E3]` is still red
+on the `features` stub, and D24 is unimplemented — which matters to E3
+specifically, since it sits on the envelope path where the group delay is
+largest. E3 is not finished, only its known-answer block is.

@@ -467,4 +467,25 @@ duration" warning is right and the stated ~1.12 s after the step is right.
 recorded in NOTEBOOK for 2026-09-03. This blocks nothing at all; it is logged
 here rather than only in NOTEBOOK because the file is the design session's to
 edit and a notebook entry cannot be closed by whoever resolves it.
-**Answer:** (open)
+**Answer:** Both correct, both errors mine, both now fixed. D33.
+
+Recomputed independently before accepting them. The continuous peak is
+0.9048013053; the 0.9048124 in the docstring came from rounding the two
+exponentials to seven digits before subtracting, which is exactly the arithmetic
+the closed form exists to avoid. And the residual is 6.738e-3, which is
+`exp(-5)`: your diagnosis is right, the sentence was written against time after
+the step and the parameter against total duration, and 2.5e-3 is `exp(-6)`, the
+value at 0.35 s total. A third, unreported: `t*` is 3.99186 ms, which I wrote
+as 3.9918 by truncating instead of rounding. Your 3.9919 is right.
+
+The conclusions all survive — the fourth OFF event arrives 1.1166 s after the
+step, so the load-bearing-duration warning stands — but that is not much
+comfort. Two of the three hand-checkable numbers in that docstring were wrong,
+and they were wrong in the one part of the file that a Layer 3 reimplementer is
+meant to check against by hand rather than by running. Finding them needed the
+closed form recomputed independently, which is what you did and what the
+protocol asks for. The corrected docstring now records that they were wrong,
+rather than silently reading correctly.
+
+Raising this as a question rather than only in NOTEBOOK was right for the
+reason you give.

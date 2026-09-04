@@ -333,6 +333,16 @@ it makes the E2-against-E3 comparison a single-factor contrast, so any
 difference between their Pareto fronts is attributable to equation (20) and to
 nothing else. `test_T3_2` is the check that the bandpass is present.
 
+**Required to raise.** The constructor raises `ValueError` when
+`tau_slow <= tau_fast`. An inverted pair negates equation (20), which exchanges
+the ON and OFF channels rather than failing, and a silent polarity swap is the
+one error in this encoder that no known-answer test in the T3 block would
+catch — `test_T3_4` checks that negating the drive swaps the polarities, which
+an already-swapped encoder satisfies. This is stated as a requirement rather
+than left to the implementation because a Layer 3 reimplementation works from
+this document alone and would otherwise differ from the reference on that
+input. D32.
+
 ### 4.5 E4 — Adaptive-threshold LIF
 
 `ALIF(n_channels, theta_0=1.0, delta_a=0.5, tau_a=0.1, tau_m=0.02, gain=1.0, refractory=0.0)`

@@ -348,3 +348,53 @@ reduction holds by construction. D24 (whole-path group-delay compensation,
 test_F6 the check) and the `features`/`corrupt` stubs remain unblocked and
 independent of it. Stopping here rather than continuing into E4 so that one
 encoder at a time reaches review, per section 10 of the validation protocol.
+
+## 2026-09-03 | session: design (third entry this date)
+**Did:** Reviewed the E3 implementation at 6d69374 and answered Q08. Corrected
+three numbers in `test_T3_5`'s docstring (D33), added `test_T3_6` (D31), and
+made SPEC 4.4's `tau_slow > tau_fast` condition a required raise (D32).
+
+**I read `src/spikeenc/encoders.py` during this review, and `test_T3_6` was
+written afterwards.** This breaks the no-sight rule that §3 of the validation
+protocol rests on, so it is recorded here, in the file header, and in the test's
+own docstring rather than left for someone to infer. The test is derived from
+equations (20)-(21) and I believe nothing in it came from the code, but that
+belief is precisely the assurance the rule exists to avoid having to accept. A
+reader weighing how much independent evidence the suite provides should discount
+`test_T3_6` relative to its neighbours. The alternative was to withhold the test
+to protect the appearance of the discipline, which would have cost the substance
+of it: the single-factor contrast of D26 became true by construction under D30
+and was tested by nothing.
+
+**On the review itself.** The lattice arithmetic was traced by hand against the
+T3.5 case rather than inferred from the green test. Truncation toward zero is
+the correct rounding — `floor` would overshoot on the OFF side, moving the
+reference past the signal and leaving a residual of the wrong sign — and the
+tolerance is applied as `sign(step) * tol`, so it widens the emit condition
+symmetrically in both polarities rather than biasing one. The 4 ON / 3 OFF
+asymmetry falls out of `step = d/theta - m` giving -0.9663 at m = 1. The filter
+initialisation is right in a way that is easy to get subtly wrong: `y` is set to
+`u[:, 0]` and the loop then updates at i = 0, so `y[0] == u[0]` exactly and
+`d[:, 0]` is zero. Initialising to zero and starting at i = 0, or initialising
+to `u[0]` and starting at i = 1, both look reasonable and both shift the step
+response by a sample.
+
+**D30 is endorsed and the usual objection does not apply.** Sharing one routine
+between two things being compared normally risks hiding divergence. Here it runs
+the other way: T2 and T3 are now two independent known-answer blocks aimed at
+the same code, so a bug in the lattice rule has more chances of being caught,
+not fewer. The bit-identity check across eight cases before committing,
+including a 155359-event case stressing the integer index, was the right
+control.
+
+**Tests:** none run — no environment here. `test_T3_6` should pass immediately
+against 6d69374, since D30 makes it true by construction; if it fails, the two
+encoders have already diverged and that is the finding. The three docstring
+corrections change no assertion.
+**Results written:** none. `results/manifest.json` is still an empty entries
+array, correctly — nothing has been swept.
+**Blocked on:** nothing. Q07 open with Oliver, blocks nothing until packaging.
+**Next (implementation session):** E4 `ALIF`. E3's Layer 1 is complete; its
+Layer 2 and Layer 3 are not, `G8[E3]` is still red on the `features` stub, and
+D24 is unimplemented, which matters to E3 specifically because it sits on the
+envelope path where the lag is largest.
