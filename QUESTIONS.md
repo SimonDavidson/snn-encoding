@@ -628,3 +628,106 @@ any case this is the design session's call.
 other nine tests pass. It blocks declaring E4's Layer 1 complete, since a T4
 test is red, and it blocks choosing the E4 `delta_a` sweep range.
 **Answer:** (open)
+
+### Q11 — E5's declared RATE_PARAM spans 1.04x, not the 4x D27 requires
+**Raised:** 2026-09-04 by implementation session
+**Context:** measured before implementing E5, after Q06/D27 established that a
+rate parameter whose count is bounded by a property of the drive is unusable.
+Simulated the SPEC §4.6 deterministic rule directly — upward zero crossings of
+the subband, gated by envelope > threshold, then refractory — without writing
+the encoder.
+
+**Measured** on the `test_G3` drive (`speechlike`, 4 channels, 2 s), sweeping
+`threshold` over the standard 0.25x-4x grid from the 0.05 default:
+
+| refractory | 0.0125 | 0.025 | 0.05 | 0.10 | 0.20 | span |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 ms (SPEC default) | 7116 | 7112 | 7096 | 7056 | 6864 | **1.04x** |
+| 0 ms | 32096 | 32020 | 31772 | 30748 | 27364 | **1.17x** |
+
+D27 requires >= 4x. Monotonic, but flat — the exact failure mode D27 was
+written to catch, and the same shape as the rejected E3 candidate in Q06.
+
+**Why it is structural, not a matter of picking a better range.** The event
+count is bounded above by the number of upward zero crossings of `x_c`, which
+is set by the carrier frequency of the channel and by the drive, not by
+`threshold`. The threshold only gates passages where the envelope is low, and
+on this drive the envelope is above the top of the sweep for most of the
+signal (percentiles: p1 = 0.048, p5 = 0.110, p25 = 0.266, p50 = 0.419). Raising
+the threshold 16x therefore removes almost nothing. Widening the sweep does not
+help either: the count saturates at the crossing count from below and falls off
+a cliff to zero only once the threshold exceeds the bulk of the envelope
+distribution, which is a switch, not a rate control.
+
+**This is visible in proposal §5.5 but was lost in SPEC §4.6.** The proposal
+says "Rate parameter: lambda_max in the stochastic form, or the envelope
+threshold in the deterministic form". SPEC §4.6 fixes `RATE_PARAM = "threshold"`
+for both modes, and `test_G3` is parametrised on the encoder, not the mode. So
+the deterministic form is being asked to do something the proposal never
+claimed it could.
+
+**A second, related gap:** equation (25) needs `lambda_max` and `z_0`, and
+neither is a constructor argument in SPEC §4.6. As the signature stands the
+Poisson mode cannot be parameterised at all, so the mode the proposal nominates
+as *having* a working rate parameter is the one that cannot express it.
+
+**Options considered:**
+1. `RATE_PARAM` becomes `lambda_max` and `mode="poisson"` becomes the default,
+   with `lambda_max` and `z_0` added to the constructor. Follows the proposal,
+   and the proposal already calls the stochastic form "the more faithful
+   model". Costs reproducibility of event counts, which is why the
+   deterministic form existed.
+2. Keep deterministic as default and make `refractory` the rate parameter —
+   rejected on sight: SPEC §4.2 fixes `refractory` as a declared constant that
+   is never swept, precisely so it cannot confound a matched-budget comparison.
+3. Sweep `f_lock` as the rate parameter. It does move the count a long way,
+   since channels above it stop locking, but §5.5 wants `f_lock` swept as a
+   scientific variable in its own right, so it cannot also be the budget knob.
+4. Accept that E5's deterministic mode has no rate parameter and match its
+   budget by channel count instead, as `test_G3`'s own docstring contemplates
+   for E6. That is a change to how E5 enters the Pareto comparison of §6.4.
+
+**Blocking?** yes, for E5. The answer determines the constructor signature,
+which is contract, and whether `test_G3[E5]` is expected to pass at all. I have
+not written the encoder — the measurement above needed no implementation.
+**Answer:** (open)
+
+### Q12 — two under-specifications in SPEC §4.6 that a Layer 3 reimplementation would resolve differently
+**Raised:** 2026-09-04 by implementation session
+**Context:** reading SPEC §4.6 against equations (24)-(26) before implementing.
+Both are cases where the document admits two readings that give different
+events, which is the class of gap §4.3's tolerance clause and D32's raise
+requirement were added to close elsewhere.
+
+**1. Which envelope gates the crossings?** §4.6 says "emit at each upward zero
+crossing of the subband waveform where the envelope exceeds `threshold`".
+`encode_from_drive` receives the subband waveform only, and §4.1 forbids it to
+apply "any additional filtering, compression, scaling or normalisation" to the
+drive. The envelope must therefore be computed inside the encoder, and §4.6
+does not say how. `Filterbank.envelope` offers three methods and is not
+reusable here in any case, since it takes raw audio and computes its own
+subbands. Hilbert magnitude is the natural default and needs no cutoff
+parameter — which matters, because `encode_from_drive` has no access to the
+channel bandwidths that D21's channel-relative cutoff would require. But
+rectify-and-lowpass is the cheaper and more physiological route the front end
+also offers, and the two differ near onsets, which is where the gate matters
+most. Proposed: state Hilbert magnitude in SPEC §4.6, and say that the
+prohibition of §4.1 applies to the drive path and not to an internal gating
+signal.
+
+**2. What are the parameters of the LIF fallback above `f_lock`?** §4.6 says
+channels above the cutoff "revert to envelope-driven LIF behaviour", and
+`test_T5_2` depends on that reversion happening. But `PhaseLocked.__init__`
+has no `theta`, `tau_m` or `gain`, so the fallback's threshold and membrane
+time constant are undefined. Reading `threshold` as E1's `theta` is available
+but wrong-dimensioned: `threshold` gates an envelope in drive units and
+defaults to 0.05, where E1's `theta` defaults to 1.0, so the fallback would
+fire on essentially every sample. Options: add explicit `theta_fallback` and
+`tau_m` arguments; or specify E1's defaults (`theta=1.0, tau_m=0.02,
+gain=1.0`); or define the fallback as `LIF` constructed with its own defaults
+and say so. Any of the three is fine, but a Layer 3 reimplementation cannot
+pick the same one by reasoning.
+
+**Blocking?** yes for E5, though subordinate to Q11 — the constructor signature
+is in question there too, so both should be answered together.
+**Answer:** (open)
