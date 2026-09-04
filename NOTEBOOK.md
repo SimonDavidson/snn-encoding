@@ -505,3 +505,61 @@ neither blocking.
 D24 (whole-path group-delay compensation, `test_F6`) and the `features` and
 `corrupt` stubs remain unblocked and independent of it — the `features` stub
 alone is holding six `G8` tests red across all encoders.
+
+## 2026-09-04 | session: implementation (third entry this date)
+**Did:** Pushed the E4 work and opened issues #1-#3 for Q10-Q12 on Simon's
+instruction. Then, E5 being blocked, implemented `spikeenc.corrupt` (SPEC §7,
+all four operators) and `spikeenc.features.featurise` (SPEC §5, equation 32).
+
+**E5 was not started, and the reason is Q11.** Before writing any of it I
+simulated the SPEC §4.6 deterministic rule directly — upward zero crossings of
+the subband, gated by envelope > threshold, then refractory — on the `test_G3`
+drive. The declared RATE_PARAM moves the event count 7116 to 6864 across the
+16x sweep, a span of 1.04x against D27's required 4x. It is the Q06 failure
+shape exactly: the count is bounded by the subband's zero-crossing rate, which
+is a property of the carrier, and `threshold` only gates quiet passages, of
+which this drive has few (envelope p25 = 0.266 against a top threshold of 0.20).
+Proposal §5.5 nominates `lambda_max` for the stochastic form, but equation
+(25)'s `lambda_max` and `z_0` are not constructor arguments, so the mode that
+has a working rate parameter cannot express it. Q12 records two further gaps:
+which envelope gates the crossings, and what parameters the LIF fallback above
+`f_lock` uses. Measured without writing the encoder, so nothing needs undoing
+when the answers arrive.
+
+**`featurise` checked against the defining equation, not against its test.** The
+shipped version accumulates recursively, `phi[k] = phi[k-1]*exp(-hop/tau) + ...`,
+which is O(N+F) rather than O(N*F). The closed form
+`exp(-t_k/tau) * cumsum(exp(t_j/tau))` was rejected: `exp(t/tau)` overflows a
+double at t/tau ~ 710, which is 3.6 s of audio at the default tau. Compared
+against a literal double-sum transcription of equation (32) on E1, E3 and E4
+trains, the worst relative error is 9.4e-16, a few ulp. Order invariance is
+bit-exact under permutation rather than merely inside the test's rtol=1e-10,
+because events are lexsorted before anything is accumulated — summation over a
+set is order-invariant in exact arithmetic and not in floating point, and
+`test_G8` is precisely a test of that. `split_polarity=False` reproduces the ON
+and OFF halves folded together to 1.1e-16.
+
+**`test_corrupt_delete_retains_expected_fraction` fails on its precondition,
+not on the operator. Raised as Q13, not touched.** The fixture yields 275
+events where the guard requires more than 500. `delete` itself is right:
+retention is 0.7382, inside the 0.65-0.75 window. E1's 275 is exact — identical
+at 2x, 4x, 8x and 16x oversampling, so no events are being lost between
+samples — and the per-channel spread 12/48/84/131 is what `drive_for`'s
+0.6/0.8/1.0/1.2 scaling predicts at theta = 1.0. The guard is not spurious: at
+N = 275 the window is +/-1.81 binomial sd and holds for 93.1 per cent of seeds,
+against +/-2.44 sd and 97.7 per cent at N = 500. `duration=8.0` would give 551.
+
+**Tests:** 60 passed, 24 failed, 1 skipped, from 53/31/1. Seven newly green:
+the three working corruption operators and `G8` for E1-E4. `G8[E5]` and
+`G8[E6]` stay red on the encoder stubs rather than on `features`, which is
+correct. Failure sets diffed, not counted; no regressions.
+**Results written:** none.
+**Blocked on:** E5 blocked on Q11 and Q12 (issues #2, #3). Q10 (#1) blocks
+declaring E4's Layer 1 complete. Q13 blocks one test's green tick and nothing
+else. Q07 and Q09 open, neither blocking.
+**Next:** E5 once Q11 and Q12 are answered — the constructor signature is in
+question, so writing it first would risk rework. Unblocked and independent
+meanwhile: D24 whole-path group-delay compensation (`test_F6`), and E6 `TTFS`,
+whose SPEC §4.7 I have not yet read against its T6 block. The remaining 24
+failures are E5 (7), E6 (8), T6 (3), T5 (4, three of which need E5), F6 (1)
+and Q13's precondition (1).

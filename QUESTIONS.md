@@ -731,3 +731,64 @@ pick the same one by reasoning.
 **Blocking?** yes for E5, though subordinate to Q11 — the constructor signature
 is in question there too, so both should be answered together.
 **Answer:** (open)
+
+### Q13 — `test_corrupt_delete_retains_expected_fraction`'s fixture yields 275 events, not the >500 its own guard requires
+**Raised:** 2026-09-04 by implementation session
+**Context:** implementing `spikeenc.corrupt` under SPEC §7. Three of the four
+corruption tests pass. This one fails on its precondition, not on its
+assertion, and not in the operator.
+
+**The operator is correct and the assertion it guards would pass.** With
+`p = 0.3` and `default_rng(0)` the train retains 203 of 275 events, a fraction
+of **0.7382**, inside the test's `0.65 < frac < 0.75` window. The failure is
+the line above it:
+
+```
+assert len(train) > 500, "need a well-populated train for a rate assertion"
+E   assert 275 > 500
+```
+
+**E1's 275 events are right, not a lost-event bug.** Re-run on the same drive
+oversampled 2x, 4x, 8x and 16x, the count is 275 every time — exactly
+grid-independent, so nothing is being missed between samples. The per-channel
+breakdown is what the drive predicts: `drive_for` scales the base by
+0.6/0.8/1.0/1.2, so with `theta = 1.0` and `gain = 1.0` the channels sit above
+threshold for 19/40/50/57 per cent of the time and produce 12/48/84/131 events.
+The low channels barely fire at all, which is the fixture working as designed —
+it is a spread of operating points, not four copies of one.
+
+**The guard is doing real work and should not simply be deleted.** The window
+is +/-0.05 around a mean of 0.7, and the binomial standard deviation of the
+retained fraction is `sqrt(0.7*0.3/N)`:
+
+| N | sd | window in sd | assertion holds, over 2000 seeds |
+|---:|---:|---:|---:|
+| 275 (actual) | 0.0276 | +/-1.81 | 93.1% |
+| 500 (guard) | 0.0205 | +/-2.44 | 97.7% |
+
+So at the fixture's actual size the test would be a 1-in-14 flake if the seed
+were ever changed, and the guard is what the design session put there to stop
+that. The seed is fixed, so today it is deterministic — but it lands at 0.7382,
+which is 1.38 sd high and only 0.012 from the upper edge.
+
+**Question:** how should the fixture reach the size its guard asks for?
+
+**Options considered:**
+1. Lengthen the drive. `duration=8.0` gives 551 events; 6.0 gives 413 and 7.0
+   gives 482, so 8.0 is the first round value that clears 500. One-word change,
+   keeps every parameter meaningful, costs about a second of test time.
+2. Lower `theta` so the quiet channels contribute. Changes what is being
+   corrupted rather than how much of it there is, and E1 at low theta is a
+   different operating point from the one the rest of the suite exercises.
+3. Lower the guard to `> 250` and widen the window to match the smaller N.
+   Keeps the runtime but weakens the assertion, and the guard's own comment
+   says why it is there.
+4. More channels rather than more seconds.
+
+Option 1 looks right to me, but the file is the design session's and the guard
+encodes a statistical judgement I should not be the one to revise.
+
+**Blocking?** no. `spikeenc.corrupt` is complete and committed; the other three
+corruption tests pass and `test_T5_4` is unblocked for whenever E5 lands. This
+blocks only the green tick on this one test.
+**Answer:** (open)
