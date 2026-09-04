@@ -398,3 +398,44 @@ array, correctly — nothing has been swept.
 Layer 2 and Layer 3 are not, `G8[E3]` is still red on the `features` stub, and
 D24 is unimplemented, which matters to E3 specifically because it sits on the
 envelope path where the lag is largest.
+
+## 2026-09-04 | session: implementation
+**Did:** Applied the Q08 patch from `q08_patch.tar.gz` and committed it unedited
+as fc7e6d2 with the `[spec]` marker. Inspected before applying, by extracting to
+a scratch directory and diffing against the working tree rather than unpacking
+over it — an unpack is indistinguishable at a glance from clobbering, and only a
+diff distinguishes them. All six deletions were deliberate replacements; no test
+was lost (45 to 46); D30 and my 2026-09-03 entry were present in the incoming
+files, so the drop was built on current state.
+
+**On the stale-state worry that prompted the check.** The E3 work was committed
+at 22:22Z on the 3rd but not pushed until 09:24Z on the 4th, so GitHub showed
+the pre-E3 state for eleven hours. The design session read after the push — its
+DECISIONS.md contains D30 and it answers Q08 — so nothing was built on a stale
+read. Worth recording because the gap was invisible from either side: a commit
+that exists locally and a commit the other session can see are different things,
+and only the push time separates them.
+
+**Raised Q09**, non-blocking. `test_T3_6`'s docstring says the SPEC 4.4
+initialisation makes `d[:, 0]` exactly zero. Measured over 200000 random inputs
+at four tau pairs, it is exactly zero about 97 per cent of the time and one ulp
+off otherwise — the two filter outputs are separately rounded reconstructions of
+`u_0` and need not agree bit for bit. It is exactly zero for the drive the test
+uses, so the test passes on the stated ground rather than on tolerance. The
+worst residue is 2.6e-15 in lattice units against the 1e-9 tolerance, six orders
+clear, so nothing needs changing.
+
+**On `test_T3_6`'s provenance,** which the patch flags itself: it was written by
+a session that had read `encoders.py`, and under D30 it is true by construction,
+since both encoders call the same routine on the same signal with the same
+anchor. It cannot fail while that structure holds. That is not an objection —
+it is a regression guard against the structure being undone, which is what it
+says it is — but it should not be counted as independent Layer 1 evidence that
+E3 is correct. The T3 block minus T3.6 is what carries that.
+
+**Tests:** 44 passed, 40 failed, 1 skipped, from 43/40/1. `test_T3_6` passes
+against 6d69374 unchanged. The three docstring corrections change no assertion.
+**Results written:** none.
+**Blocked on:** nothing. Q07 and Q09 open, neither blocking.
+**Next:** E4 `ALIF` wrapping `_integrate_and_fire`, as a separate session per
+Simon. D24 and the `features`/`corrupt` stubs remain unblocked and independent.

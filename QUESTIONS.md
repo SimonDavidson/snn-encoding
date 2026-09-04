@@ -489,3 +489,48 @@ rather than silently reading correctly.
 
 Raising this as a question rather than only in NOTEBOOK was right for the
 reason you give.
+
+### Q09 — `test_T3_6` says `d[:, 0]` is exactly zero; in floating point it usually is
+**Raised:** 2026-09-04 by implementation session
+**Context:** reviewing the Q08 patch before applying it. `test_T3_6` passes, and
+this does not threaten it. Checked because the identity the test rests on is
+stated as a floating-point fact rather than an algebraic one.
+**Question:** the docstring argues that handing E2 the signal `d` gives it the
+anchor `d[:, 0]`, "which the filter initialisation of SPEC §4.4 makes exactly
+zero", and that the identity therefore "follows from the equations alone and
+holds for any implementation". In exact arithmetic that is right. In doubles,
+`d[0] = (a_f u_0 + (1-a_f) u_0) - (a_s u_0 + (1-a_s) u_0)` is a difference of
+two separately rounded reconstructions of `u_0`, and the roundings need not
+agree.
+
+**Measured**, 200000 random `u_0` spanning 1e-6 to 1e3 in magnitude, at four
+`(tau_fast, tau_slow)` pairs:
+
+| tau pair | non-zero `d[0]` | worst \|d[0]\|/\|u_0\| |
+|---|---:|---:|
+| (0.001, 0.05) | 5684 / 200000 | 3.75e-16 |
+| (0.0005, 0.2) | 10324 / 200000 | 3.61e-16 |
+| (0.002, 0.01) | 3660 / 200000 | 3.86e-16 |
+| (0.0001, 0.5) | 4942 / 200000 | 2.11e-16 |
+
+So `d[0]` is exactly zero about 97 per cent of the time and one ulp off
+otherwise. It is exactly zero for all four channels of the drive `test_T3_6`
+actually uses, which is why the test passes rather than passing by luck of the
+tolerance.
+
+**Why it does not matter, and why it is still worth recording.** The worst
+residue is 3.9e-16 relative, which at `theta = 0.15` is 2.6e-15 in lattice
+units — six orders below the 1e-9 tolerance of SPEC §4.3, so it cannot move an
+event. The test is robust as written and needs no change. But a Layer 3
+reimplementation that hits one of the 3 per cent will see a non-zero anchor
+where SPEC says zero, and the docstring tells it that is impossible. The
+accurate statement is that `d[0]` is zero in exact arithmetic and within one
+ulp of zero in doubles, which the tolerance absorbs by six orders.
+
+**Options considered:** (1) soften the docstring's "exactly zero" to "zero in
+exact arithmetic, within an ulp in doubles, absorbed by the §4.3 tolerance";
+(2) leave it, on the grounds that no reader will hit it; (3) have E2 anchor at
+exactly zero when handed a signal whose first sample is within an ulp of zero —
+rejected, it complicates SPEC §4.3 to fix a non-problem.
+**Blocking?** no. Blocks nothing at all; `test_T3_6` passes and E4 is unaffected.
+**Answer:** (open)
