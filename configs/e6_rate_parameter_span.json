@@ -1,0 +1,20 @@
+{
+  "id": "e6_rate_parameter_span",
+  "description": "Q14: E6's declared RATE_PARAM `e_min` measured against D27's 4x requirement, by simulating the SPEC 4.7 frame-energy rule on test_G3's drive. Records that the failure is a default in the wrong place, not the structural flatness test_G3's docstring predicts.",
+  "rule": "e6_frame_energy",
+  "drive_kind": "envelope",
+  "n_channels": 4,
+  "duration_s": 2.0,
+  "seed": 0,
+  "rate_param": "e_min",
+  "rate_direction": -1,
+  "params": {
+    "e_min": 1e-06,
+    "frame": 0.025,
+    "hop": 0.010
+  },
+  "params_comment": "Defaults from SPEC 4.7 and the tests/conftest.py registry entry for E6.",
+  "sweep_factors": [0.25, 0.5, 1.0, 2.0, 4.0],
+  "d27_required_span": 4.0,
+  "predictions": []
+}

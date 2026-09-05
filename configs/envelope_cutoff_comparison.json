@@ -1,0 +1,30 @@
+{
+  "id": "envelope_cutoff_comparison",
+  "description": "Q03/D21: the equation (9) rectify-lowpass envelope under a channel-relative cutoff min(f_cut, b_c) against the f_c/4 alternative, measured on an AM tone per channel. Records the table that appears in QUESTIONS.md Q03 as data.",
+  "filterbank": {
+    "n_channels": 24,
+    "f_min": 100.0,
+    "f_max": 6000.0,
+    "sample_rate": 16000,
+    "order": 4
+  },
+  "channels_reported": [2, 6, 10, 18],
+  "channels_comment": "The four channels quoted in the Q03 table, f_c approximately 196, 479, 953 and 3057 Hz. This is test_F4's bank, which is what the original Q03 measurement used.",
+  "stimulus": {
+    "kind": "am_tone_per_channel",
+    "duration_s": 1.0,
+    "modulator_hz": 5.0,
+    "modulation_depth": 0.5,
+    "trim_fraction": 0.1,
+    "comment": "Carrier at the channel's own centre frequency, as test_F4 builds it; trim discards the filter startup transient at both ends."
+  },
+  "cutoff_rules": {
+    "fc_over_4": "min(f_c / 4, nyquist*0.99)",
+    "d21": "min(f_cut_ceiling, b_c)"
+  },
+  "f_cut_ceiling": 1000.0,
+  "lowpass_order": 4,
+  "seed": 0,
+  "seed_comment": "Deterministic stimulus and path; nothing for a seed to vary.",
+  "predictions": []
+}

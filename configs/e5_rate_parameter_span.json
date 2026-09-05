@@ -1,0 +1,19 @@
+{
+  "id": "e5_rate_parameter_span",
+  "description": "Q11: E5's declared RATE_PARAM `threshold` measured against D27's 4x requirement, by simulating the SPEC 4.6 deterministic rule on test_G3's drive. Measured before any encoder was written, because the answer changes the constructor signature.",
+  "rule": "e5_deterministic",
+  "drive_kind": "subband",
+  "n_channels": 4,
+  "duration_s": 2.0,
+  "seed": 0,
+  "rate_param": "threshold",
+  "rate_direction": -1,
+  "params": {
+    "threshold": 0.05,
+    "refractory": 0.001
+  },
+  "params_comment": "Defaults from SPEC 4.6 and the tests/conftest.py registry entry for E5. The envelope gating the crossings is taken as the Hilbert envelope of the drive; SPEC 4.6 does not say which envelope, which is the first half of Q12.",
+  "sweep_factors": [0.25, 0.5, 1.0, 2.0, 4.0],
+  "d27_required_span": 4.0,
+  "predictions": []
+}
