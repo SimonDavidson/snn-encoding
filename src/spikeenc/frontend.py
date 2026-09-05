@@ -13,7 +13,7 @@ approximation in between.
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-02
-Last modified: 2026-09-03
+Last modified: 2026-09-05
 """
 import numpy as np
 from scipy.signal import butter, fftconvolve, hilbert, sosfilt
@@ -70,6 +70,7 @@ class Filterbank:
         self.order = int(order)
         self.compensate_group_delay = bool(compensate_group_delay)
         self._taps = None                      # lazily built, then cached
+        self._lp_lags = {}                     # (f_cut, order) -> per-channel lag
 
     # -- geometry ----------------------------------------------------------
 
@@ -144,26 +145,107 @@ class Filterbank:
 
     # -- analysis ----------------------------------------------------------
 
-    def subbands(self, audio):
-        """Equation (7): x_c = g_c * x, shape (n_channels, n_samples).
+    def _subbands_raw(self, audio):
+        """Equation (7) with no compensation applied, whatever the flag says.
 
-        Causal convolution truncated to the input length, so each channel
-        carries its own group delay. With `compensate_group_delay=True` each
-        channel is advanced by its own delay, aligning onsets across the bank
-        (SPEC section 3).
+        Kept separate because compensation belongs to the *path*, not to this
+        stage (D24). `envelope` builds on this and compensates once at the end,
+        after the stage that contributes the larger lag; compensating here and
+        again there would double-shift, and compensating only here would leave
+        the envelope lowpass uncorrected, which is the defect D24 names.
         """
         x = np.asarray(audio, dtype=np.float64).ravel()
         n = x.size
         out = np.empty((self.n_channels, n), dtype=np.float64)
         for c, h in enumerate(self._filter_taps()):
             out[c] = fftconvolve(x, h)[:n]
-
-        if self.compensate_group_delay:
-            shifts = np.round(self.group_delays * self.sample_rate).astype(int)
-            for c, s in enumerate(shifts):
-                if s > 0:
-                    out[c] = np.concatenate([out[c, s:], np.zeros(min(s, n))])[:n]
         return out
+
+    def _advance(self, arr, lags):
+        """Advance each channel by its own lag, to the nearest whole sample.
+
+        Rounding costs at most half a sample, 31 us at 16 kHz, against lags of
+        several ms; sub-sample interpolation would buy nothing measurable here
+        and would add a resampling artefact to a signal whose onset shape is
+        the quantity of interest.
+
+        Modifies `arr` in place and returns it. Both call sites pass a freshly
+        allocated array; a caller that does not must copy first.
+        """
+        n = arr.shape[1]
+        shifts = np.round(np.asarray(lags, dtype=np.float64)
+                          * self.sample_rate).astype(int)
+        for c, s in enumerate(shifts):
+            if s > 0:
+                arr[c] = np.concatenate([arr[c, s:], np.zeros(min(s, n))])[:n]
+        return arr
+
+    def subbands(self, audio):
+        """Equation (7): x_c = g_c * x, shape (n_channels, n_samples).
+
+        Causal convolution truncated to the input length, so each channel
+        carries its own group delay. With `compensate_group_delay=True` each
+        channel is advanced by its own delay, aligning onsets across the bank
+        (SPEC section 3). The gammatone is the whole path from input to
+        subbands, so its lag is the whole lag here — unlike `envelope`, which
+        has a second stage to account for.
+        """
+        out = self._subbands_raw(audio)
+        if self.compensate_group_delay:
+            out = self._advance(out, self.group_delays)
+        return out
+
+    # -- declared stage lags, SPEC section 3 / D24 -------------------------
+
+    def _lowpass_lag(self, f_cut, lowpass_order):
+        """Per-channel DC group delay of the equation (9) lowpass.
+
+        Taken as the first moment of the designed filter's impulse response,
+        sum(n*h[n]) / sum(h[n]), which is the DC group delay exactly and is
+        computed from the digital filter actually used. The alternative routes
+        both have drawbacks: `scipy.signal.group_delay` needs transfer-function
+        coefficients, which SPEC section 3 records as numerically unreliable at
+        the normalised cutoffs the low channels use, and the analog Butterworth
+        prototype ignores bilinear prewarping. The prototype agrees with this
+        to better than 0.6 per cent across the bank, so a reimplementation
+        choosing either lands in the same place.
+        """
+        key = (float(f_cut), int(lowpass_order))
+        if key not in self._lp_lags:
+            nyquist = 0.5 * self.sample_rate
+            lags = []
+            for cut in np.minimum(float(f_cut), self.bandwidths):
+                sos = butter(lowpass_order, min(cut / nyquist, 0.99),
+                             btype="low", output="sos")
+                # 32 cycles of the cutoff; the first moment is tail-weighted,
+                # and converges to within 1e-15 relative by 16.
+                n = int(max(4096, 32 * self.sample_rate / cut))
+                imp = np.zeros(n)
+                imp[0] = 1.0
+                h = sosfilt(sos, imp)
+                lags.append(float(np.sum(np.arange(n) * h) / np.sum(h))
+                            / self.sample_rate)
+            self._lp_lags[key] = np.array(lags, dtype=np.float64)
+        return self._lp_lags[key]
+
+    def _envelope_stage_lag(self, method, f_cut, lowpass_order):
+        """Lag the envelope stage itself contributes, per channel.
+
+        Every stage that introduces a channel-dependent lag must declare it
+        here. A method with no declared lag raises rather than defaulting to
+        zero: silently compensating part of a path while reporting the path
+        aligned is the failure D24 exists to prevent, and it is worse than not
+        compensating at all, because an uncompensated bias is a known quantity
+        and a partially compensated one is not.
+        """
+        if method in ("hilbert", "none"):
+            return np.zeros(self.n_channels, dtype=np.float64)
+        if method == "rectify_lowpass":
+            return self._lowpass_lag(f_cut, lowpass_order)
+        raise ValueError(
+            f"envelope method {method!r} declares no group delay, so "
+            "compensate_group_delay=True cannot be honoured for it (SPEC "
+            "section 3, D24). Declare its lag in _envelope_stage_lag.")
 
     def envelope(self, audio, method="hilbert", f_cut=1000.0, lowpass_order=4):
         """Subband envelopes, equation (8) or (9).
@@ -196,23 +278,30 @@ class Filterbank:
         lowest channels put the normalised cutoff near 4e-3, where a fourth-
         order tf-form filter is numerically unreliable.
         """
-        sub = self.subbands(audio)
+        sub = self._subbands_raw(audio)
         if method == "hilbert":
-            return np.abs(hilbert(sub, axis=-1))
-        if method == "none":
-            return np.maximum(sub, 0.0)
-        if method == "rectify_lowpass":
+            env = np.abs(hilbert(sub, axis=-1))
+        elif method == "none":
+            env = np.maximum(sub, 0.0)
+        elif method == "rectify_lowpass":
             rectified = np.maximum(sub, 0.0)
             nyquist = 0.5 * self.sample_rate
             cutoffs = np.minimum(float(f_cut), self.bandwidths)
-            out = np.empty_like(rectified)
+            env = np.empty_like(rectified)
             for c, cut in enumerate(cutoffs):
                 sos = butter(lowpass_order, min(cut / nyquist, 0.99),
                              btype="low", output="sos")
-                out[c] = sosfilt(sos, rectified[c])
-            return out
-        raise ValueError(f"unknown envelope method {method!r}; "
-                         "expected 'hilbert', 'rectify_lowpass' or 'none'")
+                env[c] = sosfilt(sos, rectified[c])
+        else:
+            raise ValueError(f"unknown envelope method {method!r}; "
+                             "expected 'hilbert', 'rectify_lowpass' or 'none'")
+
+        if self.compensate_group_delay:
+            env = self._advance(
+                env,
+                self.group_delays
+                + self._envelope_stage_lag(method, f_cut, lowpass_order))
+        return env
 
     def compress(self, env, method="log", epsilon=1e-8, exponent=0.3):
         """Compressive nonlinearity, equation (10). SPEC section 3.

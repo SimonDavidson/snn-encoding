@@ -563,3 +563,114 @@ meanwhile: D24 whole-path group-delay compensation (`test_F6`), and E6 `TTFS`,
 whose SPEC §4.7 I have not yet read against its T6 block. The remaining 24
 failures are E5 (7), E6 (8), T6 (3), T5 (4, three of which need E5), F6 (1)
 and Q13's precondition (1).
+
+## 2026-09-05 | session: implementation
+**Did:** Session opened after a reboot. Established state per the CLAUDE.md
+startup sequence: nothing had drifted, 60/24/1 exactly as the last entry left
+it, working tree clean, `main` level with `origin/main`. Design session is
+token-limited for about three days (Simon), so the plan is to work the
+unblocked queue rather than wait.
+
+**Probed E6's rate parameter before writing the encoder, as Q11 taught. It
+fails D27, and not for the reason `test_G3` predicts. Raised as Q14, issue
+#5.** At the registry's `e_min = 1e-6` the 16x sweep gives 792 events at every
+one of the five points — exactly the ceiling `n_ch * n_frames` — for a span of
+**1.000x**. Frame energy on `drive_for` runs min 6.24, median 286, max 1852, so
+`1e-6` sits 6.8 decades below the quietest frame and gates nothing at all.
+
+But `e_min` is a working rate parameter, unlike E5's `threshold`. Swept where
+the energies actually live it moves the count 792 -> 744 -> 640 -> 534 -> 401
+-> 186 -> 78 -> 0. So `test_G3`'s docstring, which names E6 as the foreseeable
+D27 casualty whose count is "structurally fixed" and prescribes taking matched
+budgets from channel count or frame rate, does not describe E6. This is a
+default in the wrong place. I cannot fix it: the value lives in
+`tests/conftest.py` and SPEC 4.7, both design-session files, and there is no
+change in `src/` that turns the test green. Q14 offers an absolute retune (any
+base in 205.8-462.8 clears 4x; midpoint 308.8 gives 7.1x) against a relative
+`e_min` as a fraction of max frame energy, which is scale-free — verified
+identical counts across five decades of drive scale — and which would also
+define the `E_max` that equation (28) needs and SPEC 4.7 does not supply. The
+relative form needs a strict `>` gate: written `>=` it emits 392 events on
+silence, because `E_max` is 0 there and `0 >= 0` holds. Both forms pass G4.
+
+**Then D24, whole-path group-delay compensation. `test_F6` green.** The defect
+was as SPEC section 3 describes it: compensation lived inside `subbands`, and
+`envelope` called `subbands` and then added lowpass lag downstream that nothing
+removed, so the flag reported alignment while leaving most of the skew. Measured
+stage budget on a broadband click, 16 channels, 150-6000 Hz:
+
+| stage | onset spread across the bank |
+|---|---:|
+| gammatone lag alone, analytic | 10.76 ms |
+| hilbert envelope, measured | 10.75 ms |
+| rectify_lowpass envelope, measured | 22.63 ms |
+| extra spread contributed by the lowpass | 11.88 ms |
+
+The lowpass is the larger contributor at every channel — 12.62 ms against the
+gammatone's 11.46 ms at channel 0 — exactly as D21 predicted it would be once
+the cutoff became channel-relative. Compensating the gammatone alone removed
+48 per cent of the skew. SPEC section 3 predicted "roughly two thirds" would be
+left in place; the measured figure is 52 per cent.
+
+**`test_F6` margins, which its docstring asks to be recorded so the thresholds
+can be tightened later:**
+
+| method | uncompensated | compensated | test limit | margin | residual |
+|---|---:|---:|---:|---:|---:|
+| hilbert | 10.75 ms | 0.00 ms | 3.58 ms | 57.3x | 0.0% |
+| rectify_lowpass | 22.63 ms | 2.50 ms | 7.54 ms | 3.02x | 11.0% |
+
+The 2.50 ms residual is the declared DC group delay under-reading the lag a
+rectified carrier burst actually experiences: the lowpass lag measured from the
+click is about 1.09x the gammatone lag, while the declared DC value is 0.87x
+it. SPEC section 3 anticipates this — compensation is exact only for components
+slow relative to the stage bandwidths — so I have implemented the declaration
+SPEC specifies and measured what it achieves rather than tuning the declaration
+to flatter the test. Any T3 result taken with compensation on should quote the
+2.50 ms.
+
+**The restructuring removed a second defect that no test detected.** Old code
+shifted the subband before the Hilbert transform; new code takes the envelope
+first and shifts once at the end. Those are not the same operation, because the
+shift truncates and zero-pads and `hilbert` is a global FFT: the pad
+discontinuity rang back through the channel. Against an envelope scale of
+1.9e-2, the old and new compensated hilbert paths differ by 1.6e-2 in the pad
+region, 5.0e-3 in the first `lag` samples and 2.2e-4 in the interior — about
+1 per cent of envelope amplitude, everywhere, in a path that looked correct.
+`test_F6` could not see it because it measures peak position and the ringing
+moves amplitude, not the peak. Nothing had run with compensation on, so no
+result is affected.
+
+**Implementation choice worth a Dnn if Simon agrees, D20-shaped.** The lowpass
+lag is taken as the first moment of the designed filter's impulse response,
+`sum(n*h[n]) / sum(h[n])`, which is the DC group delay exactly and is computed
+from the digital filter actually used. `scipy.signal.group_delay` needs
+transfer-function coefficients, which SPEC section 3 records as numerically
+unreliable at these normalised cutoffs; the analog Butterworth prototype
+ignores bilinear prewarping. The prototype agrees to within 0.6 per cent worst
+case (1.0000 at the low channels, 0.9940 at channel 15), which is ~60 us
+against a 2.50 ms residual, so a Layer 3 reimplementation choosing either route
+lands in the same place.
+
+**Verified rather than assumed.** Failure sets diffed against the pre-patch
+run, not counted: exactly `test_F6` removed, nothing introduced. Uncompensated
+`subbands` and all three `envelope` methods are bit-identical to the pre-patch
+code, as is the compensated `subbands` path, so the default path every current
+test uses has not moved. The compensated `envelope` paths change, which is the
+point. The D24 raise clause fires for an undeclared method rather than
+returning zero. The lowpass lag is computed from the `f_cut` and
+`lowpass_order` actually passed, not from a cached default, so a non-default
+cutoff cannot silently compensate by the wrong amount.
+
+**Tests:** 61 passed, 23 failed, 1 skipped, from 60/24/1. One newly green:
+`test_F6`. No regressions; failure sets diffed.
+**Results written:** none. See the open question about experiment records at
+the end of this entry.
+**Blocked on:** E5 on Q11/Q12 (#2, #3). E6's Layer 1 on Q14 (#5) — though the
+encoder itself is writable now, since T6_1-T6_3 all construct with `e_min=0.0`
+and are indifferent to the default. Q10 (#1) blocks declaring E4 complete and
+bears on P-01. Q13 (#4) blocks one test. Q07, Q09 open, neither blocking.
+**Next:** E6 `TTFS` is the largest unblocked block of work — writable now,
+leaving only `test_G3[E6]` red pending Q14. `results/` is still empty and no
+manifest entry has ever been written; Simon has raised the record-keeping
+question and it needs settling before the first sweep, not after.
