@@ -106,14 +106,16 @@ def main(config_path):
         "worst_relative_error_scaled_overall": max(
             r["worst_relative_error_scaled_to_array_max"] for r in results.values()),
         "reproduction_note": (
-            "NOTEBOOK.md 2026-09-04 quotes a worst relative error of 9.4e-16, "
-            "'a few ulp'. Neither measure here reproduces that: pointwise "
-            "gives about 2e-14 and scaled about 1e-16. The original's "
-            "normalisation was never recorded, so which it was cannot be "
-            "recovered. The conclusion is unaffected either way - the "
-            "recursive accumulation agrees with equation (32) to within a few "
-            "ulp of the largest feature value - but the quoted figure is not "
-            "reproducible as stated. See Q15."),
+            "NOTEBOOK.md 2026-09-04 quotes 9.4e-16 as the worst relative error "
+            "against equation (32). That identifies the normalisation the "
+            "original used: it is the scaled measure, and E4 gives 9.39e-16. "
+            "But it was not the worst of the three - E3 gives 1.31e-15 under "
+            "the same measure, about 40 per cent larger. The conclusion is "
+            "unaffected, since agreement is a few ulp of the largest feature "
+            "value either way, but the figure as quoted understates the worst "
+            "case. The pointwise measure, about 2e-14, is a different question "
+            "and is recorded alongside so the two cannot be confused again. "
+            "See Q15."),
         "definitions": {
             "worst_relative_error_pointwise": "max |shipped-literal| / max(|literal|, floor), over all entries",
             "worst_relative_error_scaled_to_array_max": "max |shipped-literal| / max(|literal|), per encoder"}}
