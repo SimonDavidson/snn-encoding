@@ -76,10 +76,11 @@ def main(config_path):
         predictions=cfg.get("predictions"),
     )
     for method, v in values["by_method"].items():
+        margin = ("undefined" if v["test_F6_margin"] is None
+                  else f"{v['test_F6_margin']:.2f}x")
         print(f"{method:>16}: {v['uncompensated_spread_s']*1000:6.2f} ms -> "
               f"{v['compensated_spread_s']*1000:5.2f} ms  "
-              f"(limit {v['test_F6_limit_s']*1000:5.2f} ms, "
-              f"margin {v['test_F6_margin']:.2f}x)")
+              f"(limit {v['test_F6_limit_s']*1000:5.2f} ms, margin {margin})")
     print(f"written: {out}")
 
 
