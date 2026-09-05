@@ -1,0 +1,43 @@
+{
+  "by_encoder": {
+    "E1": {
+      "bit_identical_under_permutation": true,
+      "largest_feature_value": 1.0632473755117315,
+      "max_abs_error_under_permutation": 0.0,
+      "n_events": 68,
+      "polarity_folding_max_abs_error": 0.0,
+      "worst_absolute_error": 9.783840404509192e-16,
+      "worst_relative_error_pointwise": 2.0097128045010078e-14,
+      "worst_relative_error_scaled_to_array_max": 9.201847688361626e-16
+    },
+    "E3": {
+      "bit_identical_under_permutation": true,
+      "largest_feature_value": 0.9875778004938828,
+      "max_abs_error_under_permutation": 0.0,
+      "n_events": 95,
+      "polarity_folding_max_abs_error": 1.1102230246251565e-16,
+      "worst_absolute_error": 1.2906342661267445e-15,
+      "worst_relative_error_pointwise": 2.207196524803585e-14,
+      "worst_relative_error_scaled_to_array_max": 1.3068684466999002e-15
+    },
+    "E4": {
+      "bit_identical_under_permutation": true,
+      "largest_feature_value": 0.9753099120283326,
+      "max_abs_error_under_permutation": 0.0,
+      "n_events": 30,
+      "polarity_folding_max_abs_error": 0.0,
+      "worst_absolute_error": 9.159339953157541e-16,
+      "worst_relative_error_pointwise": 2.031450078575313e-14,
+      "worst_relative_error_scaled_to_array_max": 9.391209747995942e-16
+    }
+  },
+  "definitions": {
+    "worst_relative_error_pointwise": "max |shipped-literal| / max(|literal|, floor), over all entries",
+    "worst_relative_error_scaled_to_array_max": "max |shipped-literal| / max(|literal|), per encoder"
+  },
+  "hop": 0.01,
+  "reproduction_note": "NOTEBOOK.md 2026-09-04 quotes 9.4e-16 as the worst relative error against equation (32). That identifies the normalisation the original used: it is the scaled measure, and E4 gives 9.39e-16. But it was not the worst of the three - E3 gives 1.31e-15 under the same measure, about 40 per cent larger. The conclusion is unaffected, since agreement is a few ulp of the largest feature value either way, but the figure as quoted understates the worst case. The pointwise measure, about 2e-14, is a different question and is recorded alongside so the two cannot be confused again. See Q15.",
+  "tau": 0.005,
+  "worst_relative_error_pointwise_overall": 2.207196524803585e-14,
+  "worst_relative_error_scaled_overall": 1.3068684466999002e-15
+}

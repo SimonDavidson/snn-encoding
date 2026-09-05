@@ -23,6 +23,46 @@
       ],
       "date": "2026-09-05",
       "predictions": []
+    },
+    {
+      "id": "envelope_cutoff_comparison",
+      "script": "scripts/measure_envelope_cutoff.py",
+      "config": "configs/envelope_cutoff_comparison.json",
+      "commit": "1e57cece53dff07d96812ad1e2b2a29e3f2d0f4d",
+      "seed": 0,
+      "output": "results/envelope_cutoff_comparison.json",
+      "date": "2026-09-05",
+      "predictions": []
+    },
+    {
+      "id": "e5_rate_parameter_span",
+      "script": "scripts/measure_rate_parameter_span.py",
+      "config": "configs/e5_rate_parameter_span.json",
+      "commit": "1e57cece53dff07d96812ad1e2b2a29e3f2d0f4d",
+      "seed": 0,
+      "output": "results/e5_rate_parameter_span.json",
+      "date": "2026-09-05",
+      "predictions": []
+    },
+    {
+      "id": "e6_rate_parameter_span",
+      "script": "scripts/measure_rate_parameter_span.py",
+      "config": "configs/e6_rate_parameter_span.json",
+      "commit": "1e57cece53dff07d96812ad1e2b2a29e3f2d0f4d",
+      "seed": 0,
+      "output": "results/e6_rate_parameter_span.json",
+      "date": "2026-09-05",
+      "predictions": []
+    },
+    {
+      "id": "featurise_accuracy",
+      "script": "scripts/verify_featurise_accuracy.py",
+      "config": "configs/featurise_accuracy.json",
+      "commit": "1e57cece53dff07d96812ad1e2b2a29e3f2d0f4d",
+      "seed": 0,
+      "output": "results/featurise_accuracy.json",
+      "date": "2026-09-05",
+      "predictions": []
     }
   ]
 }

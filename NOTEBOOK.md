@@ -752,3 +752,77 @@ pending Q14. Item 3 of the record-keeping proposal is *not* done: the Q03
 envelope table, the Q11 1.04x measurement, the Q14 energy distribution and the
 `featurise` accuracy check are still notebook prose with no committed script
 behind them. They should be retro-fitted while the method is still fresh.
+
+## 2026-09-05 | session: implementation (third entry this date)
+**Did:** Retro-fitted the remaining paper-bearing probe measurements as
+committed script and config pairs — item 3 of the record-keeping proposal in
+the second entry. `results/manifest.json` now holds five entries where this
+morning it held none. Raised Q15.
+
+**Built.** `scripts/measure_envelope_cutoff.py` (Q03/D21),
+`scripts/measure_rate_parameter_span.py` with configs for E5 and E6 (Q11, Q14),
+and `scripts/verify_featurise_accuracy.py`. The span script takes its rule from
+its config so E5 and E6 share one implementation, which makes the D27 span
+check a reusable tool for the remaining encoders rather than a one-off — the
+measurement the memory habit says to run before writing any encoder now has a
+home. Both span configs import the drive from `tests/conftest.py` rather than
+rebuilding it, so the measurement is on `test_G3`'s own drive and cannot drift
+away from it.
+
+**Two of the four reproduce the record exactly; two do not, and Q15 records
+it.** E6's span reproduces exactly (792 flat, 1.000x). E5's span reproduces
+(1.039x against the recorded 1.04x) though its absolute counts do not — 6996
+falling to 6732 against the recorded 7116 to 6864 — almost certainly because
+SPEC 4.6 does not say which envelope gates the zero crossings and neither probe
+recorded its choice. That is the first half of Q12, and this is further
+evidence for it rather than a new question.
+
+**The Q03 envelope table half-reproduces, and the half that fails is
+informative.** All eight correlation values reproduce to four decimal places,
+which confirms the bank and stimulus reconstruction — it is test_F4's bank,
+channels 2, 6, 10 and 18. The carrier-leakage column does not: the recorded
+values are 10 to 600 times smaller, and the answer's quoted margins of 1.4x,
+30x, 128x and 419x come out here as 1.2x, 5.6x, 11.3x and 20.4x. D21 itself is
+untouched — this run also has D21 winning at every channel by a margin growing
+with frequency — but the size of the margin is not reproducible, because the
+metric definition was never written down.
+
+I checked my own metric rather than assuming it. Leakage should be the
+lowpass's gain at f_c times a constant set by the rectified waveform's harmonic
+content, and it is: the ratio is *identical for both cutoff rules at each
+channel*, 0.42, 0.36, 0.50, 0.50. That also disposes of a suspicion I had
+formed and recorded — the f_c/4 column looked implausibly flat, and I guessed
+FFT sidelobe leakage. Windowing changed nothing. The real reason is that the
+f_c/4 rule holds f_c/cutoff at exactly 4 for every channel, so its attenuation
+is constant by construction. The flatness was correct and my hypothesis was
+wrong.
+
+**The `featurise` figure reproduces, and identifies its own normalisation.**
+9.4e-16 is the scaled measure — divide by the largest value in the array — and
+E4 gives 9.39e-16. But it was not the worst of the three: E3 gives 1.31e-15,
+about 40 per cent larger. Both that and the pointwise measure, about 2e-14, are
+now recorded and named, since the gap between them is entirely definitional. My
+first attempt at the note in the result file claimed neither measure reproduced
+the figure; that was wrong and was corrected before the result was committed.
+
+**Two defects in yesterday's provenance helper, both found by using it.**
+First, the dirty-tree guard refused the *second* of four runs, because
+recording a result writes into `results/` and so makes the tree dirty. `results/`
+is output, not code; it is now excluded, and `assert_committed` on the script
+and config remains the guarantee that matters. Second, the `np.int64` repr was
+leaking into a committed script's printed output. Neither would have been found
+without four real users of the helper, which is the argument for item 3 having
+followed items 1 and 2 rather than waiting.
+
+**Tests:** 61 passed, 23 failed, 1 skipped. Unchanged — no test touched.
+**Results written:** `results/envelope_cutoff_comparison.json`,
+`results/e5_rate_parameter_span.json`, `results/e6_rate_parameter_span.json`,
+`results/featurise_accuracy.json`, all registered in `results/manifest.json`,
+which now holds five entries. Every result file verified to parse under a
+strict JSON reader.
+**Blocked on:** unchanged. E5 on Q11/Q12 (#2, #3), E6's Layer 1 on Q14 (#5),
+Q10 (#1), Q13 (#4). Q15 blocks nothing. Design session token-limited until
+about 2026-09-08.
+**Next:** E6 `TTFS`. It is writable now despite Q14 — T6_1 to T6_3 all
+construct with `e_min=0.0` and are indifferent to the default — and would clear
+eight of the twenty-three failures, leaving only `test_G3[E6]` red pending Q14.

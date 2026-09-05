@@ -878,3 +878,78 @@ blocked is declaring E6's Layer 1 complete, and the choice between an absolute
 and a relative `e_min` changes the constructor semantics, so I would rather not
 write the gate twice.
 **Answer:** (open)
+
+### Q15 — two figures quoted in the record do not reproduce as stated, and in both cases the metric was never defined
+**Raised:** 2026-09-05 by implementation session
+**Context:** retro-fitting the probe measurements of the last few sessions as
+committed scripts and configs, so that numbers quoted in QUESTIONS.md and
+NOTEBOOK.md are reproducible from the repository rather than only remembered.
+Four are now recorded in `results/manifest.json`. Two of them disagree with the
+figures already in the record.
+
+**1. The carrier-leakage column of the Q03 table.** The correlation columns
+reproduce *exactly* — all eight values to four decimal places, on the same bank
+(`n_channels=24, f_min=100, f_max=6000`, which is test_F4's) and the same 1 s AM
+tone. The leakage column does not:
+
+| f_c | leak f_c/4, recorded | this run | leak D21, recorded | this run |
+|---:|---:|---:|---:|---:|
+| 196 | 1.74e-04 | 2.56e-03 | 1.20e-04 | 2.12e-03 |
+| 479 | 1.67e-04 | 2.21e-03 | 5.32e-06 | 3.94e-04 |
+| 953 | 1.56e-04 | 2.93e-03 | 1.22e-06 | 2.60e-04 |
+| 3057 | 6.29e-05 | 1.86e-03 | 1.50e-07 | 9.10e-05 |
+
+**D21 is not in question.** This run also has D21 winning at every channel by a
+margin that grows with frequency, which is the whole of the argument the answer
+rests on. What does not reproduce is the *size* of the margin: the answer
+quotes 1.4x, 30x, 128x and 419x; this run gives 1.2x, 5.6x, 11.3x and 20.4x.
+
+**I believe the new measurement is the sound one**, and I checked rather than
+assumed. Carrier leakage here is `|rfft(envelope)|` at f_c over its value at
+DC, and it should equal the lowpass's own gain at f_c times a constant set by
+the rectified waveform's harmonic content. It does, and the constant comes out
+*identical for both cutoff rules at each channel* — 0.42, 0.36, 0.50, 0.50 —
+which is what makes a comparison between the rules meaningful. It also explains
+a feature I had thought suspicious: the f_c/4 column is nearly flat because
+that rule holds f_c/cutoff at exactly 4 for every channel, so its attenuation
+is constant by construction. The recorded column falls by a factor of 800 from
+196 Hz to 3057 Hz under D21, where fourth-order Butterworth attenuation at
+f_c/b_c predicts about 16, so I cannot construct a reading of the old numbers
+that is consistent with the filters.
+
+**2. The `featurise` accuracy figure.** NOTEBOOK 2026-09-04 quotes a worst
+relative error of 9.4e-16 against a literal transcription of equation (32).
+That figure is reproducible and identifies the normalisation used — dividing by
+the largest value in the array gives E4 exactly 9.39e-16 — but **it was not the
+worst of the three encoders**: E3 gives 1.31e-15 under the same measure, about
+40 per cent larger. The conclusion is untouched, since agreement is a few ulp of
+the largest feature value either way. Both measures are now recorded and named,
+because dividing by each entry's own value instead gives about 2e-14, and the
+gap between those two numbers is entirely definitional.
+
+**3. Noted, not asked.** E5's counts differ too — Q11 records 7116 falling to
+6864, this run gives 6996 falling to 6732 — while the span reproduces at 1.039x
+against the recorded 1.04x. The likely cause is the first half of Q12: SPEC 4.6
+does not say which envelope gates the zero crossings, this run declares the
+Hilbert envelope in its config, and the original probe did not record what it
+used. No new question needed; it is more evidence that Q12 is real.
+
+**Question:** should the leakage factors in the Q03 answer be corrected in the
+record, and if so by whom? The answer is the design session's and I must not
+edit it. Separately: should a quoted figure be required to carry its metric
+definition? All three discrepancies here are definitional rather than
+substantive, and all three would have been impossible if the definition had
+been written down beside the number.
+
+**Options considered:**
+1. Append a dated correction under the Q03 answer, as Q08's answer did for
+   `test_T3_5`, leaving the original visible. Design session's to write.
+2. Leave Q03 alone and let this entry stand as the correction, since the
+   decision it supports is unaffected.
+3. Add to the validation protocol that any reported figure carries the
+   definition of what was measured, not only the value.
+
+**Blocking?** no. D21 stands, `featurise` stands, and all four measurements are
+now recorded with their definitions attached. It blocks nothing; it corrects
+the record.
+**Answer:** (open)

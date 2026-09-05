@@ -1,0 +1,39 @@
+{
+  "counts": [
+    792,
+    792,
+    792,
+    792,
+    792
+  ],
+  "d27_pass": false,
+  "d27_required_span": 4.0,
+  "diagnostics": {
+    "ceiling_n_ch_times_n_frames": 792,
+    "decades_below_quietest_frame": 6.795323827794036,
+    "frame_energy_max": 1851.739845437557,
+    "frame_energy_median": 285.9076282780419,
+    "frame_energy_min": 6.242000912161771,
+    "frame_energy_p1": 6.773061384700878,
+    "note": "e_min gates nothing while it sits below the quietest frame; the parameter itself is not structurally flat"
+  },
+  "monotonic": true,
+  "param_values": [
+    2.5e-07,
+    5e-07,
+    1e-06,
+    2e-06,
+    4e-06
+  ],
+  "rate_direction": -1,
+  "rate_param": "e_min",
+  "rule": "e6_frame_energy",
+  "span": 1.0,
+  "sweep_factors": [
+    0.25,
+    0.5,
+    1.0,
+    2.0,
+    4.0
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "counts": [
+    6996,
+    6996,
+    6980,
+    6944,
+    6732
+  ],
+  "d27_pass": false,
+  "d27_required_span": 4.0,
+  "diagnostics": {
+    "envelope_median": 0.4192037594109047,
+    "envelope_p25": 0.2656679107835351,
+    "note": "the count is bounded above by the number of upward zero crossings, a property of the carrier; the threshold only gates quiet passages",
+    "upward_zero_crossings_total": 32112
+  },
+  "monotonic": true,
+  "param_values": [
+    0.0125,
+    0.025,
+    0.05,
+    0.1,
+    0.2
+  ],
+  "rate_direction": -1,
+  "rate_param": "threshold",
+  "rule": "e5_deterministic",
+  "span": 1.0392156862745099,
+  "sweep_factors": [
+    0.25,
+    0.5,
+    1.0,
+    2.0,
+    4.0
+  ]
+}
