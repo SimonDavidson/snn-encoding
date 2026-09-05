@@ -46,8 +46,13 @@ def git_commit(allow_dirty=False):
     untracked at the moment they are written.
     """
     root = repo_root()
+    # `results/` is excluded: a run writes its data file and its manifest entry
+    # there, so a batch of runs would block its own second member. What must
+    # match the commit is the code, and `assert_committed` checks the script
+    # and config directly, which is the guarantee that actually matters.
     dirty = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=no"],
+        ["git", "status", "--porcelain", "--untracked-files=no", "--",
+         ".", ":(exclude)results"],
         capture_output=True, text=True, check=True, cwd=root).stdout.strip()
     if dirty and not allow_dirty:
         raise DirtyTreeError(
