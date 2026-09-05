@@ -25,7 +25,7 @@ Last modified: 2026-09-05
 import sys
 
 import numpy as np
-from scipy.signal import butter, sosfilt
+from scipy.signal import butter, sosfilt, sosfreqz
 
 from spikeenc.frontend import Filterbank
 from spikeenc.provenance import load_config, record
@@ -84,15 +84,35 @@ def main(config_path):
                    else min(cfg["f_cut_ceiling"], bw[c]))
             env = lowpass(rectified, cut, cfg["lowpass_order"], fs)
             e, m = env[trim:n - trim], modulator[trim:n - trim]
+            sos = butter(cfg["lowpass_order"], min(cut / (0.5 * fs), 0.99),
+                         btype="low", output="sos")
+            gain_at_fc = float(np.abs(sosfreqz(sos, worN=[cf[c]], fs=fs)[1][0]))
+            leak = carrier_leakage(e, cf[c], fs)
             row[rule] = {
                 "cutoff_hz": float(cut),
                 "raw_correlation": float(np.corrcoef(e, m)[0, 1]),
                 "lag_corrected_correlation": lag_corrected_correlation(e, m, max_lag),
-                "carrier_leakage": carrier_leakage(e, cf[c], fs),
+                "carrier_leakage": leak,
+                # Validates the leakage metric: it should be the lowpass gain
+                # at the carrier times a constant set by the rectified
+                # waveform's own harmonic content. The constant comes out the
+                # same for both cutoff rules at a given channel, which is what
+                # makes the comparison between the rules meaningful.
+                "lowpass_gain_at_fc": gain_at_fc,
+                "leakage_over_gain": leak / gain_at_fc if gain_at_fc else None,
             }
         rows.append(row)
 
-    values = {"by_channel": rows, "metric_definitions": {
+    values = {"by_channel": rows, "reproduction_note": (
+        "The correlation columns reproduce the table in QUESTIONS.md Q03 "
+        "exactly to four decimal places. The carrier-leakage column does not: "
+        "that table's values are 10-600x smaller, and the metric definition "
+        "behind them was never recorded, so it cannot be reproduced. D21's "
+        "conclusion is unaffected - this measurement also has D21 winning at "
+        "every channel by a margin that grows with frequency - but the "
+        "specific factors quoted in the Q03 answer (1.4x, 30x, 128x, 419x) do "
+        "not reproduce; this run gives 1.2x, 5.6x, 11.3x, 20.4x. See Q15."),
+        "metric_definitions": {
         "raw_correlation": "corrcoef(envelope, modulator) on the trimmed interval",
         "lag_corrected_correlation": "the same, maximised over integer lags 0..0.05 s",
         "carrier_leakage": "|rfft(envelope)| at f_c divided by its value at DC"}}
