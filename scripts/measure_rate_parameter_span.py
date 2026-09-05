@@ -149,7 +149,7 @@ def main(config_path):
     }
     out = record(cfg["id"], script=__file__, config=cfg["_path"], seed=cfg["seed"],
                  values=values, predictions=cfg.get("predictions"))
-    print(f"  {cfg['rule']}: counts {list(counts)}")
+    print(f"  {cfg['rule']}: counts {[int(x) for x in counts]}")
     print(f"  span {span:.3f}x against D27's {cfg['d27_required_span']}x  "
           f"monotonic {monotonic}  -> {'PASS' if values['d27_pass'] else 'FAIL'}")
     print(f"written: {out}")

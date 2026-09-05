@@ -66,8 +66,17 @@ def main(config_path):
 
         shipped = featurise(train, tau=tau, hop=hop)
         literal = literal_equation_32(train, tau, hop)
-        denom = np.maximum(np.abs(literal), cfg["relative_error_floor"])
-        rel = float(np.max(np.abs(shipped - literal) / denom))
+        abs_err = np.abs(shipped - literal)
+        # Two relative measures, because they answer different questions and
+        # quoting one without saying which is what made the original 9.4e-16
+        # unreproducible. `pointwise` divides by each entry's own value and so
+        # is dominated by entries that have decayed to near nothing;
+        # `scaled` divides by the largest value in the array, which is the
+        # error that matters to a probe consuming these features.
+        floor = cfg["relative_error_floor"]
+        rel_pointwise = float(np.max(abs_err / np.maximum(np.abs(literal), floor)))
+        scale = float(np.max(np.abs(literal))) or 1.0
+        rel_scaled = float(np.max(abs_err) / scale)
 
         perm = rng.permutation(len(train))
         shuffled = SpikeTrain(train.channel[perm], train.time[perm],
@@ -81,23 +90,42 @@ def main(config_path):
 
         results[name] = {
             "n_events": len(train),
-            "worst_relative_error_vs_equation_32": rel,
+            "worst_relative_error_pointwise": rel_pointwise,
+            "worst_relative_error_scaled_to_array_max": rel_scaled,
+            "worst_absolute_error": float(np.max(abs_err)),
+            "largest_feature_value": scale,
             "bit_identical_under_permutation": bool(np.array_equal(shipped, permuted)),
             "max_abs_error_under_permutation": float(np.max(np.abs(shipped - permuted))),
             "polarity_folding_max_abs_error": fold_err,
         }
 
-    values = {"tau": tau, "hop": hop, "by_encoder": results,
-              "worst_relative_error_overall": max(
-                  r["worst_relative_error_vs_equation_32"] for r in results.values())}
+    values = {
+        "tau": tau, "hop": hop, "by_encoder": results,
+        "worst_relative_error_pointwise_overall": max(
+            r["worst_relative_error_pointwise"] for r in results.values()),
+        "worst_relative_error_scaled_overall": max(
+            r["worst_relative_error_scaled_to_array_max"] for r in results.values()),
+        "reproduction_note": (
+            "NOTEBOOK.md 2026-09-04 quotes a worst relative error of 9.4e-16, "
+            "'a few ulp'. Neither measure here reproduces that: pointwise "
+            "gives about 2e-14 and scaled about 1e-16. The original's "
+            "normalisation was never recorded, so which it was cannot be "
+            "recovered. The conclusion is unaffected either way - the "
+            "recursive accumulation agrees with equation (32) to within a few "
+            "ulp of the largest feature value - but the quoted figure is not "
+            "reproducible as stated. See Q15."),
+        "definitions": {
+            "worst_relative_error_pointwise": "max |shipped-literal| / max(|literal|, floor), over all entries",
+            "worst_relative_error_scaled_to_array_max": "max |shipped-literal| / max(|literal|), per encoder"}}
     out = record(cfg["id"], script=__file__, config=cfg["_path"], seed=cfg["seed"],
                  values=values, predictions=cfg.get("predictions"))
 
-    print(f"{'encoder':>8} {'events':>7} {'rel err vs eq32':>16} "
+    print(f"{'encoder':>8} {'events':>7} {'rel pointwise':>14} {'rel scaled':>11} "
           f"{'bit-exact perm':>15} {'fold err':>10}")
     for name, r in results.items():
         print(f"{name:>8} {r['n_events']:>7} "
-              f"{r['worst_relative_error_vs_equation_32']:>16.2e} "
+              f"{r['worst_relative_error_pointwise']:>14.2e} "
+              f"{r['worst_relative_error_scaled_to_array_max']:>11.2e} "
               f"{str(r['bit_identical_under_permutation']):>15} "
               f"{r['polarity_folding_max_abs_error']:>10.2e}")
     print(f"written: {out}")
