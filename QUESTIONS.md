@@ -792,3 +792,89 @@ encodes a statistical judgement I should not be the one to revise.
 corruption tests pass and `test_T5_4` is unblocked for whenever E5 lands. This
 blocks only the green tick on this one test.
 **Answer:** (open)
+
+### Q14 — E6's `e_min` default sits 6.8 decades below the quietest frame, so `test_G3[E6]` spans exactly 1.00x
+**Raised:** 2026-09-05 by implementation session
+**Context:** probing E6's declared RATE_PARAM before writing the encoder, as
+Q11 taught me to. Simulated the SPEC §4.7 rule directly on `test_G3`'s own
+drive; no encoder written, so nothing needs undoing whichever way this is
+answered.
+
+**The finding, and it is not the Q11 finding.** With the registry operating
+point `e_min = 1e-6` (`tests/conftest.py`) the 16x sweep gives:
+
+| e_min | 2.5e-07 | 5e-07 | 1e-06 | 2e-06 | 4e-06 |
+|---|---:|---:|---:|---:|---:|
+| events | 792 | 792 | 792 | 792 | 792 |
+
+Span **1.000x** against D27's required 4x, and 792 is exactly the ceiling
+`n_ch * n_frames` = 4 x 198. Every channel fires in every frame at every point
+in the sweep. The reason is scale: frame energy on this drive runs
+min 6.24, median 286, max 1852, so `e_min = 1e-6` is **6.8 decades below the
+quietest frame in the signal** and gates nothing whatsoever.
+
+**But `e_min` is a perfectly good rate parameter — unlike E5's.** Q11's
+`threshold` was bounded by the carrier's zero-crossing rate, a property of the
+drive that no parameter could move. Nothing of the kind is true here. Swept
+over the range the energies actually occupy, `e_min` moves the count across the
+full dynamic range:
+
+| e_min | 5.1 | 13.9 | 37.8 | 102 | 277 | 752 | 1237 | 2037 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| events | 792 | 744 | 640 | 534 | 401 | 186 | 78 | 0 |
+
+So this is a **default in the wrong place**, not a structural defect, and
+`test_G3`'s docstring — which names E6 as the foreseeable D27 casualty whose
+count is "structurally fixed" — turns out not to describe E6. The remedy it
+prescribes (matched budgets from channel count or frame rate) is not needed.
+
+**Why I cannot fix it myself.** The operating point is
+`("E6", E.TTFS, dict(n_channels=4, e_min=1e-6))` in `tests/conftest.py`, and
+the signature default `e_min=1e-6` is in SPEC §4.7. Both are design-session
+files. There is no change available to me in `src/` that makes `test_G3[E6]`
+pass, because the value that breaks it is not in `src/`.
+
+**Question:** what should `e_min` be, and should it stay an absolute energy or
+become relative?
+
+**Options considered:**
+1. **Absolute, retuned.** Any base in **205.8 to 462.8** clears 4x with no
+   endpoint at extinction; the midpoint 308.8 gives counts
+   [565, 483, 380, 228, 80], span **7.1x**. Minimal change — one number in two
+   files. But the value is meaningful only for `drive_for`'s O(1) envelope
+   summed over 400-sample frames; real audio through the front end will differ
+   by orders of magnitude, and the default would be wrong again in a way no
+   test would catch.
+2. **Relative, `e_min` as a fraction of the maximum frame energy.**
+   Scale-free by construction, and verified so: over drive scales 0.01 to 100 —
+   five decades, `E_max` from 0.185 to 1.85e7 — the sweep gives identical
+   counts [519, 429, 276, 132, 1] every time. `frac = 0.15` gives 5.5x and
+   `0.20` gives 12.4x, both without an endpoint at extinction; `0.25` passes at
+   519x but its top point is 1 event, which is extinction in all but name.
+   **This also closes a gap:** equation (28) needs `E_max`, which is not a
+   constructor argument and which SPEC §4.7 does not define — a Q12-shaped
+   under-specification I would otherwise be raising separately. One definition
+   of `E_max` would serve both the gate and the mapping.
+3. Leave `e_min` alone and take E6's matched budget from the hop `H`, which
+   §5.6 names as the secondary rate parameter. Honest to the proposal, but it
+   changes the frame grid and so changes T6's timing quantisation at the same
+   time — two factors moving at once, which is what D26/D30 exist to prevent.
+
+**Option 2, with a caveat I checked rather than assumed.** A relative gate
+written `E >= frac * E_max` **fails `test_G2`**: on all-zero drive `E_max` is 0,
+`0 >= 0` is true, and the encoder emits 392 events on silence, violating SPEC
+§4.1. Written `E > frac * E_max` it emits none. Equation (28) needs `log E` and
+so must exclude `E = 0` by a strict gate in any case, but the strictness has to
+be in the contract, not left to the implementer — this is exactly the D32
+situation. Both forms pass `test_G4`: the shift is an integer number of hops
+and the test's padding is zeros, so `E_max` is bit-identical either way
+(1851.172061 padded and unpadded) and the event count is unchanged.
+
+**Blocking?** yes, for E6 — but only for `test_G3[E6]`. The rest of E6 is
+unblocked: T6_1, T6_2 and T6_3 all construct with `e_min=0.0` explicitly and
+are indifferent to the default, so the encoder can be written and five of its
+six generic tests plus its whole T6 block can be brought green now. What is
+blocked is declaring E6's Layer 1 complete, and the choice between an absolute
+and a relative `e_min` changes the constructor semantics, so I would rather not
+write the gate twice.
+**Answer:** (open)
