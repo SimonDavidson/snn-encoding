@@ -674,3 +674,81 @@ bears on P-01. Q13 (#4) blocks one test. Q07, Q09 open, neither blocking.
 leaving only `test_G3[E6]` red pending Q14. `results/` is still empty and no
 manifest entry has ever been written; Simon has raised the record-keeping
 question and it needs settling before the first sweep, not after.
+
+## 2026-09-05 | session: implementation (second entry this date)
+**Did:** Built the run-provenance machinery Simon asked for after the
+record-keeping question at the end of the previous entry. D35, D36 added.
+
+**The state I found.** The reasoning record is in good order — NOTEBOOK
+append-only, DECISIONS at D34, QUESTIONS at Q14, and PREDICTIONS P-01 to P-08
+dated 2026-08-20, which is to say pre-registered before any run, the part that
+cannot be retrofitted. The experimental record was empty, which was correct so
+far: no experiment has run, and everything to date is Layer 1 verification. But
+the *machinery* was also absent — `results/manifest.json` held a schema and an
+empty `entries` list, and `configs/` and `scripts/` did not exist as
+directories. The first sweep would therefore have been the first test of the
+plumbing as well as the first result.
+
+**The gap that mattered more.** The probe measurements of the last few sessions
+are results in everything but name, and they lived only as prose and tables in
+NOTEBOOK and QUESTIONS, produced by scripts in a session-scoped scratchpad that
+is deleted when the session ends. The sharpest case is the 2.50 ms group-delay
+residual: SPEC section 3 *requires* it be quoted alongside any T3 result taken
+with compensation on, and asked "how did you get 2.50 ms" the honest answer
+this morning was "it is written in the notebook".
+
+**What was built.** `spikeenc.provenance.record` writes the data file and the
+manifest entry together or does neither, so a result cannot be produced without
+being registered. Configs are JSON — no yaml in the environment, no new
+dependency, and configs are committed and reviewed so they need to diff
+cleanly. Small results are JSON under `results/` and committed; bulk arrays go
+to `.npz`, which `.gitignore` already excluded, so numbers that reach the paper
+stay in the repository while large arrays stay local.
+
+**Two guards, the second of which I did not anticipate needing.** The obvious
+one refuses to record from a dirty tree, since "commit hash at time of run"
+names a state that never produced the numbers if the tree has moved. But
+`git status --porcelain --untracked-files=no` ignores untracked files, and a
+brand-new script is untracked — so the first version of the check would have
+happily recorded a result against a commit that did not contain the script that
+produced it. `assert_committed` now separately requires the script and the
+config to be tracked and unmodified. It fired correctly on the first run
+attempt, which is how I found it.
+
+**Worked example, and it earned its keep immediately.**
+`scripts/measure_group_delay_residual.py` with
+`configs/front_end_group_delay_residual.json` records the D24 residual. Running
+it exposed a defect in my own helper: `json.dump` emits `Infinity` and `NaN` as
+a non-standard extension, so the hilbert margin — undefined, since the residual
+is exactly zero — was written as `Infinity` into a file meant to be committed
+and read by other tools. A strict parser rejects it. `_jsonable` now maps
+non-finite floats to null and `json.dump` runs with `allow_nan=False` as a
+backstop. This is exactly the argument for establishing the convention on
+something small first: the defect would otherwise have surfaced in the first
+real sweep.
+
+Both botched intermediate runs were removed rather than superseded, because
+neither had been committed — there was no record to preserve, and the measured
+numbers never changed, only their serialisation. Recording that here rather
+than leaving it silent.
+
+**Recorded:** `results/front_end_group_delay_residual.json` and its `.npz`,
+manifest entry `front_end_group_delay_residual`, commit `2017ecf`, seed 0. The
+stimulus and the whole path are deterministic, so the three-seed rule does not
+apply — there is nothing for a seed to vary — and the config says so rather
+than leaving a reader to wonder why one seed was enough.
+
+**Tests:** 61 passed, 23 failed, 1 skipped. Unchanged — this session's work
+added no test and broke none.
+**Results written:** `results/front_end_group_delay_residual.json`,
+`results/front_end_group_delay_residual.npz`, registered in
+`results/manifest.json` as the first entry that file has ever held.
+**Blocked on:** unchanged — E5 on Q11/Q12 (#2, #3), E6's Layer 1 on Q14 (#5),
+Q10 (#1) on declaring E4 complete, Q13 (#4) on one test. Design session
+token-limited until about 2026-09-08.
+**Next:** E6 `TTFS` is the largest unblocked block — writable now, since
+T6_1-T6_3 all construct with `e_min=0.0`, leaving only `test_G3[E6]` red
+pending Q14. Item 3 of the record-keeping proposal is *not* done: the Q03
+envelope table, the Q11 1.04x measurement, the Q14 energy distribution and the
+`featurise` accuracy check are still notebook prose with no committed script
+behind them. They should be retro-fitted while the method is still fresh.

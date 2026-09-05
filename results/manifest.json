@@ -10,5 +10,19 @@
     "date": "YYYY-MM-DD",
     "predictions": "PREDICTIONS.md entries this result bears on"
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "front_end_group_delay_residual",
+      "script": "scripts/measure_group_delay_residual.py",
+      "config": "configs/front_end_group_delay_residual.json",
+      "commit": "2017ecff767226f28268833ae13a4f40c1beead7",
+      "seed": 0,
+      "output": [
+        "results/front_end_group_delay_residual.json",
+        "results/front_end_group_delay_residual.npz"
+      ],
+      "date": "2026-09-05",
+      "predictions": []
+    }
+  ]
 }
