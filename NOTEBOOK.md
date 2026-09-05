@@ -826,3 +826,73 @@ about 2026-09-08.
 **Next:** E6 `TTFS`. It is writable now despite Q14 — T6_1 to T6_3 all
 construct with `e_min=0.0` and are indifferent to the default — and would clear
 eight of the twenty-three failures, leaving only `test_G3[E6]` red pending Q14.
+
+## 2026-09-05 | session: implementation (fourth entry this date)
+**Did:** Probed SPEC 4.7 before writing E6. Raised Q16 (issue #7). Nothing
+written to `src/`; the encoder was not started, and that is the right outcome
+rather than a stalled one — three gaps were found for the cost of a prototype
+that was thrown away, and none of them would have been visible from reading
+the section.
+
+**Finding 1: equation (28) has no `E_max`.** Not a constructor argument in the
+SPEC 4.7 signature, not defined in SPEC 4.7 or proposal 5.6. Utterance-maximum,
+frame-maximum and a fixed constant all give different event times and a Layer 3
+reimplementation has nothing to choose between them. Q14 option 2 would close
+this from the other direction, so Q14 and Q16 should be answered together.
+
+**Finding 2: equation (28) is not evaluable at `e_min = 0`,** which is what
+`test_T6_1` and `test_T6_2` both pass, with `mode="log"` the SPEC 4.7 default.
+`log 0 = -inf` makes the normalised term `inf/inf`. `E_min` is doing two jobs in
+proposal 5.6 — the emission gate and the normalisation floor — and zero is legal
+for the first and not the second.
+
+**Finding 3: `test_T6_1` and `test_T6_2` cannot be satisfied by any
+implementation at `hop < frame`.** Both pass `frame=0.025, hop=0.010`, so
+windows overlap by 15 ms, and both then treat `[m*hop, m*hop+frame)` as holding
+frame `m`'s events when it holds three frames' worth. Measured on a prototype,
+8 channels, 1 s: 98 of 98 windows contain a duplicated channel, and no clipping
+choice changes that. This is not an encoder defect and cannot be worked around.
+
+Two causes, separated by measurement rather than argument:
+
+| hop | offset clipped to | T6_1 duplicate windows | T6_2 worst \|rho+1\| |
+|---|---|---:|---:|
+| 10 ms | frame | 98/98 | 1.2301 |
+| 10 ms | strictly inside | 98/98 | 1.2301 |
+| 25 ms | frame | 1/40 | 0.6000 |
+| 25 ms | strictly inside | 0/40 | 0.0000 |
+
+The overlap is fatal and is the design session's. The single remaining failure
+at `hop = frame` is mine: equation (28) maps `E = E_min` to an offset of exactly
+`T_f`, which lands on `m H + T_f` and so falls outside its own half-open window
+and into the next one. Clipping strictly inside takes both tests to exact
+agreement. That is a D20-shaped implementation decision and is recorded in Q16
+rather than acted on, since it is moot until findings 1 and 2 are resolved.
+
+**`mode="lif"` is clean.** Equation (29) involves no `E_min` or `E_max`,
+`test_T6_3` sets `hop = frame` so there is no overlap, and the closed form
+reproduces: `I = 4.0`, latency 5.7536 ms, inside the 25 ms frame.
+
+**Two implementation routes were put to Simon and he chose neither, correctly.**
+A provisional `E_max` reading — utterance maximum, with `E_min` falling back to
+the smallest positive observed energy — was prototyped and takes G1, G2, G4,
+G7, G8 and T6_3 green, six tests. The alternative is `mode="lif"` alone, which
+greens one and guesses nothing. Simon stopped rather than pick, on the grounds
+that the open-question queue is now long enough that guessing compounds, and is
+attempting to unblock the design session instead. Recording that the six-test
+route exists and was declined deliberately, so a later session does not
+rediscover it and assume it was overlooked.
+
+**Tests:** 61 passed, 23 failed, 1 skipped. Unchanged — no code written.
+**Results written:** none this entry.
+**Blocked on:** nine open questions, seven with issues. E6 on Q16 (#7) and Q14
+(#5); E5 on Q11 (#2) and Q12 (#3); E4's completion and P-01 on Q10 (#1); one
+test each on Q13 (#4); Q15 (#6) corrects the record and blocks nothing; Q07 and
+Q09 block nothing. Design session token-limited; Simon attempting to restore it
+2026-09-06.
+**Next:** nothing implementable without an answer. When answers arrive, the
+order that clears most is Q11+Q12 (twelve tests, E5 and the whole T5 block),
+then Q16+Q14 (eight, E6 and T6), then Q10 and Q13 (one each). If only one
+answer comes back, Q10 is the one with consequences beyond a red test: P-01
+predicts T1 accuracy rising and T2 falling with adaptation strength, and the
+onset emphasis underneath it is non-monotone with a peak near delta_a = 1.
