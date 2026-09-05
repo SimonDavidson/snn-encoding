@@ -1,0 +1,1098 @@
+ ▐▛███▛█   Claude Code v2.1.260
+▝▜██████▀  Opus 5 · Claude Pro
+  ▝▝ ▝▝    ~/work/spikeEncode
+
+
+❯ /rename "SpikeEncode — E4 ALIF" 
+  ⎿  Session renamed to: "SpikeEncode — E4 ALIF"
+
+❯ Okay, let's continue with the spike encoder evaluation work. Please check     
+  your CLAUDE.md file for instructions.                                         
+
+● I'll start with the mandated session-start sequence from CLAUDE.md.
+
+  Listed 1 directory (ctrl+o to expand)
+
+● Bash(echo "=== QUESTIONS.md ===" && cat QUESTIONS.md && echo && echo "=== git
+      log ===" && git log --oneline -15)
+  ⎿  === QUESTIONS.md ===
+     # Open questions for the design session
+     … +501 lines (ctrl+o to expand)
+
+● Bash(grep -n "^### Q" QUESTIONS.md && echo "---- last Q blocks ----" && sed -n
+      '/^### Q08/,$p' QUESTIONS.md)
+  ⎿  9:### Qnn — one-line summary
+     20:### Q01 — placeholder
+     27:### Q03 — cutoff for the rectify-lowpass envelope of equation (9)
+     … +104 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(source .venv/bin/activate 2>/dev/null; python -m pytest -q 2>&1 | tail -n
+      30)
+  ⎿  FAILED tests/test_known_answers.py::test_G4_time_shift_equivariance[E6
+     ] - Not...
+     FAILED tests/test_known_answers.py::test_G7_event_validity[E4] - NotIm
+     … +33 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Bash(git status --short && echo "--- src tree ---" && find src tests configs
+      results docs -type f | head -50)
+  ⎿  --- src tree ---
+     tests/conftest.py
+     tests/test_known_answers.py
+     … +25 lines (ctrl+o to expand)
+
+● Bash(git log --oneline -1 origin/main 2>/dev/null; git status -sb | head -3;
+      echo "--- SPEC headings ---"; grep -n "^#\|^##\|^###" SPEC.md)
+  ⎿  6359692 Extend the patch-drop ignore to .tar.gz and .tgz
+     ## main...origin/main
+     --- SPEC headings ---
+     … +16 lines (ctrl+o to expand)
+
+● Bash(sed -n '/^## 4/,/^## 5/p' SPEC.md | head -200)
+  ⎿  ## 4. Encoders
+
+     ### 4.1 Base contract
+     … +197 lines (ctrl+o to expand)
+
+● Bash(sed -n '/def test_T4_1/,/def test_T5_1/p' tests/test_known_answers.py)
+  ⎿  def test_T4_1_zero_adaptation_reduces_exactly_to_E1():
+         """The single most valuable test for E4: with delta_a = 0 it must
+     be
+     … +67 lines (ctrl+o to expand)
+
+● Bash(grep -n "" src/spikeenc/encoders.py | sed -n '1,120p')
+  ⎿  1:"""Encoders — the API surface of SPEC.md section 4.
+     2:
+     3:STATUS: E1, E2 and E3 implemented. E4-E6 remain skeletons.
+     … +117 lines (ctrl+o to expand)
+
+● Bash(sed -n '120,240p' src/spikeenc/encoders.py)
+  ⎿          # on the previous step.
+             v = beta * v * ~fired + (1.0 - beta) * gain * drive[:, i]
+     … +118 lines (ctrl+o to expand)
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Bash(sed -n '/^class LIF/,/^class SendOnDelta/p' src/spikeenc/encoders.py |
+      sed -n '20,80p')
+  ⎿          Under constant drive u the interspike interval is the closed f
+     orm of
+             protocol equation (V1), T = tau_m * ln(V_inf / (V_inf - theta)
+     … +26 lines (ctrl+o to expand)
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Bash(sed -n '1,130p' tests/conftest.py)
+  ⎿  """
+     Shared fixtures for the known-answer suite.
+     … +111 lines (ctrl+o to expand)
+
+● Bash(grep -n "def test_G1\|def test_G2\|def test_G3\|def test_G4\|def
+      test_G7\|def test_G7b\|def test_G8" -A 30 tests/test_known_answers.py |
+      sed -n '/def test_G3/,/…)
+  ⎿  84:def test_G3_rate_parameter_is_monotonic_and_spans(encoder_case):
+     85-    """Sweeping the declared rate parameter moves the event count m
+     onotonically
+     … +30 lines (ctrl+o to expand)
+
+● Bash(source .venv/bin/activate 2>/dev/null; python -m pytest -q 2>&1 | grep -E
+      "^(FAILED|PASSED)" | grep -E "E4|T4" )
+  ⎿  FAILED tests/test_known_answers.py::test_G1_determinism[E4] - NotImple
+     mentedE...
+     FAILED tests/test_known_answers.py::test_G2_silence_produces_no_events
+     … +18 lines (ctrl+o to expand)
+
+● Bash(sed -n '/def test_G7_event_validity/,/^def test_G8/p'
+      tests/test_known_answers.py)
+  ⎿  def test_G7_event_validity(encoder_case):
+         """Canonical ordering, times in range, polarities legal (SPEC §2).
+     """
+     … +27 lines (ctrl+o to expand)
+
+● Bash(sed -n '106,132p' tests/test_known_answers.py)
+  ⎿      label, cls, kwargs = encoder_case
+         drive = drive_for(cls, duration=2.0)
+         base = kwargs[cls.RATE_PARAM]
+     … +24 lines (ctrl+o to expand)
+● State established. Everything matches the last notebook entry — tree clean,
+  main level with origin/main at 6359692, tests 44 passed / 40 failed / 1 
+  skipped. The T3.6 patch (D31–D33) is in and Q09 is open and non-blocking. Next
+  item per both sessions' notebook entries is E4 ALIF.
+
+  Here is the plan before I touch anything.
+
+  What the spec requires (SPEC §4.5, equations 22–23)
+
+  θ_c[n] = θ_0 + a_c[n]                                   (22)
+  a_c[n] = ρ·a_c[n-1] + Δ_a·s_c[n-1],   ρ = exp(-dt/τ_a)   (23)
+  with (12)–(13) otherwise unchanged, and — the load-bearing clause — "with 
+  delta_a == 0 this must be bit-identical to LIF… share the implementation 
+  rather than duplicating it".
+
+  Proposed change
+
+  One file changes: src/spikeenc/encoders.py.
+
+  1. Generalise _integrate_and_fire to carry the adaptive threshold: extra args
+     delta_a, tau_a; theta becomes the baseline θ₀; returns a threshold trace
+     alongside the v trace. Loop body becomes, in this order:
+
+  a     = rho * a + delta_a * fired      # `fired` is s[n-1] — same one-step lag
+  as the reset
+  thr   = theta_0 + a
+  v     = beta * v * ~fired + (1-beta) * gain * drive[:, i]
+  fired = v >= thr
+     a starts at zeros, so thr[:,0] == theta_0 and there is no startup
+     transient.
+  2. LIF routes through the same call with delta_a=0.0. This is the point:
+     rho*0.0 + 0.0*s is exactly 0.0, and theta_0 + 0.0 is exactly theta_0, so E1
+     and E4-at-Δ_a=0 execute the same instructions on the same values — T4.1
+     then holds by construction rather than by numerical luck. It does mean E1's
+     code path moves, so I will prove the refactor bit-identical on a batch of
+     cases (constant / step / sine / noise drive, several θ, τ_m, gain,
+     refractory>0 and =0) by comparing channel, time and polarity arrays exactly
+     against the current commit before committing. Same control I used for the
+     D30 sharing.
+  3. ALIF.encode_from_drive implemented as a thin wrapper: unipolar +1 polarity
+     like E1, state keys "v" and "threshold". LIF keeps returning only "v",
+     which is what SPEC §4.2 lists.
+  4. Module docstring STATUS: line and Last modified: date updated.
+
+  Not touched: tests/, SPEC.md, conftest.py, .github/. Scratch verification
+  script goes in the session scratchpad, uncommitted.
+
+  One judgement call I want to flag
+
+  Refractory × adaptation. During an absolute refractory period D17 clamps v and
+  discards drive. My reading is that a should keep decaying through it and
+  simply not be incremented (no spike, so s[n-1]=0) — adaptation is a threshold
+  process, not a membrane process, and equation (23) has no refractory term.
+  This is invisible to the comparison runs, where SPEC §4.5 fixes refractory = 
+  0.0, but test_G7b[E4] runs at 4 ms and a Layer 3 reimplementer has to pick the
+  same reading. If you'd rather I freeze a during refractory instead, say so —
+  otherwise I'll implement the decaying reading and note it in NOTEBOOK as an
+  implementation-remit choice, raising it as a question only if it turns out to
+  be observable.
+
+  Expected outcome
+
+  Ten currently-red tests go green — T4_1–T4_4 and G1/G2/G3/G4/G7/G7b[E4] —
+  taking the suite to 54 passed / 30 failed / 1 skipped. G8[E4] stays red on the
+  features stub, like every other encoder. I'll diff the failure sets before
+  and after, not just the counts, so nothing that passes today silently breaks.
+
+  Shall I proceed?
+
+✻ Baked for 4m 14s · done 13:02
+
+❯ I think 'a' should keep decaying even thoughout the refractory period.        
+
+● Good — that's the reading I'll implement. Proceeding.
+
+  First, capture the E1 baseline before the refactor, so the bit-identity claim
+  is evidence rather than assertion.
+
+● Bash(SP=/tmp/claude-221530/-home-mbasssd3-work-spikeEncode/8a7e5786-d998-4f8d-
+      999e-4de99dae49bb/scratchpad && mkdir -p $SP && cat > $SP/e1_cases.py
+      <<'PY'
+      """E1 bit-…)
+  ⎿  wrote /tmp/claude-221530/-home-mbasssd3-work-spikeEncode/8a7e5786-d998
+     -4f8d-999e-4de99dae49bb/scratchpad/e1_before.npz: 45 cases
+
+● 45 cases (9 drives × 5 parameter sets) captured. Now the refactor.
+
+● Bash(sed -n '91,145p' src/spikeenc/encoders.py)
+  ⎿  def _integrate_and_fire(drive, dt, theta, tau_m, gain, refractory,
+                             want_state=False):
+         """Discrete leaky integrate-and-fire, equations (12)-(13).
+     … +52 lines (ctrl+o to expand)
+
+● Bash(cat > /tmp/claude-221530/-home-mbasssd3-work-spikeEncode/8a7e5786-d998-4f
+      8d-999e-4de99dae49bb/scratchpad/new_iaf.py <<'PYEOF'
+      NEW = '''def _integrate_and_fire(d…)
+  ⎿  replaced 1971 chars with 3946
+
+● Now the two call sites.
+
+● Bash(python - <<'PYEOF'
+      src = open("src/spikeenc/encoders.py").read()…)
+  ⎿  call sites updated
+
+● Bash(grep -n "_integrate_and_fire" src/spikeenc/*.py; echo "--- E1
+      bit-identity ---"; SP=/tmp/claude-221530/-home-mbasssd3-work-spikeEncode/8
+      a7e5786-d998-4f8d-999e-4…)
+  ⎿  src/spikeenc/encoders.py:91:def _integrate_and_fire(drive, dt, theta_0
+     , tau_m, gain, refractory,
+     src/spikeenc/encoders.py:291:        # bit for bit -- see _integrate_a
+     … +10 lines (ctrl+o to expand)
+
+● E1 is untouched: 180 arrays over 45 cases and 35,708 events, identical bit for
+  bit including the v traces. Now the suite.
+
+● Bash(source .venv/bin/activate; python -m pytest -q 2>&1 | tail -n 5; echo
+      "=== E4/T4 status ==="; python -m pytest -q 2>&1 | grep -E "E4|T4")
+  ⎿  FAILED tests/test_known_answers.py::test_corrupt_jitter_preserves_coun
+     t_and_ordering
+     FAILED tests/test_known_answers.py::test_corrupt_channel_shift_drops_r
+     … +17 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Bash(source .venv/bin/activate; python -m pytest -q
+      tests/test_known_answers.py::test_T4_3_adaptation_emphasises_onsets 2>&1 |
+      sed -n '1,60p')
+  ⎿  F
+        [100%]
+     =================================== FAILURES =========================
+     … +22 lines (ctrl+o to expand)
+
+● ratios[2] > ratios[1] fails: 2.0 vs 3.0. Before concluding anything about the
+  test, let me measure what the encoder is actually doing.
+
+● Bash(source .venv/bin/activate; python - <<'PYEOF'
+      import sys; sys.path.insert(0,"src"); sys.path.insert(0,"tests")…)
+  ⎿   delta_a  early  late  ratio  total  first 8 ISIs after step (ms)
+         0.00      6     6   1.00    110    8.1   8.1   8.1   8.1   8.1   8
+     .1   8.1   8.1
+     … +10 lines (ctrl+o to expand)
+
+● The encoder reproduces the analytic ALIF exactly — at delta_a=0 the ISI is 8.1
+  ms against the closed form 0.02·ln(3/2) = 8.11 ms, and at delta_a=0.5 the
+  first post-step ISI of 13.1 ms matches the V(t)=θ(t) crossing to three
+  figures. The failure is in the test's estimator, not the mechanism. Let me
+  make that argument airtight before raising it.
+
+● Bash(source .venv/bin/activate; python - <<'PYEOF'
+      import sys; sys.path.insert(0,"src"); sys.path.insert(0,"tests")…)
+  ⎿  a=rho*a+D*s[n-1]  (eq 23 literal, implemented)
+         early/late ['6/6', '3/1', '2/0']  ratios [1.0, 3.0, 2.0]  T4_3 FAI
+     L
+     … +15 lines (ctrl+o to expand)
+
+● All three discretisations produce identical early/late counts — so the failure
+  is not a choice I made. And the ceiling table shows the estimator is not
+  merely non-monotonic but inverted at the top: as delta_a → ∞ the neuron fires
+  once at onset and never again (maximal onset emphasis) and the ratio returns
+  to 1.00, the same score as no adaptation at all. Let me quantify some
+  alternatives before writing this up.
+
+● Bash(source .venv/bin/activate; python - <<'PYEOF'
+      import sys; sys.path.insert(0,"src"); sys.path.insert(0,"tests")…)
+  ⎿  delta_a early late total | A early/max(late,1) B early/(late+1) C earl
+     y/total D ISI_ss/ISI_1
+        0.00     6    6   110 |                1.00             0.86
+     … +15 lines (ctrl+o to expand)
+
+● None of the count-based estimators is monotone across a wide delta_a range —
+  with 50 ms windows and heavy adaptation the counts are 0, 1 or 2 and every
+  ratio is quantisation noise. That raises the deeper question: is the test's
+  underlying claim right and merely under-powered, or is the claim itself false?
+  One more measurement settles it.
+
+● Bash(source .venv/bin/activate; python - <<'PYEOF'
+      import sys; sys.path.insert(0,"src"); sys.path.insert(0,"tests")…)
+  ⎿  onset emphasis with adequate counts: 200 ms windows, 5 s signal
+     delta_a early  late   ratio  ISI_1(ms)  ISI_ss(ms)  ISI_ss/ISI_1
+        0.00    24    25    0.96       8.13        8.12         1.000
+     … +9 lines (ctrl+o to expand)
+
+● A real finding, and worth stating precisely: onset emphasis is not monotone in
+  adaptation strength even with ample statistics. It peaks near delta_a ≈ 1 and
+  falls away on both sides, because strong adaptation suppresses the onset
+  burst too — the first ISI stretches from 8 ms to 139 ms, so early and late
+  rates re-converge.
+
+  Read 1 file (ctrl+o to expand)
+
+● Now the write-up. QUESTIONS.md first — this is a test-versus-implementation
+  disagreement, which the precedence rules say I must argue rather than act on.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Bash(sed -n '1,40p' NOTEBOOK.md)
+  ⎿  # Lab notebook
+
+     Append-only, newest at the bottom. One entry per working session, from
+     … +37 lines (ctrl+o to expand)
+
+● Bash(source .venv/bin/activate; python -m pytest -q 2>&1 | grep -E "^FAILED" |
+      sed 's/ - .*//' | sort >
+      /tmp/claude-221530/-home-mbasssd3-work-spikeEncode/8a7e5786-d…)  ⎿  === newly PASSING (were failing, now not) ===
+     FAILED tests/test_known_answers.py::test_G1_determinism[E4]
+     FAILED tests/test_known_answers.py::test_G2_silence_produces_no_events
+     … +16 lines (ctrl+o to expand)
+  ⎿  You've hit your session limit · resets 4:50pm (Europe/London)
+     /upgrade or /usage-credits to finish what you’re working on.
+
+✻ Sautéed for 11m 9s · done 13:20
+
+❯ /context 
+  ⎿  Context Usage
+     ⛁ ⛁ ⛁ ⛁ ⛁ ⛀ ⛁ ⛀ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁   Opus 5
+     ⛁ ⛁ ⛁ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   claude-opus-5
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   106.3k/1m tokens (11%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ 
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   Estimated usage by category
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ System prompt: 3.6k tokens (0.4%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ System tools: 21.2k tokens (2.1%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ Custom agents: 425 tokens (0.0%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ Memory files: 5.6k tokens (0.6%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝   ⛁ Skills: 2.9k tokens (0.3%)
+                                               ⛁ Messages: 74k tokens (7.4%)
+                                               ⛶ Free space: 859.4k (85.9%)
+                                               ⛝ Autocompact buffer: 33k tokens (3.3%)
+
+     Auto-compact window: 1m tokens
+
+     MCP tools · /mcp (loaded on-demand)
+
+     Available
+     ├ mcp__claude_ai_Gmail__apply_sensitive_message_label
+     ├ mcp__claude_ai_Gmail__apply_sensitive_thread_label
+     ├ mcp__claude_ai_Gmail__create_draft
+     ├ mcp__claude_ai_Gmail__create_label
+     ├ mcp__claude_ai_Gmail__delete_label
+     ├ mcp__claude_ai_Gmail__forward
+     ├ mcp__claude_ai_Gmail__get_draft
+     ├ mcp__claude_ai_Gmail__get_message
+     ├ mcp__claude_ai_Gmail__get_thread
+     ├ mcp__claude_ai_Gmail__label_message
+     ├ mcp__claude_ai_Gmail__label_thread
+     ├ mcp__claude_ai_Gmail__list_drafts
+     ├ mcp__claude_ai_Gmail__list_labels
+     ├ mcp__claude_ai_Gmail__mark_message_spam
+     ├ mcp__claude_ai_Gmail__mark_thread_spam
+     ├ mcp__claude_ai_Gmail__reply
+     ├ mcp__claude_ai_Gmail__search_threads
+     ├ mcp__claude_ai_Gmail__send_message
+     ├ mcp__claude_ai_Gmail__trash_message
+     ├ mcp__claude_ai_Gmail__trash_thread
+     ├ mcp__claude_ai_Gmail__unlabel_message
+     ├ mcp__claude_ai_Gmail__unlabel_thread
+     ├ mcp__claude_ai_Gmail__unmark_message_spam
+     ├ mcp__claude_ai_Gmail__unmark_thread_spam
+     ├ mcp__claude_ai_Gmail__untrash_message
+     ├ mcp__claude_ai_Gmail__untrash_thread
+     ├ mcp__claude_ai_Gmail__update_draft
+     ├ mcp__claude_ai_Gmail__update_label
+     ├ mcp__claude_ai_Gmail__update_message_labels
+     ├ mcp__claude_ai_Google_Calendar__create_event
+     ├ mcp__claude_ai_Google_Calendar__delete_event
+     ├ mcp__claude_ai_Google_Calendar__get_event
+     ├ mcp__claude_ai_Google_Calendar__list_calendars
+     ├ mcp__claude_ai_Google_Calendar__list_events
+     ├ mcp__claude_ai_Google_Calendar__respond_to_event
+     ├ mcp__claude_ai_Google_Calendar__search_events
+     ├ mcp__claude_ai_Google_Calendar__suggest_time
+     ├ mcp__claude_ai_Google_Calendar__update_event
+     ├ mcp__claude_ai_Google_Drive__copy_file
+     ├ mcp__claude_ai_Google_Drive__create_file
+     ├ mcp__claude_ai_Google_Drive__download_file_content
+     ├ mcp__claude_ai_Google_Drive__get_file_metadata
+     ├ mcp__claude_ai_Google_Drive__get_file_permissions
+     ├ mcp__claude_ai_Google_Drive__list_recent_files
+     ├ mcp__claude_ai_Google_Drive__read_file_content
+     ├ mcp__claude_ai_Google_Drive__search_files
+     ├ mcp__claude_ai_Google_Drive__share_file
+     ├ mcp__claude_ai_Google_Drive__trash_file
+     ├ mcp__claude_ai_Google_Drive__update_file
+     ├ mcp__claude_ai_Microsoft_365__authenticate
+     ├ mcp__claude_ai_Microsoft_365__complete_authentication
+     ├ mcp__claude_ai_Spotify__add_to_library
+     ├ mcp__claude_ai_Spotify__create_playlist
+     ├ mcp__claude_ai_Spotify__fetch_tracks
+     ├ mcp__claude_ai_Spotify__get_auth_token
+     ├ mcp__claude_ai_Spotify__get_currently_playing
+     ├ mcp__claude_ai_Spotify__remove_from_library
+     ├ mcp__claude_ai_Spotify__search
+     └ mcp__claude_ai_Spotify__trigger_auth_connect
+
+     Custom agents · .claude/agents/
+
+     User
+     ├ claude-code-guide: 205 tokens
+     ├ general-purpose: 84 tokens
+     ├ Plan: 74 tokens
+     └ Explore: 62 tokens
+
+     Skills · /skills
+
+     Built-in
+     ├ dataviz: ~480 tokens
+     ├ claude-api: ~360 tokens
+     ├ design: ~340 tokens
+     ├ code-review: ~270 tokens
+     ├ update-config: ~240 tokens
+     ├ artifact-capabilities: ~220 tokens
+     ├ claude-in-chrome: ~180 tokens
+     ├ schedule: ~130 tokens
+     ├ run: ~120 tokens
+     ├ loop: ~120 tokens
+     ├ keybindings-help: ~80 tokens
+     ├ artifact-diagramming: ~70 tokens
+     ├ artifact-design: ~70 tokens
+     ├ fewer-permission-prompts: ~60 tokens
+     ├ simplify: ~60 tokens
+     ├ security-review: ~30 tokens
+     └ init: ~20 tokens
+
+❯ continue                                                                      
+
+● Nine newly green, zero regressions — failure sets diffed, not just counted.
+  Now the logs.
+
+  Read 2 files (ctrl+o to expand)
+
+● Bash(git add -A && git status --short && echo "--- diff stat ---" && git diff
+      --cached --stat)
+  ⎿  M  DECISIONS.md
+     M  NOTEBOOK.md
+     M  QUESTIONS.md
+     … +9 lines (ctrl+o to expand)
+
+● No test or spec files touched. Two commits, one logical change each.
+
+● Bash(git reset -q && git add src/spikeenc/encoders.py DECISIONS.md && git
+      commit -q -F - <<'EOF'
+      Implement E4 ALIF by generalising the LIF routine, not duplicating i…)
+  ⎿  00efa24 Session log: E4 implemented; raise Q10 against test_T4_3
+     1feb0d8 Implement E4 ALIF by generalising the LIF routine, not duplica
+     ting it
+     … +2 lines (ctrl+o to expand)
+
+● Both committed, tree clean. Let me update the memory file before the two
+  remaining actions that need your say-so.
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(python - <<'PYEOF'
+      p = "/home/mbasssd3/.claude/projects/-home-mbasssd3-work-spikeEncode/memor
+      y/spikeencode-validation-protocol-habits.md"…)
+  ⎿  memory updated
+     38:**Test the claim, not only the implementation.** A known-answer tes
+     t can assert
+     … +4 lines (ctrl+o to expand)
+
+● Bash(python - <<'PYEOF'
+      p = "/home/mbasssd3/.claude/projects/-home-mbasssd3-work-spikeEncode/memor
+      y/spikeencode-validation-protocol-habits.md"…)
+  ⎿  lead-in fixed, MEMORY.md pointer updated
+
+● E4 is done and committed. Two things need your go-ahead before I stop.
+
+  What landed
+
+  E4 ALIF implemented by generalising _integrate_and_fire rather than writing a
+  second neuron. Threshold becomes theta_0 + a, with a = rho*a + delta_a*s[n-1]
+  reading the same one-step-lagged fired the hard reset already reads. E1 now
+  calls that routine with delta_a=0.0, so SPEC §4.5's bit-identity requirement
+  is structural — there is no branch on delta_a anywhere, and an edit touching
+  one encoder cannot leave the other behind.
+
+  Your refractory ruling is in as D34 and documented at the point of
+  implementation.
+
+  Because the refactor moved E1's code path, I proved rather than asserted it
+  was unchanged: 45 cases (nine drive shapes × five parameter sets, two with
+  refractory > 0), 180 arrays, 35,708 events — identical bit for bit, v traces
+  included.
+
+  Tests: 53 passed / 31 failed / 1 skipped, from 44/40/1. Nine newly green.
+  Failure sets diffed before and after, not just counted — no regressions.
+
+  The one that needs you: test_T4_3 fails, and I think the test is wrong
+
+  I have not touched it. The argument is in Q10.
+
+  The encoder is right — ISI 8.13 ms against the closed form 8.11 ms at
+  delta_a=0, first post-step ISI 13.13 ms against a hand-solved crossing of 13.1
+  ms. And three readings of equation (23) give identical counts, which is the
+  tell: when no implementation choice moves the number, the disagreement is with
+  the claim.
+
+  There are two defects, and the second is the one that matters. The estimator
+  early/max(late,1) inverts once late hits zero — a neuron firing once at onset
+  and never again scores 1.00, exactly what no adaptation scores. But the
+  underlying claim is also false. Measured over 5 s with 200 ms windows so
+  counts are adequate:
+
+  ┌──────────────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┐
+  │   delta_a    │  0   │ 0.25 │ 0.5  │ 1.0  │ 2.0  │ 4.0  │ 8.0  │
+  ├──────────────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┤
+  │ ISI_ss/ISI_1 │ 1.00 │ 2.11 │ 2.38 │ 2.45 │ 2.14 │ 1.51 │ 1.16 │
+  └──────────────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┘
+
+  Onset emphasis peaks near delta_a ≈ 1 and decays either side, and the test's
+  two adapting points (0.5, 2.0) straddle the peak. Adaptation from the first
+  spike suppresses the second, so strong adaptation lengthens the onset ISI too
+  (8 ms → 139 ms) and the rates re-converge. Steady-state suppression is
+  monotone — that is T4_4, and it passes — but the onset-to-steady-state
+  contrast is not.
+
+  This bears on P-01, which predicts T1 rising and T2 falling "as adaptation
+  strength increases". If the mechanism underneath is non-monotone with a peak
+  near 1, a sweep spanning that peak could confirm or contradict P-01 depending
+  only on which side its points land. The E4 sweep range wants the peak located
+  first. I have not edited PREDICTIONS.md — §7 forbids it and the restatement is
+  the design session's call anyway.
+
+  Waiting on you
+
+  1. Push 1feb0d8 and 00efa24? The design session can't see Q10 until they're on
+     GitHub, and last time an eleven-hour unpushed gap went unnoticed by both
+     sides.
+  2. Open the needs-design issue for Q10? Public repo, so I'd rather you said
+     yes explicitly.
+
+  For the next session, when you want it:
+
+  /rename "SpikeEncode — E5 PhaseLocked"
+
+  Also worth knowing: the features stub alone is holding six G8 tests red across
+  every encoder, and D24 (test_F6) is still unimplemented — both are mechanical
+  and independent of E5 if you'd rather clear those first.
+
+✻ Cooked for 1m 56s · done 17:04
+
+❯ /context 
+  ⎿  Context Usage
+     ⛁ ⛁ ⛁ ⛁ ⛁ ⛀ ⛁ ⛀ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁   Opus 5
+     ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   claude-opus-5
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   127.3k/1m tokens (13%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ 
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   Estimated usage by category
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ System prompt: 3.6k tokens (0.4%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ System tools: 21.2k tokens (2.1%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ Custom agents: 425 tokens (0.0%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ Memory files: 5.6k tokens (0.6%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝ ⛝   ⛁ Skills: 2.9k tokens (0.3%)
+                                               ⛁ Messages: 93.7k tokens (9.4%)
+                                               ⛶ Free space: 839.7k (84.0%)
+                                               ⛝ Autocompact buffer: 33k tokens (3.3%)
+
+     Auto-compact window: 1m tokens
+
+     MCP tools · /mcp (loaded on-demand)
+
+     Available
+     ├ mcp__claude_ai_Gmail__apply_sensitive_message_label
+     ├ mcp__claude_ai_Gmail__apply_sensitive_thread_label
+     ├ mcp__claude_ai_Gmail__create_draft
+     ├ mcp__claude_ai_Gmail__create_label
+     ├ mcp__claude_ai_Gmail__delete_label
+     ├ mcp__claude_ai_Gmail__forward
+     ├ mcp__claude_ai_Gmail__get_draft
+     ├ mcp__claude_ai_Gmail__get_message
+     ├ mcp__claude_ai_Gmail__get_thread
+     ├ mcp__claude_ai_Gmail__label_message
+     ├ mcp__claude_ai_Gmail__label_thread
+     ├ mcp__claude_ai_Gmail__list_drafts
+     ├ mcp__claude_ai_Gmail__list_labels
+     ├ mcp__claude_ai_Gmail__mark_message_spam
+     ├ mcp__claude_ai_Gmail__mark_thread_spam
+     ├ mcp__claude_ai_Gmail__reply
+     ├ mcp__claude_ai_Gmail__search_threads
+     ├ mcp__claude_ai_Gmail__send_message
+     ├ mcp__claude_ai_Gmail__trash_message
+     ├ mcp__claude_ai_Gmail__trash_thread
+     ├ mcp__claude_ai_Gmail__unlabel_message
+     ├ mcp__claude_ai_Gmail__unlabel_thread
+     ├ mcp__claude_ai_Gmail__unmark_message_spam
+     ├ mcp__claude_ai_Gmail__unmark_thread_spam
+     ├ mcp__claude_ai_Gmail__untrash_message
+     ├ mcp__claude_ai_Gmail__untrash_thread
+     ├ mcp__claude_ai_Gmail__update_draft
+     ├ mcp__claude_ai_Gmail__update_label
+     ├ mcp__claude_ai_Gmail__update_message_labels
+     ├ mcp__claude_ai_Google_Calendar__create_event
+     ├ mcp__claude_ai_Google_Calendar__delete_event
+     ├ mcp__claude_ai_Google_Calendar__get_event
+     ├ mcp__claude_ai_Google_Calendar__list_calendars
+     ├ mcp__claude_ai_Google_Calendar__list_events
+     ├ mcp__claude_ai_Google_Calendar__respond_to_event
+     ├ mcp__claude_ai_Google_Calendar__search_events
+     ├ mcp__claude_ai_Google_Calendar__suggest_time
+     ├ mcp__claude_ai_Google_Calendar__update_event
+     ├ mcp__claude_ai_Google_Drive__copy_file
+     ├ mcp__claude_ai_Google_Drive__create_file
+     ├ mcp__claude_ai_Google_Drive__download_file_content
+     ├ mcp__claude_ai_Google_Drive__get_file_metadata
+     ├ mcp__claude_ai_Google_Drive__get_file_permissions
+     ├ mcp__claude_ai_Google_Drive__list_recent_files
+     ├ mcp__claude_ai_Google_Drive__read_file_content
+     ├ mcp__claude_ai_Google_Drive__search_files
+     ├ mcp__claude_ai_Google_Drive__share_file
+     ├ mcp__claude_ai_Google_Drive__trash_file
+     ├ mcp__claude_ai_Google_Drive__update_file
+     ├ mcp__claude_ai_Microsoft_365__authenticate
+     ├ mcp__claude_ai_Microsoft_365__complete_authentication
+     ├ mcp__claude_ai_Spotify__add_to_library
+     ├ mcp__claude_ai_Spotify__create_playlist
+     ├ mcp__claude_ai_Spotify__fetch_tracks
+     ├ mcp__claude_ai_Spotify__get_auth_token
+     ├ mcp__claude_ai_Spotify__get_currently_playing
+     ├ mcp__claude_ai_Spotify__remove_from_library
+     ├ mcp__claude_ai_Spotify__search
+     └ mcp__claude_ai_Spotify__trigger_auth_connect
+
+     Custom agents · .claude/agents/
+
+     User
+     ├ claude-code-guide: 205 tokens
+     ├ general-purpose: 84 tokens
+     ├ Plan: 74 tokens
+     └ Explore: 62 tokens
+
+     Skills · /skills
+
+     Built-in
+     ├ dataviz: ~480 tokens
+     ├ claude-api: ~360 tokens
+     ├ design: ~340 tokens
+     ├ code-review: ~270 tokens
+     ├ update-config: ~240 tokens
+     ├ artifact-capabilities: ~220 tokens
+     ├ claude-in-chrome: ~180 tokens
+     ├ schedule: ~130 tokens
+     ├ run: ~120 tokens
+     ├ loop: ~120 tokens
+     ├ keybindings-help: ~80 tokens
+     ├ artifact-diagramming: ~70 tokens
+     ├ artifact-design: ~70 tokens
+     ├ fewer-permission-prompts: ~60 tokens
+     ├ simplify: ~60 tokens
+     ├ security-review: ~30 tokens
+     └ init: ~20 tokens
+
+❯   /rename "SpikeEncode — E5 PhaseLocked"                                      
+
+● Noted — moving to E5. Two items from E4 are still open and unanswered, and I'm
+  not acting on either: pushing 1feb0d8/00efa24, and opening the Q10 issue. The
+  design session can't see Q10 until the push happens, so it's worth a yes/no
+  when you get a moment.
+
+  Meanwhile, per the workflow, let me read before planning rather than assume.
+
+● Bash(sed -n '/^def test_T5_1/,/^# ===/p' tests/test_known_answers.py)
+  ⎿  def test_T5_1_pure_tone_below_cutoff_locks_tightly():
+         """Vector strength above 0.9 for a tone the encoder is meant to lo
+     ck to."""
+     … +65 lines (ctrl+o to expand)
+
+● Bash(sed -n '/### 5.5 E5/,/### 5.6/p' docs/proposal_v2.md)
+  ⎿  ### 5.5 E5 - Phase-locked fine structure
+
+     The only candidate that represents the carrier rather than the envelop
+     … +38 lines (ctrl+o to expand)
+
+  Searched for 2 patterns (ctrl+o to expand)
+
+● Bash(sed -n '147,215p' src/spikeenc/frontend.py)
+  ⎿      def subbands(self, audio):
+             """Equation (7): x_c = g_c * x, shape (n_channels, n_samples).
+     … +66 lines (ctrl+o to expand)
+
+● Bash(sed -n '/^## 5. Featurisation/,/^## 6/p' SPEC.md; echo "=========="; sed
+      -n '/^## 7. Corruption/,/^## 8/p' SPEC.md)
+  ⎿  ## 5. Featurisation — `spikeenc.features`
+
+     ```python
+     … +37 lines (ctrl+o to expand)
+
+● Both features and corrupt are fully specified in SPEC — genuinely mechanical.
+  Before planning E5, one cheap measurement, because E5's rate parameter is
+  exposed to exactly the trap that caught E3 in Q06/D27.
+
+● Bash(source .venv/bin/activate; python - <<'PYEOF'
+      import sys; sys.path.insert(0,"src"); sys.path.insert(0,"tests")…)
+  ⎿  refractory=1 ms  counts over the G3 sweep [7116, 7112, 7096, 7056, 686
+     4]  span 1.04x  FAIL (D27 needs >= 4x, monotone)
+     refractory=0 ms  counts over the G3 sweep [32096, 32020, 31772, 30748,
+     … +5 lines (ctrl+o to expand)
+
+● Confirmed before writing a line of E5 — and it's the Q06/D27 trap again,
+  structurally.
+
+  E5's declared RATE_PARAM cannot hit a matched budget. Over the G3 16× sweep
+  the event count moves 7116 → 6864, a span of 1.04× against D27's required 4×.
+  The cause is exactly the one that disqualified the rejected E3 candidate: the
+  count is bounded by the number of upward zero crossings of the subband, which
+  is a property of the carrier, not of the threshold. The threshold only gates
+  quiet passages, and this drive's envelope sits above the sweep's top value
+  most of the time (p25 = 0.266 vs a top threshold of 0.20).
+
+  Let me record that properly.
+
+● Bash(cat >> QUESTIONS.md <<'EOF'…)
+  ⎿  0172ad9 Raise Q11 and Q12 against SPEC 4.6 before implementing E5
+     00efa24 Session log: E4 implemented; raise Q10 against test_T4_3
+     1feb0d8 Implement E4 ALIF by generalising the LIF routine, not duplica
+     ting it
+● Q11 and Q12 are recorded and committed. E5 is genuinely blocked — the
+  constructor signature is in question, so writing it now risks building on a
+  shape that changes.
+
+  Two things I need from you.
+
+● User answered Claude's questions:
+  ⎿  · Q10, Q11 and Q12 are all recorded locally but invisible to the design 
+     session until pushed. What should I do with the remote? → Push and open all
+     three issues
+     · E5 is blocked on Q11/Q12. What should I do with the rest of this session?
+     → Implement corrupt and features (Recommended)
+
+● Pushing first, then the issues.
+
+● Bash(git push origin main 2>&1 | tail -5; echo "---"; git status -sb | head
+      -2)
+  ⎿  To https://github.com/SimonDavidson/snn-encoding.git
+        6359692..0172ad9  main -> main
+     ---
+     ## main...origin/main
+
+● Bash(gh label list 2>/dev/null | head -10; echo "--- existing issues ---"; gh
+      issue list --state all --limit 10 2>&1 | head)
+  ⎿  accessibility      Barrier affecting people with disabilities      #f143ab
+     bug        Something isn't working #d73a4a
+     documentation      Improvements or additions to documentation      #0075ca
+     … +8 lines (ctrl+o to expand)
+
+
+
+● Bash(gh label create needs-design --description "Blocked awaiting a decision
+      from the design session" --color 5319e7 2>&1 | tail -2)
+  ⎿  (No output)
+
+● Bash(SP=/tmp/claude-221530/-home-mbasssd3-work-spikeEncode/8a7e5786-d998-4f8d-
+      999e-4de99dae49bb/scratchpad
+      python - "$SP" <<'PYEOF'…)
+  ⎿  Q10: `test_T4_3` asserts a monotonicity the ALIF does not have
+     Q11: E5's declared RATE_PARAM spans 1.04x, not the 4x D27 requires
+     Q12: two under-specifications in SPEC §4.6 that a Layer 3 reimplementa
+     … +4 lines (ctrl+o to expand)
+
+● Pushed (6359692..0172ad9) and three needs-design issues opened — #1 Q10, #2 
+  Q11, #3 Q12. Now corrupt and features.
+
+● Bash(sed -n '/def test_G8_featurisation/,/^def test_corrupt_jitter/p'
+      tests/test_known_answers.py; echo "=== corrupt tests ==="; sed -n '/^def
+      test_corrupt_jitter/,$…)
+  ⎿  def test_G8_featurisation_is_order_invariant(encoder_case):
+         """SPEC §5. Shuffling the event arrays must not change the feature
+     s."""
+     … +607 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(grep -n "^def test_corrupt" -A 32 tests/test_known_answers.py | sed -n
+      '1,140p')
+  ⎿  854:def test_corrupt_jitter_preserves_count_and_ordering():
+     855-    enc = E.LIF(n_channels=4, theta=1.0, tau_m=0.02)
+     856-    train = enc.encode_from_drive(drive_for(E.LIF), DT)
+     … +55 lines (ctrl+o to expand)
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Everything I need. Writing both modules.
+
+● Bash(source .venv/bin/activate; python -c "
+      import numpy as np…)
+  ⎿  1.0/0.01 = 100.0  floor+1 = 101  round-based = 101
+     2.0/0.01 = 200.0  floor+1 = 201  round-based = 201
+     0.3/0.01 = 30.0  floor+1 = 31  round-based = 31
+     … +2 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(cat > src/spikeenc/corrupt.py <<'PYEOF'
+      """Corruption operators — SPEC.md section 7.…)
+  ⎿  FAILED tests/test_known_answers.py::test_T6_2_latency_rank_inverts_ene
+     rgy_rank
+     FAILED tests/test_known_answers.py::test_T6_3_lif_latency_matches_the_
+     … +4 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Bash(source .venv/bin/activate; python -m pytest -q
+      tests/test_known_answers.py::test_corrupt_delete_retains_expected_fraction
+      2>&1 | sed -n '1,30p')
+  ⎿  F
+        [100%]
+     =================================== FAILURES =========================
+     … +17 lines (ctrl+o to expand)
+
+● delete is fine — the failure is the test's precondition: E1 on that fixture
+  yields 275 events, not the >500 the test requires. Let me check whether E1's
+  count is right before blaming the test.
+
+● Bash(source .venv/bin/activate; python - <<'PYEOF'
+      import sys; sys.path.insert(0,"src"); sys.path.insert(0,"tests")…)
+  ⎿  oversample  dt (us)  events
+              1    62.50     275
+              2    31.25     275
+     … +11 lines (ctrl+o to expand)
+
+● 275 is exact — identical at 16× oversampling, so it is not a discretisation
+  artefact. The precondition is simply wrong for the fixture. One more number
+  before I write it up.
+
+● Bash(source .venv/bin/activate; python - <<'PYEOF'
+      import sys; sys.path.insert(0,"src"); sys.path.insert(0,"tests")…)
+  ⎿  N = 275, retained 203 = 0.7382  (window 0.65-0.75)
+     binomial sd at N=275: 0.0276  -> window is +/-1.81 sd
+     binomial sd at N=500: 0.0205 -> +/-2.44 sd
+     … +5 lines (ctrl+o to expand)
+
+● All quantified. delete itself is correct — retention 0.7382 sits inside the
+  window; only the fixture guard fails, and the guard is doing real work (at
+  N=275 the window is ±1.81 sd, passing for 93.1% of seeds; at N=500 it is ±2.44
+  sd and 97.7%).
+
+● Bash(SP=/tmp/claude-221530/-home-mbasssd3-work-spikeEncode/8a7e5786-d998-4f8d-
+      999e-4de99dae49bb/scratchpad
+      source .venv/bin/activate; python -m pytest -q 2>&1 | grep…)
+  ⎿  === newly PASSING since E4 landed ===
+     FAILED tests/test_known_answers.py::test_corrupt_channel_shift_drops_r
+     ather_than_wraps
+     … +18 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Seven newly green, no regressions (G8[E5]/G8[E6] stay red on the encoder
+  stubs, correctly). Now verify featurise against the defining equation by an
+  independent route, rather than trusting a green test.
+
+● Bash(source .venv/bin/activate; python - <<'PYEOF'
+      import sys; sys.path.insert(0,"src"); sys.path.insert(0,"tests")…)
+  ⎿  E1:    45 events, polarities [1], shape (51, 8)  max rel err vs naive
+     eq(32) 4.55e-16  permutation bit-identical: True
+     E3:    47 events, polarities [-1, 1], shape (51, 8)  max rel err vs na
+     … +8 lines (ctrl+o to expand)
+
+● featurise agrees with the literal double-sum form of equation (32) to
+  4–9×10⁻¹⁶ relative — a few ulp — and permutation invariance is bit-exact, well
+  beyond the test's rtol=1e-10. Now recording the delete finding.
+  Read 1 file (ctrl+o to expand)
+
+● Bash(cat >> NOTEBOOK.md <<'EOF'…)
+  ⎿  126151c Implement corrupt (SPEC 7) and features.featurise (SPEC 5, eq
+     32)
+     0172ad9 Raise Q11 and Q12 against SPEC 4.6 before implementing E5
+     ## main...origin/main
+
+● Bash(SP=/tmp/claude-221530/-home-mbasssd3-work-spikeEncode/8a7e5786-d998-4f8d-
+      999e-4de99dae49bb/scratchpad
+      python - "$SP" <<'PYEOF'…)
+  ⎿  Q13 `test_corrupt_delete_retains_expected_fraction`'s fixture yields 2
+     75 events, not the >500 its own guard requires
+     https://github.com/SimonDavidson/snn-encoding/issues/4
+
+● Bash(sleep 25; gh run list --limit 3 2>&1 | head -5)
+  ⎿  Error: Blocked: sleep 25 followed by: gh run list --limit 3 head -5. To 
+     wait for a condition, use Monitor with an until-loop (e.g. `until <check>; 
+     do sleep 2; done`). To wait for a command you started, use 
+     run_in_background: true. Do not chain shorter sleeps to work around this 
+     block.
+
+● Bash(gh run list --limit 4 2>&1 | head -6)
+  ⎿  in_progress                Implement corrupt (SPEC 7) and features.featuris
+     5,
+     eq 32)     tests   main    push    33895854936     14s     2026-09-04T16:34
+     completed  failure Raise Q11 and Q12 against SPEC 4.6 before
+     implementing
+     … +5 lines (ctrl+o to expand)
+
+
+● CI has been red on every push including the ones before this session —
+  expected while encoders are stubs. But let me confirm it's failing on the
+  suite and not on the spec guard.
+
+● Bash(gh run view 33894979447 --log-failed 2>&1 | tail -25)
+  ⎿  known-answers      Layer 1 known-answer tests      2026-09-04T16:25:29.3157
+     ILED tests/test_known_answers.py::test_G8_featurisation_is_order_invar
+     iant[E1] - NotImplementedError: equation (32); must be order-invariant
+     … +102 lines (ctrl+o to expand)
+
+
+● CI's failure set matches local exactly (31/53/1 at that commit) — no
+  environment divergence, and the spec guard isn't tripping. CI also reproduces
+  assert 275 > 500 independently, so Q13 isn't a local artefact. Checking the
+  latest run:
+
+● Bash(gh run list --limit 1 2>&1 | head -2; echo "---"; gh run view 33895854936
+      --log-failed 2>&1 | grep -E "passed|failed" | tail -2)
+  ⎿  completed  failure Implement corrupt (SPEC 7) and
+     features.featurise (SPE
+     C 5, eq 32)        tests   main    push    33895854936     34s     2026-09-
+     ---
+     … +3 lines (ctrl+o to expand)
+
+
+● CI independently confirms 60 passed / 24 failed / 1 skipped — identical to
+  local. One memory addition, since probing the rate parameter before
+  implementing saved writing E5 twice.
+
+● Bash(python - <<'PYEOF'
+      p = "/home/mbasssd3/.claude/projects/-home-mbasssd3-work-spikeEncode/memor
+      y/spikeencode-validation-protocol-habits.md"…)
+  ⎿  memory updated
+
+● Done. Everything is committed, pushed, and CI-confirmed.
+
+  Suite: 44 → 60 passing (CI agrees exactly)
+
+  60 passed / 24 failed / 1 skipped, from 44/40/1 at session start. Failure sets
+  diffed at every step — no regressions anywhere.
+
+  E4 ALIF — landed
+
+  Implemented by generalising _integrate_and_fire, so E1 and E4-at-delta_a=0 are
+  one code path rather than two that agree. E1 verified unchanged across 45
+  cases / 35,708 events, bit for bit. D34 records your refractory ruling.
+
+  E5 — not written, deliberately
+
+  I measured the SPEC §4.6 rule before implementing it, and it fails D27
+  structurally: threshold moves the event count 1.04× across the G3 sweep
+  against the required 4×, because the count is bounded by the subband's
+  zero-crossing rate. Proposal §5.5 nominates lambda_max for the stochastic form
+  — but equation (25)'s lambda_max and z_0 aren't constructor arguments, so the
+  mode that has a working rate parameter can't express it. Twenty lines of
+  simulation, no encoder written, nothing to undo when the answer comes back.
+
+  corrupt and features — landed
+
+  Both fully specified, so mechanical. featurise accumulates recursively
+  (O(N+F); the closed form overflows a double at 3.6 s of audio) and was checked
+  against a literal transcription of equation (32) — worst error 9.4e-16. Order
+  invariance is bit-exact under permutation, not merely inside the test's
+  rtol=1e-10.
+
+  Four questions now open on GitHub
+
+  ┌──────┬──────────┬───────────────────────────────────────────────────────┐
+  │      │  Blocks  │                        Finding                        │
+  ├──────┼──────────┼───────────────────────────────────────────────────────┤
+  │ #1   │ E4 Layer │ test_T4_3 asserts monotonicity the ALIF lacks —       │
+  │ Q10  │  1       │ emphasis peaks near delta_a≈1; bears on P-01          │
+  ├──────┼──────────┼───────────────────────────────────────────────────────┤
+  │ #2   │ E5       │ RATE_PARAM spans 1.04×, not 4×                        │
+  │ Q11  │          │                                                       │
+  ├──────┼──────────┼───────────────────────────────────────────────────────┤
+  │ #3   │ E5       │ Gating envelope undefined; LIF fallback has no        │
+  │ Q12  │          │ theta/tau_m                                           │
+  ├──────┼──────────┼───────────────────────────────────────────────────────┤
+  │ #4   │ one test │ delete fixture gives 275 events against its own >500  │
+  │ Q13  │          │ guard                                                 │
+  └──────┴──────────┴───────────────────────────────────────────────────────┘
+
+  Q13 is worth a glance because it's cheap: the operator is correct (retention
+  0.7382, inside the window) and E1's 275 is exact under 16× oversampling.
+  duration=8.0 gives 551. But the guard encodes a statistical judgement — at
+  N=275 the window is ±1.81 sd and holds for 93% of seeds — so I left it to the
+  design session.
+
+  Where I'd go next
+
+  E5 and E6 account for 15 of the 24 remaining failures and E5 is blocked. E6 
+  TTFS is unblocked — though I'd want to probe its e_min span first, since
+  test_G3's own docstring names E6 as the foreseeable D27 casualty. D24
+  group-delay compensation (test_F6) is the other unblocked item; CI shows it
+  currently halves onset spread where the test wants a third.
+
+  Nothing needs a decision from you tonight beyond relaying those four
+  questions.
+
+✻ Crunched for 13m 41s · done 17:35
+
+❯ Is your memory up to date? I'm going to start a new session and change        
+  accounts at the same time.                                                    
+
+● Let me verify rather than assume.
+
+  Listed 1 directory (ctrl+o to expand)
+
+● Bash(cd
+      /home/mbasssd3/.claude/projects/-home-mbasssd3-work-spikeEncode/memory/ &&
+      cat one-encoder-per-session-review-gate.md
+      design-session-sees-only-what-is-pushed…)
+  ⎿  ---
+     name: one-encoder-per-session-review-gate
+     description: Simon wants one encoder per session in spikeEncode, with
+     … +54 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to /home/mbasssd3/work/spikeEncode
+
+● Bash(python - <<'PYEOF'
+      p = "/home/mbasssd3/.claude/projects/-home-mbasssd3-work-spikeEncode/memor
+      y/one-encoder-per-session-review-gate.md"…)
+  ⎿  encoder-gate memory refined
+     ## main...origin/main
+     --- unpushed? ---
+     0
+
+● Yes — memory is current. I made one refinement just now and verified the repo
+  state.
+
+  Memory: 6 files, all accurate
+
+  File: spikeencode-validation-protocol-habits
+  Status: Updated twice today — added "test the claim, not only the
+  implementation" (Q10) and "probe RATE_PARAM before writing an encoder" (Q11)
+  ────────────────────────────────────────
+  File: one-encoder-per-session-review-gate
+  Status: Just refined — records that you chose corrupt/features over stopping,
+  so a module SPEC specifies completely counts as mechanical, not only sweeps
+  and figures
+  ────────────────────────────────────────
+  File: design-session-sees-only-what-is-pushed
+  Status: Still accurate; today's push closed the gap it warns about
+  ────────────────────────────────────────
+  File: design-answers-arrive-outside-decisions-md
+  Status: Unchanged, still accurate
+  ────────────────────────────────────────
+  File: notebook-entries-from-the-two-sessions-cross
+  Status: Unchanged, still accurate
+  ────────────────────────────────────────
+  File: MEMORY.md index
+  Status: Hooks updated to match
+
+  Repo is clean, 0 unpushed commits, four commits on origin/main, four issues
+  open.
+
+  The account change is the part worth thinking about
+
+  Memory lives at
+  /home/mbasssd3/.claude/projects/-home-mbasssd3-work-spikeEncode/memory/. What
+  happens depends on which kind of account:
+
+  - Different Claude account, same Linux user mbasssd3 — memory persists. It's
+    filesystem state under your home directory, keyed by project path, not by
+    Claude account. Nothing to do.
+  - Different Linux user — memory does not follow, and neither does
+    ~/.claude/CLAUDE.md, which is where your global preferences live (calling
+    you Simon, the session-title conventions, the git branch and push rules). A
+    new session would lose all of that and wouldn't know it was missing.
+
+  If it's the second, copy both across before you start:
+
+  cp -r ~/.claude/CLAUDE.md ~/.claude/projects/-home-mbasssd3-work-spikeEncode/
+  <new-home>/.claude/...
+
+  The good news is that this is exactly the failure D13 was written to survive.
+  Everything that matters to the work is in the repository — DECISIONS through
+  D34, three NOTEBOOK entries from today, Q10–Q13, and the four GitHub issues. A
+  fresh session on a fresh account that follows the project CLAUDE.md startup
+  sequence will reconstruct the full state without any memory at all. The memory
+  files only carry working habits and your preferences, not project facts.
+
+  For the new session
+
+  E5 stays blocked until Q11/Q12 come back. The unblocked work is E6 TTFS (probe
+  e_min's span first — test_G3's own docstring names E6 as the likely D27
+  casualty) or D24 group-delay compensation.
+
+  /rename "SpikeEncode — E6 TTFS"
+
+  One thing to carry over in your head rather than in a file: Q10 bears on P-01,
+  and that's the only open item with consequences beyond a red test.
+
+✻ Baked for 1m 5s · done 21:29

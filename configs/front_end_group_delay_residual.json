@@ -1,0 +1,25 @@
+{
+  "id": "front_end_group_delay_residual",
+  "description": "Onset spread across the filterbank with and without whole-path group-delay compensation (D24). SPEC section 3 requires the residual to be quoted alongside any T3 result taken with compensation on, so it is recorded as data rather than left in a notebook entry.",
+  "filterbank": {
+    "n_channels": 16,
+    "f_min": 150.0,
+    "f_max": 6000.0,
+    "sample_rate": 16000,
+    "order": 4
+  },
+  "envelope": {
+    "methods": ["hilbert", "rectify_lowpass"],
+    "f_cut": 1000.0,
+    "lowpass_order": 4
+  },
+  "stimulus": {
+    "kind": "click",
+    "duration_s": 1.0,
+    "onset_fraction": 0.3333333333333333,
+    "comment": "Matches test_F6: a unit impulse at n//3 of a 1 s buffer. Broadband, so every channel is excited identically and the spread of envelope peaks is the channel-dependent lag alone."
+  },
+  "seed": 0,
+  "seed_comment": "The stimulus and the whole path are deterministic, so the three-seed rule in CLAUDE.md does not apply here — there is nothing for a seed to vary. Recorded as 0 for the manifest.",
+  "predictions": []
+}
