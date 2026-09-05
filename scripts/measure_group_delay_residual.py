@@ -51,7 +51,9 @@ def main(config_path):
             "compensated_spread_s": com,
             "residual_fraction": com / unc if unc else 0.0,
             "test_F6_limit_s": unc / 3.0,
-            "test_F6_margin": (unc / 3.0) / com if com else float("inf"),
+            # None, not inf: a zero residual leaves the ratio undefined, and
+            # the informative number is compensated_spread_s beside it.
+            "test_F6_margin": (unc / 3.0) / com if com else None,
         }
         arrays[f"{method}_peaks_uncompensated_s"] = peaks[False]
         arrays[f"{method}_peaks_compensated_s"] = peaks[True]

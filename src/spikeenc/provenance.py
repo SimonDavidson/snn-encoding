@@ -105,8 +105,12 @@ def _jsonable(obj):
         return obj.tolist()
     if isinstance(obj, (np.integer,)):
         return int(obj)
-    if isinstance(obj, (np.floating,)):
-        return float(obj)
+    if isinstance(obj, (float, np.floating)):
+        # JSON has no Infinity or NaN. json.dump would emit them anyway, as a
+        # non-standard extension, producing a committed result file that a
+        # strict parser rejects. Undefined is recorded as null.
+        f = float(obj)
+        return f if np.isfinite(f) else None
     if isinstance(obj, dict):
         return {k: _jsonable(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
@@ -152,7 +156,8 @@ def record(result_id, *, script, config, seed, values, arrays=None,
 
     out_json = results / f"{result_id}.json"
     with open(out_json, "w", encoding="utf-8") as fh:
-        json.dump(_jsonable(values), fh, indent=2, sort_keys=True)
+        json.dump(_jsonable(values), fh, indent=2, sort_keys=True,
+                  allow_nan=False)
         fh.write("\n")
 
     outputs = [str(out_json.relative_to(root))]
