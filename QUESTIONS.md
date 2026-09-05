@@ -953,3 +953,86 @@ been written down beside the number.
 now recorded with their definitions attached. It blocks nothing; it corrects
 the record.
 **Answer:** (open)
+
+### Q16 — equation (28) has no `E_max`, is not evaluable at the `e_min` the T6 tests use, and `test_T6_1`/`test_T6_2` are unsatisfiable at `hop < frame`
+**Raised:** 2026-09-05 by implementation session
+**Context:** probing SPEC 4.7 before writing E6, as Q11 and Q14 taught. Three
+findings, none of which needs the encoder to exist. Nothing written to `src/`.
+
+**1. `E_max` is never defined.** Equation (28) is
+
+    t_c[m] = m H + T_f ( 1 - (log E_c[m] - log E_min) / (log E_max - log E_min) )
+
+`E_max` is not a constructor argument in the SPEC 4.7 signature, and neither
+SPEC 4.7 nor proposal 5.6 says what it is. Candidate readings — the largest
+frame energy in the utterance, the largest in the frame, a fixed constant —
+give different event times, and a Layer 3 reimplementation has nothing to
+choose between them. This is the same gap Q14 option 2 would close from the
+other direction, by making `e_min` relative to `E_max` and so forcing `E_max`
+to be defined.
+
+**2. Equation (28) is not evaluable at `e_min = 0`, which is what two of its
+own tests pass.** `test_T6_1` and `test_T6_2` both construct
+`TTFS(..., e_min=0.0)`, and `mode="log"` is the SPEC 4.7 default. With
+`E_min = 0`, `log E_min = -inf`, the ratio is `inf/inf`, and the offset is
+`nan`. Proposal 5.6 uses `E_min` both as the gate ("channels whose energy falls
+below E_min emit nothing") and as the normalisation floor, and those two roles
+cannot both take the value 0.
+
+**3. `test_T6_1` and `test_T6_2` are unsatisfiable by any implementation at
+`hop < frame`.** Both pass `frame=0.025, hop=0.010`, so consecutive frame
+windows overlap by 15 ms, and both then treat the window
+`[m*hop, m*hop + frame)` as containing exactly frame `m`'s events. It contains
+frames `m`, `m+1` and `m+2`. `test_T6_1` asserts no channel appears twice in
+that window; a channel firing in consecutive frames necessarily does, unless
+its offset in frame `m+1` is at least 15 ms and in `m+2` at least 5 ms, which
+is to say unless it is nearly silent — exactly where it does not fire at all.
+`test_T6_2` computes frame `m`'s energy and correlates it against the latencies
+of every event in the window, which belong to three different frames.
+
+Measured on a prototype, 8 channels, `drive_for`, 1 s:
+
+| hop | offset clipped to | T6_1 windows with a duplicated channel | T6_2 worst \|rho − (−1)\| |
+|---|---|---:|---:|
+| 10 ms (declared default) | `frame` | 98 of 98 | 1.2301 |
+| 10 ms | strictly inside | 98 of 98 | 1.2301 |
+| 25 ms (= frame) | `frame` | 1 of 40 | 0.6000 |
+| 25 ms (= frame) | strictly inside | **0 of 40** | **0.0000** |
+
+Two independent causes, and the second is mine. The overlap is fatal and no
+implementation choice touches it. The single remaining failure at `hop = frame`
+is the equation (28) boundary: `E = E_min` maps to an offset of exactly `T_f`,
+which lands on `m H + T_f` and so falls outside its own half-open window and
+into the next one. Clipping strictly inside the frame fixes that and takes both
+tests to exact agreement.
+
+**`test_T6_3` is unaffected and passes.** It uses `mode="lif"`, equation (29),
+which involves no `E_min` or `E_max`, and it sets `hop = frame = 0.025` so
+there is no overlap. Equation (29) is fully specified and reproduces its own
+closed form: `I = 4.0`, latency `tau_m ln(I/(I-theta)) = 5.7536 ms`, inside the
+25 ms frame.
+
+**Question:** what is `E_max`; what does equation (28) do when `E_min` is zero;
+and should `test_T6_1`/`test_T6_2` be run at `hop >= frame`, or should their
+per-window assertions be rewritten to select events by the frame that produced
+them rather than by a time window?
+
+**Options considered:**
+1. `E_max` = largest frame energy in the utterance, `E_min` = the gate when
+   positive and the smallest positive observed frame energy when zero. Makes
+   every G-block test for E6 pass and is what I prototyped. It makes the
+   encoder depend on the whole utterance, though `test_G4` survives that
+   because the shift is a whole number of hops and its padding is zeros, so
+   `E_max` is bit-identical either way (verified).
+2. `E_max` and `E_min` as explicit constructor arguments. Cleanest for a
+   Layer 3 reimplementation, but changes the SPEC 4.7 signature, which the
+   encoders module header records as contract.
+3. Normalise per frame rather than per utterance. Keeps the encoder causal, but
+   the same energy then maps to different latencies in different frames, which
+   breaks the interpretation of E6 as a rate-coded spectral snapshot.
+
+**Blocking?** yes for `mode="log"`, which is the SPEC 4.7 default and which the
+whole G block for E6 exercises. `mode="lif"` is fully specified and can be
+implemented now. `test_T6_1` and `test_T6_2` are blocked on part 3 regardless
+of what is decided about `E_max`.
+**Answer:** (open)
