@@ -1508,3 +1508,78 @@ requires. Every channel is below `f_lock` at the registry point
 by D40 and D41 and can be written now; the rest of the T5 block and E5's other
 generic tests do not depend on this.
 **Answer:** (open)
+
+**Correction, 2026-09-06 (implementation session), before any answer.** The
+figures above were measured with the refractory comparing absolute event times,
+which is not shift-invariant and understates the count at small `k`. Corrected
+to the integer sample difference `_integrate_and_fire` already uses, the numbers
+move slightly and the conclusion does not:
+
+| base `cycle_divisor` | sweep | counts | span |
+|---:|---|---|---:|
+| 4 (registry) | 1, 2, 4, 8, 16 | 7096, 6396, 5292, 4008, 2004 | **3.54x** |
+| 8 | 2, 4, 8, 16, 32 | 6396, 5292, 4008, 2004, 1004 | 6.37x |
+| 16 | 4, 8, 16, 32, 64 | 5292, 4008, 2004, 1004, 504 | 10.50x |
+| 32 | 8, 16, 32, 64, 128 | 4008, 2004, 1004, 504, 252 | 15.90x |
+
+`results/e5_cycle_divisor_span.json` re-recorded under the corrected rule; the
+first entry is marked superseded in the manifest rather than removed.
+
+### Q20 — `test_T5_3` cannot pass at the `cycle_divisor` default that D40 introduces
+**Raised:** 2026-09-06 by implementation session
+**Context:** prototyping E5 against the rewritten SPEC 4.6 and running the real
+T5 block against it before writing anything into `src/`. Ten of the twelve E5
+tests pass. One failure is Q19. This is the other, and it is not the same
+problem.
+
+**The arithmetic.** `test_T5_3` builds `harmonic_complex(125.0, n_harmonics=8)`
+and asserts that the pooled ISI histogram peaks at `1/F0 = 8.00 ms`, within
+`0.1/F0 = 0.80 ms`. That signal has **exactly one upward zero crossing per F0
+period** — 125 crossings in 1 s at F0 = 125 Hz — which is what makes the test
+work: one event per period gives an ISI of exactly `1/F0`.
+
+Under D40 the encoder keeps every `cycle_divisor`-th survivor, so the ISI
+becomes `k/F0`:
+
+| `cycle_divisor` | ISI | assertion (8.00 +/- 0.80 ms) |
+|---:|---:|---|
+| 1 | 8.00 ms | passes |
+| 2 | 16.00 ms | fails |
+| **4 (the default)** | **32.00 ms** | fails by 24 ms |
+
+Measured on the prototype the ISI mode is 32.12 ms, as predicted. `test_T5_3`
+does not pass `cycle_divisor`, so it takes the SPEC 4.6 default of 4.
+
+**No implementation reading avoids this.** The rule — "of the survivors in each
+channel, keep every `cycle_divisor`-th, counting from the first survivor in
+that channel" — is unambiguous, and any encoder obeying it emits at `k/F0` on
+this signal. The test and the default are simply inconsistent with one another.
+
+**Why it matters more than a red tick.** `test_T5_3`'s own docstring calls
+recovering F0 from the pooled ISI histogram "the one job the encoder exists to
+do", and prediction P-03 rests on E5 being much the strongest on T2, which is
+F0 contour estimation. This is the test that pins the property the encoder is
+in the battery for.
+
+**Options considered:**
+1. `test_T5_3` constructs with `cycle_divisor=1`. One argument, and it restores
+   the test's original meaning exactly: at `k = 1` the encoder emits at every
+   gated crossing and the ISI is `1/F0`. The test then measures phase locking
+   rather than phase locking composed with decimation.
+2. Assert the peak at `cycle_divisor / F0` and keep the default. Tests what the
+   encoder does at its registry point, but the quantity is no longer "the ISI
+   histogram recovers F0" — it recovers F0 only if the reader knows `k`.
+3. Change the SPEC 4.6 default to 1. Rejected on my side: it would put
+   `test_G3`'s sweep at 0.25 and 0.5, which are not positive integers, and D40
+   chose 4 precisely so the grid lands on integers.
+4. Pool ISIs modulo the smallest, or take the histogram of `k`-fold differences.
+   Overcomplicated for what is a one-argument fix.
+
+Option 1 looks clearly right to me, and it interacts cleanly with Q19: if the
+registry point moves to 8 or 16 for the span, `test_T5_3` becomes *more* wrong
+at the default, not less, so pinning `cycle_divisor=1` in this test is
+independent of whatever Q19 decides.
+
+**Blocking?** for `test_T5_3` only. E5 is otherwise fully specified and I can
+implement it now; ten of its twelve tests pass on the prototype.
+**Answer:** (open)

@@ -1,8 +1,8 @@
 {
   "counts": [
-    6976,
-    6300,
-    5204,
+    7096,
+    6396,
+    5292,
     4008,
     2004
   ],
@@ -24,7 +24,8 @@
   "rate_direction": -1,
   "rate_param": "cycle_divisor",
   "rule": "e5_cycle_divisor",
-  "span": 3.4810379241516967,
+  "span": 3.5409181636726546,
+  "supersedes_note": "The first recording of this id used an absolute-time refractory comparison, which is not shift-invariant and understated the k=1 count. Corrected to the integer sample difference used by _integrate_and_fire.",
   "sweep_factors": [
     0.25,
     0.5,
