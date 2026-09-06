@@ -1423,3 +1423,88 @@ line another session wrote.
 **Blocking?** no. Nothing is blocked; the drop is applied and correct. This is
 about the next drop, not this one.
 **Answer:** (open)
+
+### Q19 — `cycle_divisor` spans 3.48x at the registry default, because refractory saturates the low-k half of the sweep
+**Raised:** 2026-09-06 by implementation session
+**Context:** the APPLY sheet for the Q09-Q16 patch states that `test_G3[E5]`'s
+span is "a prediction, not a measurement", since `cycle_divisor` was specified
+without an environment to run it in, and that a span under 4x "is a finding to
+raise as a question, not a threshold to relax — exactly as with `threshold`
+before it." Measured by simulating the rewritten SPEC 4.6 rule on `test_G3`'s
+own drive, before writing the encoder. Recorded as `e5_cycle_divisor_span`.
+
+**The measurement.** At the registry point `cycle_divisor=4`, the sweep gives:
+
+| cycle_divisor | 1 | 2 | 4 | 8 | 16 |
+|---|---:|---:|---:|---:|---:|
+| events | 6976 | 6300 | 5204 | 4008 | 2004 |
+
+Span **3.481x**, monotonic, against the 4x D27 requires. It misses by 13 per
+cent.
+
+**Why, and D40 is not wrong about the mechanism — only about where it stops.**
+SPEC 4.6 already says "the span is not exactly `1/k`, since `refractory` is
+already binding in the high channels at `k = 1`". It binds considerably further
+than that. The envelope gate leaves **32036 survivors**, and `refractory` at
+1 ms caps the achievable count at about 6976:
+
+| k | count | survivors / k | refractory binding? |
+|---:|---:|---:|---|
+| 1 | 6976 | 32036 | yes, heavily |
+| 2 | 6300 | 16018 | yes |
+| 4 | 5204 | 8009 | yes |
+| 8 | 4008 | 4004 | no |
+| 16 | 2004 | 2002 | no |
+| 32 | 1004 | 1001 | no |
+| 64 | 504 | 501 | no |
+
+So three of the five sweep points sit in the refractory-saturated region where
+`cycle_divisor` barely moves the count, and only the top two are on the clean
+`1/k` line. **The parameter itself is sound** — from `k = 8` upward the count is
+exactly `survivors / k` — which makes this the Q14 shape rather than the Q11
+shape: a default in the wrong place, not a rule that cannot work.
+
+**Where it clears.** The span depends only on where the sweep is centred:
+
+| base `cycle_divisor` | sweep | counts | span |
+|---:|---|---|---:|
+| 4 (registry) | 1, 2, 4, 8, 16 | 6976, 6300, 5204, 4008, 2004 | 3.48x |
+| **8** | 2, 4, 8, 16, 32 | 6300, 5204, 4008, 2004, 1004 | **6.27x** |
+| 16 | 4, 8, 16, 32, 64 | 5204, 4008, 2004, 1004, 504 | 10.33x |
+| 32 | 8, 16, 32, 64, 128 | 4008, 2004, 1004, 504, 252 | 15.90x |
+
+SPEC 4.6 gives the reason for the default as "chosen so that the `x0.25` to
+`x4` grid of `test_G3` lands on integers". Eight and sixteen satisfy that
+equally, so the stated ground for 4 does not distinguish it from a value that
+also clears D27.
+
+**Question:** should the registry point move to 8, or 16? I cannot make the
+change: it is `tests/conftest.py`, and the default is in SPEC 4.6.
+
+**Options considered:**
+1. Registry point to **8**. Smallest change that clears D27, at 6.27x. Keeps
+   the sweep's lowest point at `k = 2`, so the front still reaches the dense
+   end of E5's range, which is where P-03 expects it to be informative.
+2. Registry point to 16, at 10.33x. More margin, but the whole sweep sits on
+   the clean `1/k` line and the dense end of E5 is never exercised — and the
+   dense end is the operating region the encoder exists to represent.
+3. Reduce `refractory` below 1 ms so saturation starts later. Rejected on my
+   side: `refractory` is a declared constant for E5 and moving it changes the
+   biology being modelled to make a test pass.
+4. Accept 3.48x for E5 specifically. That is relaxing the threshold, which the
+   APPLY sheet explicitly rules out.
+
+Option 1 looks right to me, and option 2 is defensible; the choice is between
+margin and keeping the dense end of the front.
+
+**Caveat on the measurement.** This simulates the SPEC 4.6 rule rather than
+running an implementation, so it inherits my reading of "keep every
+`cycle_divisor`-th, counting from the first survivor in that channel" as
+`survivors[::k]`, and applies `refractory` after selection as the stated order
+requires. Every channel is below `f_lock` at the registry point
+(`centre_frequencies=None`), so the LIF fallback does not arise.
+
+**Blocking?** for `test_G3[E5]` only. The encoder is otherwise fully specified
+by D40 and D41 and can be written now; the rest of the T5 block and E5's other
+generic tests do not depend on this.
+**Answer:** (open)

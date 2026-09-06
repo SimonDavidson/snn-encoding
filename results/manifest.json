@@ -63,6 +63,16 @@
       "output": "results/featurise_accuracy.json",
       "date": "2026-09-05",
       "predictions": []
+    },
+    {
+      "id": "e5_cycle_divisor_span",
+      "script": "scripts/measure_rate_parameter_span.py",
+      "config": "configs/e5_cycle_divisor_span.json",
+      "commit": "fc90f08cb9e4a468634bd544b06501792a0723a0",
+      "seed": 0,
+      "output": "results/e5_cycle_divisor_span.json",
+      "date": "2026-09-06",
+      "predictions": []
     }
   ]
 }

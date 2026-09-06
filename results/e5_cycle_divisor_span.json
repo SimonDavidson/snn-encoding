@@ -1,0 +1,35 @@
+{
+  "counts": [
+    6976,
+    6300,
+    5204,
+    4008,
+    2004
+  ],
+  "d27_pass": false,
+  "d27_required_span": 4.0,
+  "diagnostics": {
+    "note": "cycle_divisor moves the count as 1/k; the span is not exactly 1/k because refractory is already binding in the high channels at k = 1 (SPEC 4.6, D40)",
+    "survivors_after_envelope_gate": 32036,
+    "upward_zero_crossings_total": 32112
+  },
+  "monotonic": true,
+  "param_values": [
+    1.0,
+    2.0,
+    4.0,
+    8.0,
+    16.0
+  ],
+  "rate_direction": -1,
+  "rate_param": "cycle_divisor",
+  "rule": "e5_cycle_divisor",
+  "span": 3.4810379241516967,
+  "sweep_factors": [
+    0.25,
+    0.5,
+    1.0,
+    2.0,
+    4.0
+  ]
+}
