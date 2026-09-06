@@ -1368,3 +1368,58 @@ myself, since the file is the design session's.
 **Blocking?** no. E4's Layer 1 is complete, `test_T4_3` is green, and every
 margin is recorded above.
 **Answer:** (open)
+
+### Q18 — a patch drop that contains `NOTEBOOK.md` breaks the never-edit rule mechanically
+**Raised:** 2026-09-06 by implementation session
+**Context:** applying the Q09-Q16 drop. Not a question about the study; a
+question about the coordination mechanism, raised here because this file is the
+channel and because the fix is the design session's to adopt when building the
+next drop.
+
+**What happened.** The drop's `APPLY` sheet says to unpack over the tree from
+the repository root. Its `NOTEBOOK.md` was a complete file containing every
+entry up to and including a new 2026-09-06 design entry — but **not** the
+2026-09-06 implementation entry, which had been pushed as `830a400` a few hours
+before the drop was built. Unpacking as instructed would have replaced the
+working `NOTEBOOK.md` wholesale and deleted that entry, which carried the
+schedule finding: that the project is at week 3 of 12 with the weeks 1-2
+infrastructure deliverable untouched and the week 4 decision gate unreachable.
+
+It was caught by check 3 of the drop protocol — confirm the incoming files
+contain your own latest work before applying — and `NOTEBOOK.md` was merged
+rather than copied. The existing entry is byte-identical and the design entry
+was appended after it; 18 entries became 19 and none was lost. Every other file
+in the drop was applied verbatim.
+
+**This is not a criticism of the drop, which was right about everything else.**
+The eight answers are clean supersets, the deletions are all deliberate
+replacements, the test count holds at 46, and `test_T4_3` and
+`test_corrupt_delete_*` went green exactly as the sheet predicted. The problem
+is structural: the two sessions write to `NOTEBOOK.md` independently and
+neither can see the other's uncommitted or unread work, so any drop containing
+a whole `NOTEBOOK.md` is stale the moment the other session writes an entry.
+`CLAUDE.md` already forbids editing another session's entry; shipping the file
+does it regardless of intent.
+
+**Proposed fix, and I have made the corresponding edit to `CLAUDE.md`.** A drop
+ships its notebook entry as a separate `NOTEBOOK_ENTRY.md` containing only the
+new entry, which the applying session appends. Appending cannot destroy
+anything; copying always can. `DECISIONS.md` and `QUESTIONS.md` do not need the
+same treatment — both have arrived as clean supersets, and `QUESTIONS.md`
+legitimately rewrites `**Answer:**` blocks in place — but `NOTEBOOK.md` has no
+case for being shipped at all, since nothing in a drop ever needs to change a
+line another session wrote.
+
+**Options considered:**
+1. `NOTEBOOK_ENTRY.md` shipped separately and appended. Mechanical, and it
+   cannot fail. *Implemented in `CLAUDE.md`; revert it if you disagree.*
+2. Keep shipping `NOTEBOOK.md` and rely on the applying session to diff first.
+   That is what happened here and it worked, but it makes a destructive default
+   safe only by vigilance, which is the wrong way round.
+3. A CI check rejecting any push where `NOTEBOOK.md` loses lines. Strongest
+   guarantee, but `.github/workflows/tests.yml` is a protected file and this is
+   the design session's call, not mine.
+
+**Blocking?** no. Nothing is blocked; the drop is applied and correct. This is
+about the next drop, not this one.
+**Answer:** (open)

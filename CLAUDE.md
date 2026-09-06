@@ -177,6 +177,26 @@ or either of us in six weeks — would rightly wonder what else had been tidied
 away. This is the same principle `DECISIONS.md` states for superseded entries,
 applied to a file with a different mechanism.
 
+**A patch drop must never contain `NOTEBOOK.md`.** Added 2026-09-06, after the
+Q09-Q16 drop very nearly destroyed an entry. The rule above says entries are
+never edited by the other session; a drop that ships a whole `NOTEBOOK.md`
+breaks it mechanically, whatever its author intended, because the file is
+copied over the tree and every entry written since the drop was built is gone.
+That is not hypothetical: the Q09-Q16 archive was assembled after `D37` was
+pushed but before the 2026-09-06 implementation entry was, so unpacking it as
+its own `APPLY` sheet instructed would have silently deleted that entry and the
+schedule finding in it. It was caught only because the drop protocol says to
+extract to scratch and diff first.
+
+The fix is mechanical rather than a matter of care. **A drop ships its notebook
+entry as a separate file — `NOTEBOOK_ENTRY.md` — containing only the new entry,
+which the applying session appends.** Appending cannot destroy anything;
+copying always can. The same reasoning applies to any other append-only file a
+drop wants to add to, `DECISIONS.md` and `QUESTIONS.md` included, though those
+have so far arrived as clean supersets and `QUESTIONS.md` legitimately edits
+`**Answer:**` blocks in place. `NOTEBOOK.md` has no such need: nothing in a
+drop ever needs to change a line another session wrote.
+
 **Blockers live in `QUESTIONS.md` and nowhere else.** A `NOTEBOOK` entry refers
 to them by number — "blocked on Q05" — and does not restate the substance. A
 blocker restated in the notebook cannot be closed by the session that resolves
