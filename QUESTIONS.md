@@ -1310,3 +1310,61 @@ that part 1 rules out.
 **This costs an API addition** and it is worth naming as a cost: `encode_from_drive`
 must expose the two matrices under `return_state=True`. That is more than a
 reading of SPEC 4.7 and is why it carries a decision number.
+
+### Q17 — `test_T4_3`'s docstring quotes an onset latency one sample later than the encoder produces
+**Raised:** 2026-09-06 by implementation session
+**Context:** verifying the D39 patch beyond its assertions, as the Q08 habit
+requires. The test passes and both of its substantive claims hold. This is a
+quoted constant that no assertion evaluates — the Q08 situation exactly.
+
+**What the docstring says.** "The latency is the equation (12) closed form
+`t_first = tau_m * ln(V_inf / (V_inf - theta_0)) = 0.02 * ln(3.0 / 2.0) =
+8.109 ms`, **which at DT = 62.5 us fires on the sample at 8.125 ms**." The
+APPLY sheet repeats it: "the onset latency as 8.125 ms at every `delta_a`".
+
+**What the encoder produces: 8.0625 ms**, at every `delta_a`, exactly.
+
+**Why, and I believe the encoder is right.** Under equation (12) from rest with
+constant drive, `V[m] = V_inf * (1 - beta^m)` after `m` updates. Crossing needs
+`beta^m <= 1 - theta_0/V_inf`, i.e. `m >= ln(2/3)/ln(beta) = 129.7488`, so
+`m = 130` updates. But the step arrives at sample `k0` and is integrated by
+*that same sample's* update, so `m` updates place the crossing at sample offset
+`m - 1 = 129`, not `m`. 129 * 62.5 us = 8.0625 ms. The quoted figure is
+`m * DT`, which is one sample too late.
+
+| quantity | value |
+|---|---|
+| continuous closed form | 8.1093 ms |
+| `m * DT`, as quoted | 8.1250 ms |
+| `(m-1) * DT`, as measured | 8.0625 ms |
+
+**Nothing fails, and nothing about D39 is in doubt.** The assertion is
+`abs(first[0] - expected) < 1.5 * DT` against the *closed form*, and the
+measurement sits 0.75 samples below it, so it passes with a margin of 2.0x.
+The invariance assertion passes with `np.ptp(first)` exactly zero across the
+sweep — D39's substantive claim, that the first spike after silence is
+adaptation-free, holds precisely. The ratio column reproduces to within 0.8 per
+cent: 1.01, 2.75, 3.87, 5.74, 8.87, 13.68 against the predicted 1.00, 2.73,
+3.84, 5.69, 8.80, 13.57, the offset explained by the sheet dividing by 8.13 ms
+where the true onset is 8.0625 ms.
+
+**Question:** should the docstring and the APPLY sheet's figure be corrected to
+8.0625 ms? This matters only because the value exists specifically to be
+hand-checked — a Layer 3 reimplementation comparing against 8.125 ms would
+conclude its own encoder fires a sample early and go looking for a defect that
+is not there. That is precisely the argument that produced D33 for `test_T3_5`.
+
+**Options considered:**
+1. Correct the quoted sample-grid value to 8.0625 ms, leaving the closed form
+   and every assertion untouched. One number, in a docstring.
+2. Drop the sample-grid sentence entirely and quote only the closed form, since
+   that is what the assertion actually uses and the grid value adds nothing an
+   implementer needs.
+3. Leave it; the tolerance absorbs it.
+
+Option 1 or 2; I have no preference between them and would not choose either
+myself, since the file is the design session's.
+
+**Blocking?** no. E4's Layer 1 is complete, `test_T4_3` is green, and every
+margin is recorded above.
+**Answer:** (open)
