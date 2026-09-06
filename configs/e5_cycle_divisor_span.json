@@ -1,0 +1,21 @@
+{
+  "id": "e5_cycle_divisor_span",
+  "description": "D40: E5's new RATE_PARAM `cycle_divisor` measured against D27's 4x requirement, by simulating the rewritten SPEC 4.6 deterministic rule on test_G3's drive. The APPLY sheet for the Q09-Q16 patch flags this span as a prediction rather than a measurement, since cycle_divisor was specified without an environment to run it in.",
+  "rule": "e5_cycle_divisor",
+  "drive_kind": "subband",
+  "n_channels": 4,
+  "duration_s": 2.0,
+  "seed": 0,
+  "rate_param": "cycle_divisor",
+  "rate_direction": -1,
+  "params": {
+    "cycle_divisor": 4,
+    "threshold": 0.05,
+    "env_cutoff": 100.0,
+    "refractory": 0.001
+  },
+  "params_comment": "Defaults from the rewritten SPEC 4.6 and the tests/conftest.py registry entry for E5. The gating envelope is half-wave rectification then a fourth-order Butterworth at env_cutoff, per D41.",
+  "sweep_factors": [0.25, 0.5, 1.0, 2.0, 4.0],
+  "d27_required_span": 4.0,
+  "predictions": []
+}

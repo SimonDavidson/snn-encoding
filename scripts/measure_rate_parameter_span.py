@@ -35,6 +35,58 @@ class _DriveKind:
         self.DRIVE_KIND = kind
 
 
+def e5_cycle_divisor_count(drive, dt, params):
+    """SPEC 4.6 under D40: upward zero crossings of the subband, discard those
+    where the internal envelope does not exceed `threshold`, keep every
+    `cycle_divisor`-th survivor counting from the first in that channel, then
+    apply `refractory`.
+
+    The gating envelope is half-wave rectification then a fourth-order
+    Butterworth at `env_cutoff` (D41), computed inside the encoder because
+    encode_from_drive receives the subband waveform.
+    """
+    from scipy.signal import butter, sosfilt
+    fs = 1.0 / dt
+    sos = butter(4, min(params["env_cutoff"] / (0.5 * fs), 0.99),
+                 btype="low", output="sos")
+    env = sosfilt(sos, np.maximum(drive, 0.0), axis=-1)
+    k = int(params["cycle_divisor"])
+    total = 0
+    for c in range(drive.shape[0]):
+        x = drive[c]
+        crossings = np.where((x[:-1] <= 0.0) & (x[1:] > 0.0))[0] + 1
+        survivors = [i for i in crossings if env[c, i] > params["threshold"]]
+        kept = survivors[::k]
+        last = -np.inf
+        for i in kept:
+            t = i * dt
+            if t - last >= params["refractory"]:
+                total += 1
+                last = t
+    return total
+
+
+def e5_cycle_divisor_diagnostics(drive, dt, params):
+    from scipy.signal import butter, sosfilt
+    fs = 1.0 / dt
+    sos = butter(4, min(params["env_cutoff"] / (0.5 * fs), 0.99),
+                 btype="low", output="sos")
+    env = sosfilt(sos, np.maximum(drive, 0.0), axis=-1)
+    n_cross = int(np.sum((drive[:, :-1] <= 0.0) & (drive[:, 1:] > 0.0)))
+    gated = 0
+    for c in range(drive.shape[0]):
+        x = drive[c]
+        idx = np.where((x[:-1] <= 0.0) & (x[1:] > 0.0))[0] + 1
+        gated += int(np.sum(env[c, idx] > params["threshold"]))
+    return {
+        "upward_zero_crossings_total": n_cross,
+        "survivors_after_envelope_gate": gated,
+        "note": ("cycle_divisor moves the count as 1/k; the span is not exactly "
+                 "1/k because refractory is already binding in the high "
+                 "channels at k = 1 (SPEC 4.6, D40)"),
+    }
+
+
 def e5_count(drive, dt, params):
     """SPEC 4.6, mode="deterministic": emit at each upward zero crossing of the
     subband where the envelope exceeds `threshold`, subject to `refractory`.
@@ -105,7 +157,8 @@ def e6_diagnostics(drive, dt, params):
     }
 
 
-RULES = {"e5_deterministic": (e5_count, e5_diagnostics),
+RULES = {"e5_cycle_divisor": (e5_cycle_divisor_count, e5_cycle_divisor_diagnostics),
+         "e5_deterministic": (e5_count, e5_diagnostics),
          "e6_frame_energy": (e6_count, e6_diagnostics)}
 
 
