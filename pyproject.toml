@@ -11,6 +11,9 @@ dependencies = ["numpy>=1.24", "scipy>=1.10"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.4", "pytest-xdist"]
+# Only needed to regenerate reports/; deliberately not in `dev`, so CI does not
+# install it to run the known-answer suite.
+report = ["python-docx>=1.1"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
