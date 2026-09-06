@@ -896,3 +896,64 @@ then Q16+Q14 (eight, E6 and T6), then Q10 and Q13 (one each). If only one
 answer comes back, Q10 is the one with consequences beyond a red test: P-01
 predicts T1 accuracy rising and T2 falling with adaptation strength, and the
 onset emphasis underneath it is non-monotone with a peak near delta_a = 1.
+
+## 2026-09-06 | session: implementation
+**Did:** Built `reports/spikeEncode_encoder_survey.docx` and its generator,
+`scripts/build_encoder_report.py`, at Simon's request — a 26-page survey of
+every encoder planned or implemented: methodology and defining equations,
+design parameters and which are swept, output characteristics, verification
+status, and recorded results. Between 1.7 and 3.1 pages per encoder, plus the
+shared front end, the featurisation and corruption machinery, the manifest, the
+open questions ordered by what each unblocks, and the pre-registered
+predictions. Narrative is authored in the script; every number is read from
+`results/` and the manifest at build time, so a rebuild after a run picks up
+new values rather than restating stale ones. The build is deterministic —
+python-docx stamps the current time into the archive, so an unchanged report
+would otherwise diff on every rebuild and a real content change would be
+indistinguishable from noise.
+
+**The observation that matters more than the report.** Prompted by Simon
+sending it to Oliver, I checked the work against the twelve-week schedule of
+proposal §9 for the first time. Today is day 18, week 3 of 12 against the D11
+start of 2026-08-20, and the picture is lopsided:
+
+| | §9 asks for | Actual |
+|---|---|---|
+| Weeks 1-2 | Data pipeline, probe harness, budget and information accounting, experiment tracking. Deliverable: E1 end to end on TIMIT with a T1 linear probe. Concurrently resolve the TIMIT licence. | Not started. No data loader, no probe, no training code in `src/`; `data/` holds only `.gitkeep`. |
+| Week 3 (now) | Preliminary P1, count-only baseline on E1 across all three tasks | Cannot start |
+| Week 4 (next) | Preliminary P2 — DECISION GATE, battery confirmed or revised | Unreachable |
+| Weeks 5-7 | Implement E2-E6 | E2, E3, E4 done — two to four weeks ahead |
+
+So the encoder work has run well ahead of schedule and the infrastructure
+everything downstream depends on has not been touched. The week 4 decision gate
+cannot be reached next week, because P1 and P2 both need a corpus and a probe
+harness and neither exists. **The TIMIT licence has not appeared in any log
+since 2026-08-20**, eighteen days, and §9 names it as the top risk in rough
+order of likelihood precisely because it is week one work.
+
+**This is my miss and it is worth naming.** I have spent every session since
+2026-09-02 optimising against the known-answer suite, which the validation
+protocol does demand, and never once opened §9 to check what the schedule
+wanted. The suite is a correctness instrument, not a progress one: it goes green
+in the order the encoders are written, and says nothing at all about work that
+has not been started. Nothing in the startup sequence of CLAUDE.md points at the
+schedule either, which is how it stayed invisible for eighteen days.
+
+**Consequence for the next block of work.** The whole weeks 1-2 deliverable is
+*unblocked*. E5 and E6 are stuck behind Q11, Q12, Q14 and Q16, but the probe
+harness, the budget and information accounting, R2 the mel baseline and the
+P1/P2 scaffolding depend on none of them, and most can be built and tested on
+synthetic drive while the licence is resolved. That is the work standing between
+the project and its first actual result.
+
+**Tests:** 61 passed, 23 failed, 1 skipped. Unchanged — no encoder code touched.
+**Results written:** none. The report reads existing results; it adds none.
+**Blocked on:** unchanged — nine open questions, seven with issues. Design
+session token-limited; Simon attempting to restore it.
+**Next:** Simon meets Oliver on **Tuesday 8 September 2026** and has sent him
+the report. **Hold any email drafts until early Tuesday** — Simon's explicit
+instruction, on the grounds that there may be more to say by then. A response
+from the design session is expected to be uploaded into a fresh session before
+that. When it arrives, Q11+Q12 clears the most (twelve tests), then Q16+Q14
+(eight), then Q10 and Q13. If instead the schedule is the priority coming out of
+Tuesday, start the probe harness rather than an encoder.
