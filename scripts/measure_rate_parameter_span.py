@@ -57,12 +57,15 @@ def e5_cycle_divisor_count(drive, dt, params):
         crossings = np.where((x[:-1] <= 0.0) & (x[1:] > 0.0))[0] + 1
         survivors = [i for i in crossings if env[c, i] > params["threshold"]]
         kept = survivors[::k]
-        last = -np.inf
+        last = -(1 << 40)
         for i in kept:
-            t = i * dt
-            if t - last >= params["refractory"]:
+            # Integer sample difference, matching _integrate_and_fire. Comparing
+            # absolute times is not shift-invariant: (i+s)*dt - (j+s)*dt is not
+            # bit-identical to i*dt - j*dt, so an interval of exactly
+            # refractory/dt samples flips across a shift and breaks test_G4.
+            if (i - last) * dt >= params["refractory"]:
                 total += 1
-                last = t
+                last = i
     return total
 
 
