@@ -1,101 +1,115 @@
-# Patch: Q08 answered, `test_T3_6` added, SPEC 4.4 guard ratified
+# Patch: Q09-Q16 answered, Q03 corrected, P-01 amendment drafted
 
-Review of E3 at 6d69374. Nothing here blocks E4; apply it and start.
+Eight questions, D38-D46. Unblocks E5 and E6. Nothing left open except Q07,
+which is with Oliver and blocks nothing until packaging.
 
-## What changed
+## Read first: two things are not settled by this patch
 
-**Q08 — both corrections accepted, both errors were the design session's.**
-D33. The continuous peak is 0.9048013, not 0.9048124; the error came from
-rounding the two exponentials to seven digits before subtracting them, which is
-the arithmetic the closed form exists to avoid. The residual at 0.30 s is
-6.738e-3 = `exp(-5)`, not 2.5e-3; the diagnosis in Q08 is right, the sentence
-was written against time after the step and the parameter against total
-duration. A third that went unreported: `t*` is 3.99186 ms, written as 3.9918 by
-truncating instead of rounding — the 3.9919 in Q08 is right.
+**`P-01a` is drafted and is NOT live.** `PREDICTIONS.md` carries it with a
+`PENDING SIGN-OFF` marker that only Simon removes. Do not treat it as a
+pre-registered prediction, and do not choose an E4 sweep range from it, until
+that marker is gone.
 
-No assertion changes. The corrected docstring now records that those values were
-once wrong, rather than quietly reading correctly, because they exist to be
-hand-checked and a reader is entitled to know they failed that check once.
+**`test_G3[E5]`'s span is a prediction, not a measurement.** `cycle_divisor`
+was specified without an environment to run it in. If the standard sweep comes
+in under 4x, that is a finding to raise as a question, not a threshold to relax
+— exactly as with `threshold` before it.
 
-**`test_T3_6` added.** D31. E3 at `theta = C` must emit exactly the events E2
-emits at `C` when handed E3's own `d`. This is an identity in the equations: E2
-anchors its lattice at its input's first sample, `d[:, 0]` is zero by the SPEC
-4.4 initialisation, and zero is E3's anchor. D30 makes it true by construction,
-which is the right structure — this is what keeps it true if that structure ever
-changes, since two separate loops would each go on passing their own block while
-drifting apart and D26's single-factor contrast would stop holding with nothing
-noticing.
+## The answers
 
-**SPEC 4.4 now requires the `tau_slow <= tau_fast` raise.** D32. The guard was
-a good addition and correctly within implementation remit, but a Layer 3
-reimplementation works from SPEC alone and would not have it. Note that
-`test_T3_4` does not catch an inverted pair: it checks that negating the drive
-swaps the polarities, which an already-swapped encoder satisfies.
+**Q09** — softened, and it makes an earlier decision better than its stated
+reason. D38. SPEC 4.4 carried the same "same number" claim and gets the same
+correction. Anchoring E3's lattice at exactly zero was justified aesthetically
+in D26; your measurement makes it substantive.
 
-## Read before running: `test_T3_6` was written after sight of the code
+**Q10** — none of the four options. D39. The first-spike latency after silence
+is adaptation-free by construction (`a = 0` at the step), so measuring onset
+emphasis against it rather than against the first ISI gives a monotone
+quantity. The new content is asserting that the latency is *invariant* and
+equals the closed form, which nothing else in the suite does and which is what
+pins D34.
 
-Unlike everything else in `tests/test_known_answers.py`, `test_T3_6` was written
-by a design session that had read `src/spikeenc/encoders.py`. It is derived from
-equations (20)-(21) and SPEC 4.3, and as far as its author could tell nothing in
-it came from the implementation — but that is exactly the assurance the no-sight
-rule exists to avoid needing to accept.
+**Q11** — a fifth option. D40. `RATE_PARAM` becomes `cycle_divisor`: keep every
+k-th gated crossing. Option 1 was rejected because a Poisson process cannot
+satisfy `test_G4`'s exact shift-equivariance, which trades one broken gate for
+another; option 4 because reaching low budgets by cutting channels removes
+frequency resolution at the same time, confounding the one thing E5 is in the
+battery to test. `lambda_max` and `z_0` are added so the Poisson mode is
+coherent, but it is excluded from 6.4, G3 and G4.
 
-The file header has been qualified rather than left as an approximation, the
-test's own docstring says so, and NOTEBOOK records it. Weigh `test_T3_6` as
-weaker independent evidence than its neighbours. The alternative was to withhold
-the test to protect the appearance of the discipline at the cost of its
-substance.
+**Q12** — rectify-and-lowpass, not Hilbert, on causality grounds. D41. The
+fallback above `f_lock` is an `LIF` instance so the reversion becomes a
+testable identity rather than three named constants.
+
+**Q13** — a fifth option, chosen over option 1. D42. Mean retained fraction
+over twenty seeds. It tests the rate the test is named for; lengthening the
+drive only makes a single draw more reliable.
+
+**Q14** — option 2. D43. `e_frac`, gating at `e_frac * E_max`, registry point
+0.20. Two things the question did not pin down are now specified: `E_max` is
+over *all channels and all frames*, and the resulting utterance-level
+normalisation is a known asymmetry recorded in SPEC 4.7.
+
+**Q15** — options 1 and 3. D45. Dated correction above the Q03 answer with the
+original left visible, and a new section 8 of the validation protocol requiring
+every reported figure to carry its metric definition.
+
+**Q16** — D44, taken with D43. Making the gate relative resolves parts 1 and 2
+and removes your clipping decision as a side effect: a strict gate puts every
+offset strictly inside its frame by construction. Part 3 is mine and both tests
+are rewritten onto the state matrices.
 
 ## Files
 
 | File | Change |
 |---|---|
-| `tests/test_known_answers.py` | header qualified; `test_T3_5` docstring corrected; `test_T3_6` added |
-| `SPEC.md` | 4.4 required raise |
-| `QUESTIONS.md` | Q08 answered |
-| `DECISIONS.md` | D31-D33 |
-| `NOTEBOOK.md` | design entry, including the review notes |
+| `SPEC.md` | 4.4 Q09 correction; 4.5 D34 restated; 4.6 rewritten (E5); 4.7 rewritten (E6) |
+| `tests/test_known_answers.py` | `test_T4_3` replaced; `test_T6_1`, `test_T6_2`, `test_corrupt_delete_*` rewritten; G3 docstring corrected; `test_T6_3` argument renamed |
+| `tests/conftest.py` | E5 and E6 registry operating points |
+| `docs/proposal_v2.md` | 5.5 and 5.6 rate parameters |
+| `docs/validation_protocol.md` | new section 8 |
+| `PREDICTIONS.md` | P-01a drafted, pending sign-off |
+| `QUESTIONS.md` | Q09-Q16 answered; Q03 correction appended |
+| `DECISIONS.md` | D38-D46 |
+| `NOTEBOOK.md` | design entry |
 
 ## Apply
 
 From the repository root:
 
-    tar xzf q08_patch.tar.gz
+    tar xzf q09_q16_patch.tar.gz
 
-`SPEC.md` and `tests/test_known_answers.py` are behind the CI guard, so the
-commit message needs `[spec]`.
+`SPEC.md`, `tests/test_known_answers.py` and `tests/conftest.py` are behind the
+CI guard, so the commit message needs `[spec]`.
+
+## New API surface
+
+Three additions, all of them contract rather than implementation choice:
+
+- `PhaseLocked` gains `cycle_divisor`, `env_cutoff`, `lambda_max`, `z_0`.
+- `TTFS` takes `e_frac` in place of `e_min`, and raises `ValueError` on
+  `e_frac <= 0` in `mode="log"`.
+- `TTFS.encode_from_drive(..., return_state=True)` must expose `"energy"` and
+  `"offsets"`, both shape `(n_channels, n_frames)`, with `offsets` holding NaN
+  where a channel did not fire. This is the one place the patch asks for more
+  than a reading of the spec, and it is what lets `test_T6_1` and `test_T6_2`
+  assert on frames rather than on unrecoverable time windows.
 
 ## Expected result
 
-`test_T3_6` should pass immediately against 6d69374, since D30 makes it true by
-construction. If it fails, the two encoders have already diverged and that is
-the finding, not a test to adjust. The three docstring corrections change no
-assertion, so the counts should go from 43/40/1 to 44/40/1.
+`test_T4_3` should go green once E4 is rerun; it needs no code change. Q10's own
+table predicts the ratio column as 1.00, 2.73, 3.84, 5.69, 8.80, 13.57, and the
+onset latency as 8.125 ms at every `delta_a`. If the latency moves with
+`delta_a`, adaptation is being driven by something other than the spike train
+and that is a real defect, not a tolerance to widen.
 
-## Notes from the review, for context rather than action
+E5 and E6 are unblocked in full. The order that clears most is E5 first — the
+whole T5 block plus its generic tests — then E6.
 
-The lattice arithmetic was traced by hand against the T3.5 case rather than
-inferred from the green test. Truncation toward zero is the correct rounding —
-`floor` would overshoot on the OFF side and leave a residual of the wrong sign —
-and applying the tolerance as `sign(step) * tol` widens the emit condition
-symmetrically rather than biasing one polarity. The filter initialisation is
-right in a way that is easy to get subtly wrong: setting `y` to `u[:, 0]` and
-then updating at `i = 0` gives `y[0] == u[0]` exactly. Initialising to zero and
-starting at `i = 0`, or initialising to `u[0]` and starting at `i = 1`, both look
-reasonable and both shift the step response by a sample.
+## One caution about E6
 
-D30 is endorsed, and the usual objection to sharing an implementation between
-two things being compared does not apply. It runs the other way here: T2 and T3
-are now two independent known-answer blocks aimed at the same routine, so a bug
-in the lattice rule has more chances of being caught, not fewer.
-
-## Next
-
-E4 `ALIF`, wrapping `_integrate_and_fire` so T4.1's `delta_a == 0` reduction
-holds by construction. D24 and the `features`/`corrupt` stubs remain unblocked
-and independent.
-
-E3's Layer 1 is complete. Its Layer 2 and Layer 3 are not, `G8[E3]` is still red
-on the `features` stub, and D24 is unimplemented — which matters to E3
-specifically, since it sits on the envelope path where the group delay is
-largest. E3 is not finished, only its known-answer block is.
+`test_T6_2` now asserts a Pearson correlation of exactly -1 between log energy
+and offset within a frame. That is a tight assertion and it is deliberate: it
+holds only if every channel shares the same `E_max` and `E_min`, so it is what
+detects a per-channel normalisation. If it fails at around -0.9 rather than
+-1.0, check the scope of `E_max` before checking anything else.

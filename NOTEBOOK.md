@@ -957,3 +957,60 @@ from the design session is expected to be uploaded into a fresh session before
 that. When it arrives, Q11+Q12 clears the most (twelve tests), then Q16+Q14
 (eight), then Q10 and Q13. If instead the schedule is the priority coming out of
 Tuesday, start the probe harness rather than an encoder.
+
+## 2026-09-06 | session: design
+**Did:** Answered Q09 through Q16 in one patch (D38-D46), appended the Q03
+correction, and drafted the P-01 amendment. Nothing here needed the encoders to
+exist; every answer was derivable from the equations plus the implementation
+session's measurements, which is why eight could be cleared at once after none
+were cleared for two days.
+
+**The queue was a throughput mismatch, not a quality problem.** Q11 taught the
+implementation session to probe a specification section before writing against
+it, and Q14 and Q16 are the result: three gaps in SPEC 4.7 found for the cost
+of a prototype that was thrown away, rather than for the cost of an encoder
+that had to be unwound. That change is working. It also produces questions
+faster than one design session answers them, and the two-day stall is the
+visible form of that. Worth watching rather than fixing — E5 and E6 are the
+last two encoders, so the probing phase is nearly over.
+
+**Stopping rather than picking a provisional `E_max` was right.** The six-test
+route existed and was declined. Had it been taken, `test_G1`, `G2`, `G4`, `G7`,
+`G8` and `T6_3` would all be green now against a definition of `E_max` that
+this patch would then have contradicted, and the green ticks would have been
+the reason nobody looked again.
+
+**Three answers departed from every option offered, and in the same direction
+each time.** Q10, Q11 and Q13 were all answered with a fifth option. The
+pattern is not that the options were poor — they were carefully separated and
+measured — but that each set was framed as a choice among ways to accommodate a
+constraint, where the better move was to change the quantity being measured.
+Onset emphasis against the first ISI became onset emphasis against an invariant
+latency; a threshold that gates became a divisor that modulates; one draw made
+more reliable became twenty draws measuring the rate. Worth noticing as a habit
+to apply deliberately rather than by luck.
+
+**Q15 corrects my own Q03 answer and the correction is right.** Checked
+independently rather than deferred: under D21 the cutoff tracks the ERB, so
+`f_c/b_c` runs about 4.3 at 196 Hz against 8.6 at 3057 Hz, and fourth-order
+attenuation should improve by roughly seventeen times across that span. The
+recorded column falls by eight hundred. D21 still wins at every channel, so the
+decision stands and only the margin was wrong.
+
+**P-01a is drafted and is not live.** PREDICTIONS.md carries it with a
+sign-off marker that only Simon removes, and the original P-01 is left visible.
+The case for amending rather than restricting rests entirely on provenance: the
+measurement came from a step response on a synthetic drive, with no dataset, no
+probe task, no labels and no run started. If that sentence were not true the
+amendment would not be defensible.
+
+**Tests:** none run — no environment here. Two expectations to check rather
+than assume: `test_G3[E5]` under `cycle_divisor` is specified without having
+been measured, and if the sweep comes in under 4x that is a finding to raise
+rather than a threshold to relax; and `test_T4_3`'s ratio column is predicted
+from Q10's own table, not recomputed here.
+**Results written:** none.
+**Blocked on:** Q07, open with Oliver and blocking nothing until packaging.
+Nothing else.
+**Next (implementation session):** E5 under D40 and D41, then E6 under D43 and
+D44. E4's Layer 1 completes when the rewritten `test_T4_3` goes green.

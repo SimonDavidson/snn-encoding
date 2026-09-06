@@ -266,3 +266,26 @@ To be satisfied before any result is reported.
 - Three seeds run; spread recorded.
 - Commit hash, config and seed recorded in the results manifest.
 - Prediction for this result recorded and dated beforehand; any contradiction investigated in writing.
+
+---
+
+## 8. Reported figures carry their definition
+
+Every number reported in `QUESTIONS.md`, `NOTEBOOK.md`, `results/` or the paper
+carries, beside it, the definition of what was measured — not only the value
+and the conditions. A figure without its metric cannot be checked, only
+re-derived, and a re-derivation that disagrees cannot be told apart from a
+change in the code.
+
+Added 2026-09-06 under D45, after Q15 found three discrepancies in the record
+and all three turned out to be definitional rather than substantive. Carrier
+leakage had been quoted without saying it was measured as the envelope spectrum
+at the carrier over its value at DC; a featurisation accuracy figure had been
+quoted without saying whether the normalisation was by the largest value in the
+array or by each entry's own value, which differ by two orders of magnitude;
+and a set of E5 counts had been quoted without recording which envelope gated
+the crossings, when the specification admitted two answers. All three would
+have been impossible had the definition been written beside the number.
+
+This is the reporting counterpart of §6. §6 makes a number reproducible from
+the repository; this makes it interpretable once reproduced.

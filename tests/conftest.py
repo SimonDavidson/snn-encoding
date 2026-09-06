@@ -90,8 +90,9 @@ def all_encoders():
         ("E2", E.SendOnDelta, dict(n_channels=4, C=0.1)),
         ("E3", E.TemporalContrast, dict(n_channels=4, theta=0.2)),
         ("E4", E.ALIF, dict(n_channels=4, theta_0=1.0, delta_a=0.5, tau_a=0.1)),
-        ("E5", E.PhaseLocked, dict(n_channels=4, threshold=0.05)),
-        ("E6", E.TTFS, dict(n_channels=4, e_min=1e-6)),
+        ("E5", E.PhaseLocked, dict(n_channels=4, threshold=0.05,
+                                   cycle_divisor=4)),
+        ("E6", E.TTFS, dict(n_channels=4, e_frac=0.20)),
     ]
 
 

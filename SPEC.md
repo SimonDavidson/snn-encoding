@@ -312,9 +312,13 @@ lattice units. `reference_update="exact"` sets the reference to `d` at event
 time, exactly as in §4.3; it is available for symmetry with E2 but is not a
 swept axis and `"lattice"` is the default. D26.
 
-The lattice is anchored at `d = 0`, not at `d[:, 0]`. Under the initialisation
-above those are the same number, but the anchor is a property of the rule
-rather than of the signal, so it is specified independently.
+The lattice is anchored at `d = 0`, not at `d[:, 0]`. These are the same number
+in exact arithmetic, and Q09 measured that in doubles they differ by up to one
+ulp for about 3 per cent of first samples, because `alpha*u + (1-alpha)*u`
+rounds differently for the two time constants. The residue is at most 4e-16
+relative, six orders below the `1e-9` tolerance above, so it cannot move an
+event — but the anchor is specified as exactly zero rather than as `d[:, 0]`
+so that the rule does not inherit the rounding at all. D38.
 
 **Why not a crossing rule.** Any rule emitting at most one event per threshold
 crossing has an event count bounded above by the number of excursions of `d`,
@@ -355,35 +359,121 @@ this must be bit-identical to `LIF` at the same `theta_0`, `tau_m`, `gain` and
 keys: `"v"`, `"threshold"`.
 
 The refractory rule of §4.2 applies unchanged, including the requirement that
-`refractory == 0.0` for comparison runs.
+`refractory == 0.0` for comparison runs. **The adaptation state `a` keeps
+decaying through an absolute refractory period and is not incremented within
+it**: equation (23) has no refractory term, and the threshold tracks spike
+history rather than membrane state, so clamping `V` says nothing about `a`.
+D34, restated here because a Layer 3 reimplementation works from this document
+and would otherwise have to guess. `test_T4_3` is what detects the wrong
+choice.
 
 ### 4.6 E5 — Phase-locked
 
-`PhaseLocked(n_channels, threshold=0.05, gamma=1.0, f_lock=1500.0, refractory=0.001, mode="deterministic", centre_frequencies=None)`
+`PhaseLocked(n_channels, cycle_divisor=4, threshold=0.05, env_cutoff=100.0, gamma=1.0, f_lock=1500.0, refractory=0.001, mode="deterministic", centre_frequencies=None, lambda_max=200.0, z_0=0.0)`
 
-RATE_PARAM `"threshold"`, RATE_DIRECTION `-1`, DRIVE_KIND `"subband"`.
+RATE_PARAM `"cycle_divisor"`, RATE_DIRECTION `-1`, DRIVE_KIND `"subband"`.
+State keys: `"envelope"`.
 
-`mode="deterministic"`: emit at each upward zero crossing of the subband
-waveform where the envelope exceeds `threshold`, subject to `refractory`.
-`mode="poisson"`: inhomogeneous Poisson with intensity from equation (25);
-requires `seed`.
+**Event rule, `mode="deterministic"`.** In order: take the upward zero
+crossings of the subband waveform; discard those where the internal envelope
+does not exceed `threshold`; of the survivors in each channel, keep every
+`cycle_divisor`-th, counting from the first survivor in that channel; then
+apply `refractory`. `cycle_divisor` is a positive integer and the default of 4
+is chosen so that the `x0.25` to `x4` grid of `test_G3` lands on integers.
 
-Channels whose centre frequency exceeds `f_lock` revert to envelope-driven LIF
-behaviour. When called through `encode_from_drive`, centre frequencies come from
-the `centre_frequencies` constructor argument; if `None`, all channels are
-treated as below cutoff.
+**Why the rate parameter is not `threshold`.** Q11 measured a span of 1.04x
+over the standard sweep. The event count is bounded above by the number of
+upward zero crossings, which is set by the channel's carrier frequency and by
+the drive, not by any parameter — the same structural failure as the crossing
+rules rejected for E3 in Q06, and exactly what D27 exists to catch.
+`cycle_divisor` moves the count as `1/k` while leaving both the frequency
+resolution and the per-event timing precision untouched, which matters because
+E5 is in the battery to test whether fine timing buys anything: reaching a low
+budget by discarding channels would remove frequency resolution at the same
+time and confound the result. The span is not exactly `1/k`, since `refractory`
+is already binding in the high channels at `k = 1`. D40.
+
+**The internal envelope.** `encode_from_drive` receives the subband waveform,
+so the gating envelope is computed inside the encoder: half-wave rectification
+followed by a fourth-order Butterworth lowpass at `env_cutoff`, matching the
+filter family of equation (9). The prohibition in §4.1 on further filtering,
+compression, scaling or normalisation applies to the drive path and not to an
+internal gating signal.
+
+Hilbert magnitude is the obvious alternative and is rejected: the analytic
+signal uses the whole record, so the gate at time *t* would depend on signal
+after *t*. For a battery whose T3 probe is boundary detection, that leaks
+post-boundary information into the pre-boundary gate, and it would do so for
+one encoder out of six. The cost of the choice made instead is that
+`env_cutoff` is a fixed constant rather than the channel-relative cutoff of
+D21, because `encode_from_drive` has no access to channel bandwidths. D41.
+
+**The fallback above `f_lock`.** Channels whose centre frequency exceeds
+`f_lock` are encoded by `LIF` constructed with the §4.2 defaults, run on the
+internal envelope above. Specified as an instance rather than as a set of
+numbers so that the reversion is a testable identity: E5 with `f_lock` below
+every centre frequency must equal E1 on the same envelope, event for event.
+When called through `encode_from_drive`, centre frequencies come from the
+`centre_frequencies` constructor argument; if `None`, all channels are treated
+as below cutoff. D41.
+
+**`mode="poisson"`** takes `lambda_max` and `z_0` for equation (25) and
+requires `seed`. It is **excluded from the six-encoder comparison of §6.4 and
+from `test_G3` and `test_G4`**. G4 asserts exact time-shift equivariance, and a
+Poisson process is shift-stationary rather than shift-equivariant: pad the
+drive and the draws realign, so the events in the real portion change. The
+mode is retained, and its arguments are added so that §4.6 is coherent, but it
+is not a study arm. D40.
 
 ### 4.7 E6 — Time-to-first-spike
 
-`TTFS(n_channels, e_min=1e-6, frame=0.025, hop=0.010, tau_m=0.02, theta=1.0, mode="log")`
+`TTFS(n_channels, e_frac=0.20, frame=0.025, hop=0.010, tau_m=0.02, theta=1.0, mode="log")`
 
-RATE_PARAM `"e_min"`, RATE_DIRECTION `-1`, DRIVE_KIND `"envelope"`.
+RATE_PARAM `"e_frac"`, RATE_DIRECTION `-1`, DRIVE_KIND `"envelope"`.
+State keys: `"energy"`, `"offsets"`, both shape `(n_channels, n_frames)`.
 
 `mode="log"` uses equation (28); `mode="lif"` uses equation (29). At most one
 event per channel per frame. Frame energy is the sum of squared drive samples
 within the frame — computed on whatever drive is supplied, with no further
 transformation, so that a test can reproduce it independently. Frame `m` covers `[m·hop, m·hop + frame)`, and the
 number of frames is `floor((n_samples·dt − frame)/hop) + 1`.
+
+**The gate is relative and strict.** A channel emits in frame `m` when
+
+    E_c[m] > e_frac * E_max
+
+where **`E_max` is the largest frame energy over all channels and all frames of
+the utterance**. Not per channel: a per-channel maximum would map every
+channel's loudest frame to the same latency and destroy the spectral profile,
+which is the whole content of a time-to-first-spike snapshot. The inequality is
+strict, not `>=`; on an all-zero drive `E_max` is zero and a non-strict gate
+emits an event in every channel of every frame, violating §4.1. D43.
+
+`e_min` was an absolute energy and is replaced. Q14 measured the previous
+default of `1e-6` sitting 6.8 decades below the quietest frame of the test
+drive, gating nothing, and giving `test_G3` a span of exactly 1.00x. An
+absolute default cannot be right for both synthetic drives and real audio,
+whose frame energies differ by orders of magnitude, and would be wrong again
+after the corpus changed in a way no test would catch. The relative form is
+scale-free: Q14 verified identical counts across five decades of drive scale.
+
+**`E_min` in equation (28) is the gate.** That is, `E_min = e_frac * E_max`, so
+that a frame at the gate maps to an offset of `T_f` and a frame at `E_max` maps
+to zero. Two consequences follow and neither needs a separate rule. Because the
+gate is strict, `log E − log E_min > 0` for every frame that fires, so the
+offset is **strictly below `T_f`** and no clipping convention is required.
+And because `E_min` is a fraction of `E_max` it is positive whenever anything
+fires at all, so the `log 0` case that Q16 found cannot arise. In `mode="log"`,
+`e_frac <= 0` raises `ValueError`: the value is legal as a gate and not as a
+normalisation floor, and the two roles are the same quantity here. D44.
+
+**A known asymmetry, recorded rather than removed.** A relative gate makes E6
+the only encoder in the battery with utterance-level normalisation; E1 to E5
+are level-sensitive. At matched event budget E6 therefore gets scale invariance
+that the others do not, and if E6 performs well on T1 it will be a live
+question whether the normalisation or the coding scheme earned it. This is
+accepted for the sake of a rate parameter that works on any corpus, and belongs
+in the paper's limitations. D43.
 
 ---
 

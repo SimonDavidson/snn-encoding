@@ -23,3 +23,6 @@ venv/
 results/**/*.npz
 results/**/*.parquet
 !results/manifest.json
+
+# Design-session drops also arrive zipped (2026-09-06).
+*.zip

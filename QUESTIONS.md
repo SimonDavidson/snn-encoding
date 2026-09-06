@@ -57,6 +57,21 @@ reference):
 
 **Blocking?** no — `"hilbert"` is the SPEC section 3 default and every current
 test path uses it. It blocks only the envelope-method sweep.
+**Correction appended 2026-09-06 (D45).** The leakage figures quoted in the
+answer below do not reproduce and should not be cited. Q15 re-measured them
+from a committed script and config: the margins between the two cutoff rules
+are 1.2x, 5.6x, 11.3x and 20.4x, not the 1.4x, 30x, 128x and 419x recorded. The
+correlation columns reproduce exactly, and D21 still wins at every channel by a
+margin that grows with frequency, so the decision below stands unchanged — it
+is the size of the margin that was wrong.
+
+The re-measurement is the sound one and the physics says so independently.
+Under D21 the cutoff tracks the ERB, so `f_c/b_c` runs about 4.3 at 196 Hz and
+8.6 at 3057 Hz, and fourth-order attenuation should therefore improve by
+roughly `(8.6/4.3)^4` — about 17x across that span. The recorded column falls
+by a factor of 800. No reading of the filters produces that. The original text
+is left below rather than edited, as with `test_T3_5` under D33.
+
 **Answer:** Option 2, with the cutoff tied to the channel's own bandwidth
 rather than to f_c: `f_cut_c = min(f_cut, b_c)`, global ceiling 1000 Hz, fourth
 order. SPEC section 3 amended; D21. A subband of bandwidth b_c cannot carry
@@ -533,7 +548,25 @@ exact arithmetic, within an ulp in doubles, absorbed by the §4.3 tolerance";
 exactly zero when handed a signal whose first sample is within an ulp of zero —
 rejected, it complicates SPEC §4.3 to fix a non-problem.
 **Blocking?** no. Blocks nothing at all; `test_T3_6` passes and E4 is unaffected.
-**Answer:** (open)
+**Answer:** Option 1. D38. The docstring is softened and SPEC 4.4 carries the
+same correction, since it makes the identical claim — "under the initialisation
+above those are the same number" — and SPEC is what a Layer 3 reimplementation
+reads.
+
+Worth recording that this makes an earlier decision better than its stated
+reason. SPEC 4.4 anchors E3's lattice at exactly zero rather than at `d[:, 0]`,
+and D26 justified that on the aesthetic ground that the anchor is a property of
+the rule rather than of the signal. Your measurement makes it substantive: the
+two genuinely differ, about 3 per cent of the time, and anchoring at exactly
+zero is the choice that does not inherit the rounding.
+
+One consequence for `test_T3_6` itself, now stated in its docstring rather than
+left implicit. The identity is not exact in floating point — E3 anchors at zero
+and E2 handed `d` anchors at `d[:, 0]` — and the events coincide because the
+difference is six orders below the tolerance, not because the anchors are
+equal. A residual would have to land within about 3e-15 of the tolerance
+boundary to change an event, which is possible in principle at a probability
+around 1e-10 per run and has not been observed.
 
 ### Q10 — `test_T4_3` asserts a monotonicity the ALIF does not have
 **Raised:** 2026-09-04 by implementation session
@@ -627,7 +660,56 @@ any case this is the design session's call.
 **Blocking?** not for implementation — E4 is complete and committed, and the
 other nine tests pass. It blocks declaring E4's Layer 1 complete, since a T4
 test is red, and it blocks choosing the E4 `delta_a` sweep range.
-**Answer:** (open)
+**Answer:** None of the four. The test is replaced with a fifth thing, and
+P-01 is amended rather than restricted. D39.
+
+The analysis is right and I checked the mechanism independently rather than
+accepting the table. All four options work around a badly chosen statistic
+instead of replacing it, and option 1 says so about itself.
+
+**The first-spike latency is adaptation-free by construction.** At the step
+`a = 0` — no prior spikes — so the threshold is `theta_0` and the neuron is an
+unadapted LIF. The latency is `tau_m*ln(V_inf/(V_inf - theta_0))` = 8.109 ms
+for every `delta_a`, which is what your own table shows at 8.13 ms in the
+`delta_a = 0` row and which the other rows never had occasion to check. Measure
+onset emphasis against that invariant rather than against the first ISI, and
+the numerator is your monotone steady-state column against a constant
+denominator: 1.00, 2.73, 3.84, 5.69, 8.80, 13.57.
+
+That half largely restates `test_T4_4`. The new content is the other half:
+`t_first` must be *invariant* across `delta_a` and equal to the closed form,
+and nothing in the suite asserts it. It is also what pins D34 — an
+implementation driving adaptation from the drive rather than from the spike
+train, or failing to reset `a` at the start of a channel, moves that number and
+nothing else in the T4 block notices. So the rewritten `test_T4_3` earns its
+place rather than duplicating its neighbour.
+
+Option 2 is rejected specifically: bounding the assertion at `delta_a <= 1`
+would bake a measured peak location into a test, which is the direction this
+project has consistently refused. Option 4 is adopted incidentally — the
+replacement uses a 5 s signal and reads the steady state after 3 s.
+
+**On P-01, the amendment is stronger than the restriction.** Drafted in
+PREDICTIONS.md as P-01a, pending Simon's sign-off, with the original left
+visible. Rather than narrow P-01 to a range where it survives, it now predicts
+what the mechanism actually implies: T2 falling monotonically, T1 non-monotone
+with an interior maximum. An interior peak on one task beside a monotone
+decline on the other is much harder to hit by accident than two monotone
+trends, so the amended prediction commits us to more, not less.
+
+What makes amending legitimate rather than post-hoc is the provenance, and it
+is worth stating plainly because a reader will ask: the information came from a
+step response on a synthetic drive, with no dataset, no probe task, no labels
+and no run started.
+
+**One thing that constrains the sweep and was not in your analysis.** The peak
+sits near `delta_a = 1` *for that step and those time constants*. Its location
+depends on `V_inf/theta_0` and `tau_a/tau_m`, so it will move on real speech
+envelopes and a grid chosen from this measurement will not transfer to TIMIT.
+The peak has to be relocated on the actual drive distribution — `speechlike` as
+a proxy now, real drives when the licence lands — and that calibration is a
+recorded pre-run step under D35. Without the record, choosing a range that
+straddles the peak is indistinguishable from tuning.
 
 ### Q11 — E5's declared RATE_PARAM spans 1.04x, not the 4x D27 requires
 **Raised:** 2026-09-04 by implementation session
@@ -690,7 +772,49 @@ as *having* a working rate parameter is the one that cannot express it.
 **Blocking?** yes, for E5. The answer determines the constructor signature,
 which is contract, and whether `test_G3[E5]` is expected to pass at all. I have
 not written the encoder — the measurement above needed no implementation.
-**Answer:** (open)
+**Answer:** A fifth option. `RATE_PARAM` becomes `cycle_divisor`, a positive
+integer k: of the crossings that survive the envelope gate, keep every k-th,
+then apply refractory. D40. SPEC 4.6 is rewritten.
+
+Your diagnosis is right and D27 catching this is the gate doing exactly the job
+it was written for. But all four options give something up that this one does
+not.
+
+**Option 1 breaks a second gate, which I do not think was visible before the
+encoder existed.** `test_G4` asserts *exact* time-shift equivariance: pad the
+drive and every event moves by exactly the pad. A Poisson process cannot
+satisfy that. It is shift-*stationary*, not shift-*equivariant* — pad the input
+and the draws realign, so the events in the real portion change. Recovering G4
+would mean restating it distributionally, which is Layer 2. So option 1 trades
+`test_G3[E5]` for `test_G4[E5]`. `test_G1` is fine, incidentally, since it
+passes the same seed twice.
+
+**Option 4 costs the thing E5 is in the battery to measure.** Reaching a low
+budget by cutting channels removes frequency resolution at the same time, so a
+poor showing at low budget could not be attributed to the timing hypothesis
+rather than to the missing bands.
+
+`cycle_divisor` avoids both. The count falls as roughly `1/k` — not exactly,
+since `refractory` is already binding in the high channels at `k = 1` — so the
+span is ample; it is deterministic, so G1 and G4 both hold; padding with
+silence introduces no crossings, so the crossing index is preserved and G4
+holds *exactly*; and at low budget the encoder keeps every channel and every
+event keeps its full timing precision, firing on fewer cycles instead. It also
+reads better biologically than either alternative: auditory nerve fibres do not
+fire on every cycle, and deterministic sub-harmonic locking is the volley
+principle without the stochasticity.
+
+The cost is honest and should be stated in the paper: `k` is not in the
+proposal, so this is a design change rather than a reading of one, and §5.5 has
+been rewritten to say why.
+
+The Poisson mode is kept and its missing arguments — `lambda_max` and `z_0` —
+are added, so the second gap you raise is closed. It is excluded from §6.4 and
+from G3 and G4 rather than left ambiguous.
+
+**Please measure the span before committing.** I have specified `cycle_divisor`
+without being able to run it. If the `x0.25`-`x4` grid comes in under 4x, that
+is a finding to raise, not a threshold to relax.
 
 ### Q12 — two under-specifications in SPEC §4.6 that a Layer 3 reimplementation would resolve differently
 **Raised:** 2026-09-04 by implementation session
@@ -730,7 +854,39 @@ pick the same one by reasoning.
 
 **Blocking?** yes for E5, though subordinate to Q11 — the constructor signature
 is in question there too, so both should be answered together.
-**Answer:** (open)
+**Answer:** Both parts, and they turn out to be one question. D41. SPEC 4.6 is
+rewritten together with the Q11 answer.
+
+**The envelope is rectify-and-lowpass, not Hilbert, and the deciding argument
+is causality.** The analytic signal uses the whole record, so a Hilbert gate at
+time *t* depends on signal after *t*. In a battery whose T3 probe is boundary
+detection, that leaks post-boundary information into the pre-boundary gate, and
+it would do so for one encoder out of six. That asymmetry is worse than the
+extra parameter. Half-wave rectification followed by a fourth-order Butterworth
+at a declared `env_cutoff`, default 100 Hz, matching the filter family of
+equation (9).
+
+The cost is exactly the one you identify: `env_cutoff` is a fixed constant
+rather than D21's channel-relative cutoff, because `encode_from_drive` has no
+access to channel bandwidths. That is a real loss of consistency with the front
+end and it is recorded in SPEC rather than hidden.
+
+Your proposed clarification is adopted verbatim: the §4.1 prohibition applies
+to the drive path and not to an internal gating signal.
+
+**The fallback is an `LIF` instance with the §4.2 defaults, run on that same
+envelope** — your third option. It is the best of the three for a reason beyond
+tidiness: specifying an instance rather than a set of numbers makes the
+reversion a *testable identity*. E5 with `f_lock` below every centre frequency
+must equal E1 on the same envelope, event for event, which is the same
+construction as `test_T3_6` and pins the fallback in a way that three named
+constants would not.
+
+**Q15's third finding is independent evidence this gap was real.** E5's
+measured counts moved between two probes — 7116 falling to 6864, then 6996
+falling to 6732 — because the first probe did not record which envelope it
+used and the second declared Hilbert. That is the ambiguity producing different
+numbers in the record before any encoder was written.
 
 ### Q13 — `test_corrupt_delete_retains_expected_fraction`'s fixture yields 275 events, not the >500 its own guard requires
 **Raised:** 2026-09-04 by implementation session
@@ -791,7 +947,24 @@ encodes a statistical judgement I should not be the one to revise.
 **Blocking?** no. `spikeenc.corrupt` is complete and committed; the other three
 corruption tests pass and `test_T5_4` is unblocked for whenever E5 lands. This
 blocks only the green tick on this one test.
-**Answer:** (open)
+**Answer:** A fifth option, chosen over option 1. D42. The assertion is now the
+mean retained fraction over twenty seeds, in a window 3.2 standard errors wide,
+with the guard lowered to 200.
+
+Your statistics are right and the guard was doing real work. But lengthening
+the drive makes a single draw more reliable, when the thing the test is named
+for is a *rate*. Twenty draws at N = 275 give an effective 5500 trials and a
+standard error of 0.0062, against 0.0205 for one draw at N = 500 — a better
+test, and it runs on a shorter signal rather than a longer one.
+
+Option 2 is rejected for the reason you give, and option 3 for the reason its
+own comment gives.
+
+The trade-off, which is why this needed deciding rather than doing: it puts a
+statistical assertion into a file whose header calls it a known-answer suite.
+That is now stated in the test's docstring, and the corruption block is the
+only part of the file of which it is true. Simon took the view that a test
+which measures the property it claims to measure is worth the qualification.
 
 ### Q14 — E6's `e_min` default sits 6.8 decades below the quietest frame, so `test_G3[E6]` spans exactly 1.00x
 **Raised:** 2026-09-05 by implementation session
@@ -877,7 +1050,40 @@ six generic tests plus its whole T6 block can be brought green now. What is
 blocked is declaring E6's Layer 1 complete, and the choice between an absolute
 and a relative `e_min` changes the constructor semantics, so I would rather not
 write the gate twice.
-**Answer:** (open)
+**Answer:** Option 2. `e_min` becomes `e_frac`, gating at `e_frac * E_max`,
+registry operating point 0.20. D43. Answered together with Q16, as you asked —
+see there for `E_max` and the log-mode consequences.
+
+The reasoning is right, the scale-invariance check across five decades is the
+right control, and finding the `test_G2` failure by checking rather than
+assuming is what makes the strict inequality specifiable rather than
+discovered later. The strictness is in SPEC now, not left to the implementer.
+
+**Two things the question does not pin down, and both would silently produce a
+wrong encoder.**
+
+`E_max` must be the maximum over *all channels and all frames*, not per
+channel. A per-channel maximum maps every channel's loudest frame to the same
+latency, which destroys the spectral profile — the whole content of a
+time-to-first-spike snapshot. Nothing in Q14 or Q16 excludes the per-channel
+reading and it is arguably the more natural one to write. It is now specified,
+and the rewritten `test_T6_2` detects the wrong choice: it asserts a Pearson
+correlation of exactly -1 between log energy and offset within a frame, which
+holds only if every channel shares the same normalisation constants.
+
+And a relative gate makes E6 the only encoder in the battery with
+utterance-level normalisation, where E1 to E5 are level-sensitive. At matched
+budget E6 gets scale invariance the others do not, and if it does well on T1 it
+will be a live question whether the normalisation or the coding scheme earned
+it. We accept that rather than contort the design, but it is recorded in SPEC
+4.7 and belongs in the paper's limitations rather than being found by a
+referee.
+
+**Your correction to `test_G3`'s docstring is accepted and the docstring is
+rewritten.** I named E6 as the foreseeable D27 casualty and was wrong on both
+halves: E6's count is not structurally fixed, and the encoder whose count *is*
+bounded by a property of the drive turned out to be E5, which I did not
+anticipate.
 
 ### Q15 — two figures quoted in the record do not reproduce as stated, and in both cases the metric was never defined
 **Raised:** 2026-09-05 by implementation session
@@ -952,7 +1158,33 @@ been written down beside the number.
 **Blocking?** no. D21 stands, `featurise` stands, and all four measurements are
 now recorded with their definitions attached. It blocks nothing; it corrects
 the record.
-**Answer:** (open)
+**Answer:** Options 1 and 3 together. D45. A dated correction is appended above
+the Q03 answer with the original left visible, and §8 of the validation
+protocol now requires a reported figure to carry the definition of what was
+measured.
+
+**The correction is accepted, and the physics agrees independently.** I checked
+rather than deferring. Under D21 the cutoff tracks the ERB, so `f_c/b_c` runs
+about 4.3 at 196 Hz against 8.6 at 3057 Hz, and fourth-order attenuation should
+improve by roughly `(8.6/4.3)^4` — about 17x across that span. The recorded
+column falls by 800x. There is no reading of that consistent with the filters,
+and the constant coming out identical for both cutoff rules at each channel is
+the right check that the comparison means anything.
+
+The `featurise` figure is corrected in the same spirit: 9.4e-16 was E4's, not
+the worst of the three, and E3 gives 1.31e-15 under the same normalisation.
+
+Option 2 is rejected. Leaving a wrong figure in place because the decision it
+supports is unaffected makes the record self-inconsistent, and a reader who
+recomputes it has no way to tell a stale number from a changed implementation.
+
+**On the general question, yes, and it is the more valuable half.** All three
+discrepancies were definitional, and all three would have been impossible had
+the metric been written beside the value. That is now §8. It is the reporting
+counterpart of §6: §6 makes a number reproducible from the repository, §8 makes
+it interpretable once reproduced. Note that D35 is what made these findable at
+all — retro-fitting the probes as committed scripts is what surfaced the
+disagreement.
 
 ### Q16 — equation (28) has no `E_max`, is not evaluable at the `e_min` the T6 tests use, and `test_T6_1`/`test_T6_2` are unsatisfiable at `hop < frame`
 **Raised:** 2026-09-05 by implementation session
@@ -1035,4 +1267,46 @@ them rather than by a time window?
 whole G block for E6 exercises. `mode="lif"` is fully specified and can be
 implemented now. `test_T6_1` and `test_T6_2` are blocked on part 3 regardless
 of what is decided about `E_max`.
-**Answer:** (open)
+**Answer:** D44, taken with Q14/D43. Making the gate relative resolves parts 1
+and 2 and most of part 3 as a side effect, which is some evidence it is the
+right change rather than a convenient one.
+
+**1. `E_max` is the largest frame energy over all channels and all frames of
+the utterance.** Not per channel — see the Q14 answer for why that reading
+would destroy the spectral profile, and for the test that now detects it.
+Option 2 was tempting for Layer 3's sake but adding `E_max` as a constructor
+argument makes the caller responsible for a quantity the encoder can compute,
+and every caller would compute it the same way.
+
+**2. `E_min` in equation (28) is the gate itself,** `e_frac * E_max`. The two
+roles you identify — emission gate and normalisation floor — become one
+quantity, and it is positive whenever anything fires at all, so the `log 0`
+case cannot arise. In `mode="log"`, `e_frac <= 0` now raises, since the value
+is legal as a gate and not as a floor. `test_T6_1` and `test_T6_2` are updated
+to pass a small positive fraction instead of `0.0`; `test_T6_3` is `mode="lif"`
+and takes `e_frac=0.0` unchanged.
+
+**And your clipping decision disappears rather than being made.** Because the
+gate is strict, `log E - log E_min > 0` for anything that fires, so the offset
+is strictly below `T_f` by construction. No clipping convention, no event
+landing on the next window's edge. The `1 of 40` failure you measured at
+`hop = frame` was the artefact of a non-strict gate, and the strictness that
+`test_G2` independently forced removes it.
+
+**3. The overlap is mine and both tests are rewritten** — not run at
+`hop = frame`, but moved off time windows entirely. They now assert on
+`state["offsets"]` and `state["energy"]`, shape `(n_channels, n_frames)`, which
+SPEC 4.7 now declares as state keys. Frame membership is not recoverable from
+event times when `hop < frame` — several `(frame, offset)` pairs give the same
+absolute time — so reconstructing it was never going to work; the matrices are
+the object equation (28) actually describes.
+
+`test_T6_2` gets stronger in the process. It now asserts a *Pearson*
+correlation of exactly -1 between log energy and offset, not a rank
+correlation. Equation (28) claims an affine relation, and a rank test would
+pass for any monotone decreasing map — including the per-channel normalisation
+that part 1 rules out.
+
+**This costs an API addition** and it is worth naming as a cost: `encode_from_drive`
+must expose the two matrices under `return_state=True`. That is more than a
+reading of SPEC 4.7 and is why it carries a decision number.

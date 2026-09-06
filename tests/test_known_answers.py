@@ -48,6 +48,9 @@ def _rank(x):
     return ranks
 
 
+# Currently unused: test_T6_2 moved to a Pearson correlation on log energy
+# under D44, since equation (28) claims an affine relation and a rank test
+# would pass for any monotone map. Kept for the T5 block, which may want it.
 def _spearman(a, b):
     ra, rb = _rank(np.asarray(a)), _rank(np.asarray(b))
     ra = ra - ra.mean()
@@ -96,12 +99,23 @@ def test_G3_rate_parameter_is_monotonic_and_spans(encoder_case):
 
     Four is chosen as a factor that any usable rate parameter clears easily
     (E2 gives about sixteen over this sweep, E3 under D26 about thirteen) while
-    still failing the degenerate case above. An encoder whose event count is
-    structurally fixed — E6 is the foreseeable candidate, if it emits one spike
-    per channel per frame regardless of its parameter — will fail this and
-    should fail it: matched budgets for such an encoder have to come from
-    channel count or frame rate, and that is a design question to raise in
-    QUESTIONS.md, not a threshold to relax here.
+    still failing the degenerate case above.
+
+    This docstring previously named E6 as the foreseeable casualty, on the
+    grounds that a time-to-first-spike encoder emits one spike per channel per
+    frame and so has a structurally fixed count. That was wrong on both halves
+    and is corrected under D46. Q14 measured E6's `e_frac` moving the count
+    across the full range once it sits where the frame energies actually are —
+    the original failure was a default in the wrong place, not a structural
+    limit. The encoder whose count *is* structurally bounded turned out to be
+    E5, which was not anticipated: Q11 measured its `threshold` spanning 1.04x,
+    because the count is capped by the carrier's zero-crossing rate. E5 now
+    takes `cycle_divisor` as its rate parameter instead (D40).
+
+    The general point stands and is worth keeping. If an encoder's count is
+    bounded by a property of the drive rather than by its parameter, no choice
+    of range rescues it, and the answer is a different rate mechanism — raised
+    in QUESTIONS.md, not a threshold relaxed here.
     """
     label, cls, kwargs = encoder_case
     drive = drive_for(cls, duration=2.0)
@@ -690,21 +704,65 @@ def test_T4_2_threshold_decays_geometrically_after_a_spike():
     np.testing.assert_allclose(window, predicted, rtol=1e-6, atol=1e-9)
 
 
-def test_T4_3_adaptation_emphasises_onsets():
-    """A step drive gives a burst then decay. The ratio of early to late event
-    counts exceeds one, and grows with adaptation strength."""
-    drive = step_drive(0.0, 3.0, 0.1, n_channels=1, duration=1.0)
-    ratios = []
-    for delta_a in (0.0, 0.5, 2.0):
-        enc = E.ALIF(n_channels=1, theta_0=1.0, delta_a=delta_a, tau_a=0.1,
-                     tau_m=0.02, gain=1.0, refractory=0.0)
+def test_T4_3_onset_latency_is_adaptation_free():
+    """The first spike after silence is untouched by adaptation, and the steady
+    state is suppressed relative to it in proportion to adaptation strength.
+
+    REPLACES an earlier test asserting that the ratio of early to late event
+    counts grows with `delta_a`. That claim is false of any correct ALIF and
+    was retired under D39 after Q10 measured it. Strong adaptation suppresses
+    the *second* spike as well as the steady state, so the first ISI lengthens
+    from 8 ms to 139 ms across the sweep and the onset-to-steady contrast
+    re-converges, peaking near `delta_a = 1`. Three readings of equation (23)
+    give identical counts, so no implementation choice was involved.
+
+    What is true splits in two, and the first half is the new content.
+
+    ONE. The latency to the first spike after silence does not depend on
+    `delta_a` at all. At the step `a = 0` by equation (23) — there are no prior
+    spikes — so the threshold is `theta_0` and the neuron is an unadapted LIF.
+    The latency is the equation (12) closed form
+
+        t_first = tau_m * ln(V_inf / (V_inf - theta_0))
+                = 0.02 * ln(3.0 / 2.0) = 8.109 ms
+
+    which at DT = 62.5 us fires on the sample at 8.125 ms. This is what pins
+    D34: an implementation driving adaptation from the drive rather than from
+    the spike train, or failing to reset `a` at the start of a channel, moves
+    this number, and nothing else in the T4 block would notice.
+
+    TWO. The steady-state ISI grows monotonically with `delta_a`, so its ratio
+    to an invariant onset grows too. That half overlaps `test_T4_4`, which
+    asserts the same suppression as a count rather than an interval. It is kept
+    because the ratio against an invariant onset is the quantity P-01 rests on,
+    and asserting it here is what makes the amended P-01 checkable.
+
+    Expected ratios from Q10's re-measurement, steady-state ISI over 8.13 ms:
+    1.00, 2.73, 3.84, 5.69, 8.80, 13.57. Strictly increasing, unlike the
+    quantity the retired test measured.
+    """
+    v_inf, theta_0, tau_m = 3.0, 1.0, 0.02
+    drive = step_drive(0.0, v_inf, 0.1, n_channels=1, duration=5.0)
+    expected = tau_m * np.log(v_inf / (v_inf - theta_0))
+
+    first, ratios = [], []
+    for delta_a in (0.0, 0.25, 0.5, 1.0, 2.0, 4.0):
+        enc = E.ALIF(n_channels=1, theta_0=theta_0, delta_a=delta_a, tau_a=0.1,
+                     tau_m=tau_m, gain=1.0, refractory=0.0)
         t = enc.encode_from_drive(drive, DT).times_in_channel(0)
-        early = int(np.sum((t >= 0.10) & (t < 0.15)))
-        late = int(np.sum((t >= 0.50) & (t < 0.55)))
-        ratios.append(early / max(late, 1))
-    assert ratios[0] == pytest.approx(1.0, abs=0.25), "no adaptation, no emphasis"
-    assert ratios[1] > 1.1
-    assert ratios[2] > ratios[1]
+        assert len(t) >= 3, f"delta_a={delta_a}: only {len(t)} events"
+        first.append(t[0] - 0.1)
+        late = t[t > 3.0]
+        assert len(late) >= 2, f"delta_a={delta_a}: {len(late)} steady-state events"
+        ratios.append(float(np.mean(np.diff(late))) / first[-1])
+
+    assert np.ptp(first) < 1.5 * DT, (
+        f"onset latency moved with delta_a: {first}. Adaptation must not touch "
+        "the first spike after silence, since a = 0 there. See D34.")
+    assert abs(first[0] - expected) < 1.5 * DT, (
+        f"onset latency {first[0]:.6f} s, closed form {expected:.6f} s")
+    assert np.all(np.diff(ratios) > 0), (
+        f"steady-to-onset ratio not increasing with delta_a: {ratios}")
 
 
 def test_T4_4_adaptation_suppresses_the_steady_state():
@@ -797,38 +855,77 @@ def test_T5_4_jitter_degrades_vector_strength_by_the_gaussian_law(sigma):
 
 def test_T6_1_budget_is_bounded_exactly():
     """At most one event per channel per frame, hence at most n_ch * n_frames
-    events in total. This exactness is E6's distinctive practical virtue."""
+    events in total. This exactness is E6's distinctive practical virtue.
+
+    Asserted on the per-frame offsets matrix rather than on time windows.
+    The earlier version selected events by the window [m*hop, m*hop + frame)
+    and treated it as holding frame m's events. At the declared default hop of
+    10 ms against a 25 ms frame that window holds three frames, so a channel
+    firing in consecutive frames appears in it more than once and the assertion
+    could not be satisfied by any implementation whatsoever. Q16 measured 98 of
+    98 windows failing, and no clipping choice changed it. The fault was the
+    design session's; retired under D44.
+
+    The matrix is the more direct object in any case. Equation (28) maps a
+    frame energy to an offset within that frame, and this asserts on exactly
+    that, at whatever hop is declared, rather than reconstructing frame
+    membership from event times — which is not recoverable when hop < frame,
+    since several (frame, offset) pairs give the same absolute time.
+    """
     n_ch, duration, frame, hop = 8, 1.0, 0.025, 0.010
-    enc = E.TTFS(n_channels=n_ch, e_min=0.0, frame=frame, hop=hop)
+    enc = E.TTFS(n_channels=n_ch, e_frac=0.05, frame=frame, hop=hop)
     drive = drive_for(E.TTFS, n_channels=n_ch, duration=duration)
-    train = enc.encode_from_drive(drive, DT)
+    train, state = enc.encode_from_drive(drive, DT, return_state=True)
+
     n_frames = int(np.floor((duration - frame) / hop)) + 1
+    offsets = state["offsets"]
+    assert offsets.shape == (n_ch, n_frames), (
+        f"offsets shape {offsets.shape}, expected {(n_ch, n_frames)}")
+
+    fired = np.isfinite(offsets)
+    assert len(train) == int(np.sum(fired)), (
+        f"{len(train)} events against {int(np.sum(fired))} finite offsets")
     assert len(train) <= n_ch * n_frames
-    for m in range(n_frames):
-        lo, hi = m * hop, m * hop + frame
-        window = train.channel[(train.time >= lo) & (train.time < hi)]
-        assert len(np.unique(window)) == len(window), f"channel fired twice in frame {m}"
+    assert np.all(offsets[fired] >= 0.0)
+    assert np.all(offsets[fired] < frame), (
+        "an offset reached the frame length. The SPEC 4.7 gate is strict, so "
+        "E > E_min for anything that fires and the offset is strictly below "
+        "T_f by construction — no clipping rule should be needed. See D44.")
 
 
-def test_T6_2_latency_rank_inverts_energy_rank():
-    """Within a frame, louder channels fire earlier — exactly, with Spearman
-    correlation of -1 across the channels that fired."""
+def test_T6_2_latency_is_affine_in_log_energy():
+    """Equation (28) is affine in log E with negative slope and coefficients
+    shared by every channel and frame, so within a frame the offsets and the
+    log energies of the channels that fired correlate at exactly -1.
+
+    A stronger claim than the rank correlation the earlier version asserted,
+    and it holds at any hop because it reads the state matrices instead of
+    reconstructing frame membership from event times. See D44 and Q16 for why
+    the window-based version was unsatisfiable at hop < frame.
+
+    Pearson rather than Spearman on purpose: rank correlation would pass for
+    any monotone decreasing map, where equation (28) says specifically that the
+    map is affine in the logarithm. If E_max or E_min were taken per channel
+    rather than over the whole utterance, the coefficients would differ between
+    channels, the relation across a frame would stop being affine, and this
+    test would catch it where a rank test would not.
+    """
     n_ch, frame, hop = 8, 0.025, 0.010
-    enc = E.TTFS(n_channels=n_ch, e_min=0.0, frame=frame, hop=hop)
+    enc = E.TTFS(n_channels=n_ch, e_frac=0.05, frame=frame, hop=hop)
     drive = drive_for(E.TTFS, n_channels=n_ch, duration=0.5)
-    train = enc.encode_from_drive(drive, DT)
+    _, state = enc.encode_from_drive(drive, DT, return_state=True)
+    offsets, energy = state["offsets"], state["energy"]
+
     checked = 0
-    for m in range(1, 40):
-        lo = m * hop
-        sel = (train.time >= lo) & (train.time < lo + frame)
-        if np.sum(sel) < 4:
+    for m in range(offsets.shape[1]):
+        sel = np.isfinite(offsets[:, m])
+        if int(np.sum(sel)) < 4:
             continue
-        chans = train.channel[sel]
-        lat = train.time[sel] - lo
-        i0, i1 = int(round(lo / DT)), int(round((lo + frame) / DT))
-        energy = np.sum(drive[chans, i0:i1] ** 2, axis=1)
-        assert _spearman(energy, lat) == pytest.approx(-1.0, abs=1e-9), (
-            f"frame {m}: rank correlation {_spearman(energy, lat):.4f}")
+        log_e = np.log(energy[sel, m])
+        if np.ptp(log_e) < 1e-12:
+            continue                      # correlation undefined, not a failure
+        r = float(np.corrcoef(log_e, offsets[sel, m])[0, 1])
+        assert r == pytest.approx(-1.0, abs=1e-9), f"frame {m}: r = {r:.9f}"
         checked += 1
     assert checked >= 5, "not enough populated frames to test"
 
@@ -836,7 +933,7 @@ def test_T6_2_latency_rank_inverts_energy_rank():
 def test_T6_3_lif_latency_matches_the_closed_form():
     """mode='lif': t = tau_m * ln(I / (I - theta)), equation (29)."""
     tau_m, theta = 0.02, 1.0
-    enc = E.TTFS(n_channels=1, e_min=0.0, frame=0.025, hop=0.025,
+    enc = E.TTFS(n_channels=1, e_frac=0.0, frame=0.025, hop=0.025,
                  tau_m=tau_m, theta=theta, mode="lif")
     drive = constant_drive(np.sqrt(4.0 / int(0.025 / DT)), n_channels=1, duration=0.025)
     train = enc.encode_from_drive(drive, DT)
@@ -869,11 +966,32 @@ def test_corrupt_channel_shift_drops_rather_than_wraps():
 
 
 def test_corrupt_delete_retains_expected_fraction():
+    """Deletion at p = 0.3 retains 0.7 of the events in expectation, averaged
+    over twenty seeds rather than asserted on a single draw.
+
+    The earlier version guarded a single draw with `len(train) > 500`, and the
+    fixture yields 275. Q13 measured the underlying problem: at 275 events the
+    +/-0.05 window is 1.81 standard deviations wide, so the assertion is a
+    1-in-14 flake if the seed ever changes, and the guard was an attempt to fix
+    that by making one draw more reliable. Averaging fixes it more directly. It
+    tests the deletion *rate*, which is what this test is named for, rather
+    than one realisation of it: over twenty seeds the standard error is 0.0062,
+    so the window below is 3.2 standard errors wide. D42.
+
+    Note against the Layer 1 claim in this file's header: this is a statistical
+    assertion rather than a known answer. It is deterministic given the seeds,
+    but its expected value is a mean and not a closed form. The corruption
+    block is the only part of this file of which that is true.
+    """
     enc = E.LIF(n_channels=4, theta=1.0, tau_m=0.02)
     train = enc.encode_from_drive(drive_for(E.LIF, duration=4.0), DT)
-    assert len(train) > 500, "need a well-populated train for a rate assertion"
-    out = corrupt.delete(train, 0.3, np.random.default_rng(0))
-    assert 0.65 < len(out) / len(train) < 0.75
+    assert len(train) > 200, "need a populated train for a rate assertion"
+    fracs = [len(corrupt.delete(train, 0.3, np.random.default_rng(s))) / len(train)
+             for s in range(20)]
+    mean = float(np.mean(fracs))
+    assert 0.68 < mean < 0.72, (
+        f"mean retained fraction {mean:.4f} over 20 seeds, expected 0.70; "
+        f"per-seed {[round(f, 4) for f in fracs]}")
 
 
 def test_corrupt_randomise_times_preserves_channel_counts():
