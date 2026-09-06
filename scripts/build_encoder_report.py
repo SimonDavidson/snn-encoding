@@ -10,8 +10,11 @@ Author:        Simon Davidson & Claude
 Created:       2026-09-06
 Last modified: 2026-09-06
 """
+import datetime as _dt
 import json
+import shutil
 import subprocess
+import zipfile
 from pathlib import Path
 
 from docx import Document
@@ -38,6 +41,23 @@ AMBER = "FFE699"
 GREY = "DCDCDC"
 ROSE = "F6C9C9"
 LILAC = "E4DDF0"
+
+
+def _normalise_zip_times(path):
+    """A .docx is a zip, and zip members carry mtimes. Rewrite them all to a
+    fixed date so the file is byte-identical when the content is."""
+    fixed = (1980, 1, 1, 0, 0, 0)
+    src = zipfile.ZipFile(path)
+    tmp = Path(str(path) + ".tmp")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as out:
+        for info in sorted(src.infolist(), key=lambda i: i.filename):
+            data = src.read(info.filename)
+            ni = zipfile.ZipInfo(info.filename, date_time=fixed)
+            ni.compress_type = info.compress_type
+            ni.external_attr = info.external_attr
+            out.writestr(ni, data)
+    src.close()
+    shutil.move(str(tmp), str(path))
 
 
 def load(name):
@@ -1380,8 +1400,22 @@ def build():
     questions_section(doc, ctx)
     predictions_section(doc, ctx)
 
+    # Deterministic output: python-docx stamps the current time into
+    # docProps/core.xml, so an unchanged report would otherwise show as a diff
+    # on every rebuild and a real content change would be indistinguishable
+    # from noise. Pinned to the study start date (D11).
+    stamp = _dt.datetime(2026, 8, 20, 0, 0, 0)
+    cp = doc.core_properties
+    cp.created = stamp
+    cp.modified = stamp
+    cp.last_modified_by = "Simon Davidson & Claude"
+    cp.author = "Simon Davidson & Claude"
+    cp.title = "spikeEncode — encoder survey"
+    cp.revision = 1
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     doc.save(OUT)
+    _normalise_zip_times(OUT)
     print(f"written: {OUT}")
     return OUT
 
