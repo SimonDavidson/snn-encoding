@@ -16,7 +16,7 @@ Usage:
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-05
-Last modified: 2026-09-05
+Last modified: 2026-09-07
 """
 import sys
 
@@ -160,9 +160,105 @@ def e6_diagnostics(drive, dt, params):
     }
 
 
+def e6_e_frac_count(drive, dt, params):
+    """SPEC 4.7 under D43: at most one event per channel per frame, emitted
+    where the frame energy *strictly* exceeds `e_frac * E_max`, with `E_max`
+    the largest frame energy over all channels and all frames of the utterance.
+
+    Reimplemented here rather than imported from `spikeenc.encoders`, which is
+    the whole point of this script: an independent count of the same rule is a
+    cross-check on the encoder, and `e6_e_frac_diagnostics` reports whether the
+    two agree. The earlier `e6_frame_energy` rule is left in place rather than
+    edited -- it measured the absolute `e_min` that Q14 retired, and its result
+    stays visible in the manifest, as DECISIONS.md does for superseded entries.
+    """
+    E = _e6_energies(drive, dt, params)
+    if E.size == 0:
+        return 0
+    return int(np.sum(E > params["e_frac"] * E.max()))
+
+
+def e6_e_frac_diagnostics(drive, dt, params):
+    """Diagnostics for the relative gate, with every figure carrying the
+    definition of what was measured, as section 8 of the validation protocol
+    now requires (D45).
+
+    That discipline is why the scale-invariance block reports decades of drive
+    *amplitude* and decades of frame *energy* separately. Q14 recorded the same
+    sweep as "five decades" and proposal 5.6 repeats it; the sweep is five
+    scale *points*, spanning four decades of amplitude and eight of energy, and
+    an undefined "decades" is exactly what D45 was written for.
+    """
+    from spikeenc import encoders as enc_mod
+
+    E = _e6_energies(drive, dt, params)
+    e_max = float(E.max())
+    gate = params["e_frac"] * e_max
+
+    # The relative gate should give identical counts at any input level. This
+    # is the claim proposal 5.6 rests the absolute-to-relative change on.
+    scales = [1e-2, 1e-1, 1.0, 1e1, 1e2]
+    scale_counts, scale_e_max = [], []
+    for s in scales:
+        Es = _e6_energies(drive * s, dt, params)
+        scale_counts.append(int(np.sum(Es > params["e_frac"] * Es.max())))
+        scale_e_max.append(float(Es.max()))
+
+    # Independent-reimplementation check, in the spirit of validation layer 3:
+    # the encoder's own count against this script's simulation of the rule.
+    e6 = enc_mod.TTFS(n_channels=drive.shape[0], e_frac=params["e_frac"],
+                      frame=params["frame"], hop=params["hop"])
+    train, state = e6.encode_from_drive(drive, dt, return_state=True)
+    simulated = e6_e_frac_count(drive, dt, params)
+
+    return {
+        "ceiling_n_ch_times_n_frames": int(E.size),
+        "frame_energy_min": float(E.min()),
+        "frame_energy_p1": float(np.percentile(E, 1)),
+        "frame_energy_median": float(np.median(E)),
+        "frame_energy_max": e_max,
+        "gate_at_base_e_frac": gate,
+        "gate_log10_ratio_to_quietest_frame": float(np.log10(E.min() / gate)),
+        "gate_definition": ("gate = e_frac * E_max, E_max the largest frame "
+                            "energy over all channels and all frames; "
+                            "gate_log10_ratio_to_quietest_frame is "
+                            "log10(min frame energy / gate), so a negative "
+                            "value means the gate sits above the quietest "
+                            "frame and therefore gates something"),
+        "scale_invariance": {
+            "drive_amplitude_scales": scales,
+            "n_scale_points": len(scales),
+            "decades_of_drive_amplitude": float(np.log10(max(scales)
+                                                         / min(scales))),
+            "decades_of_frame_energy": float(np.log10(max(scale_e_max)
+                                                      / min(scale_e_max))),
+            "frame_energy_max_per_scale": scale_e_max,
+            "event_count_per_scale_at_base_e_frac": scale_counts,
+            "counts_identical_across_scales": len(set(scale_counts)) == 1,
+            "definition": ("the drive is multiplied by each scale and the full "
+                           "rule re-run; energy scales as the square of "
+                           "amplitude, so the two decade figures differ by a "
+                           "factor of two by construction"),
+        },
+        "encoder_cross_check": {
+            "encoder_event_count": len(train),
+            "simulated_event_count": simulated,
+            "counts_agree": bool(len(train) == simulated),
+            "frame_energy_max_abs_difference": float(
+                np.max(np.abs(state["energy"] - E))) if E.size else 0.0,
+            "definition": ("spikeenc.encoders.TTFS at the base e_frac against "
+                           "this script's independent simulation of the same "
+                           "SPEC 4.7 rule, on the same drive"),
+        },
+        "note": ("the relative gate is scale-free, so unlike the absolute "
+                 "e_min of the superseded e6_rate_parameter_span run it cannot "
+                 "drift below the signal when the corpus changes"),
+    }
+
 RULES = {"e5_cycle_divisor": (e5_cycle_divisor_count, e5_cycle_divisor_diagnostics),
          "e5_deterministic": (e5_count, e5_diagnostics),
-         "e6_frame_energy": (e6_count, e6_diagnostics)}
+         "e6_frame_energy": (e6_count, e6_diagnostics),
+         "e6_e_frac": (e6_e_frac_count, e6_e_frac_diagnostics)}
 
 
 def main(config_path):

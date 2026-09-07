@@ -1,0 +1,23 @@
+{
+  "id": "e6_e_frac_span",
+  "description": "D43: E6's new RATE_PARAM `e_frac` measured against D27's 4x requirement, by simulating the rewritten SPEC 4.7 frame-energy rule on test_G3's drive, independently of src/. Supersedes nothing: the earlier e6_rate_parameter_span run measured the absolute `e_min` that Q14 retired and stays visible under its own id. Records the span, the scale invariance that proposal 5.6 rests the absolute-to-relative change on, and whether the encoder agrees with an independent count of its own rule.",
+  "rule": "e6_e_frac",
+  "drive_kind": "envelope",
+  "n_channels": 4,
+  "duration_s": 2.0,
+  "seed": 0,
+  "rate_param": "e_frac",
+  "rate_direction": -1,
+  "params": {
+    "e_frac": 0.20,
+    "frame": 0.025,
+    "hop": 0.010
+  },
+  "params_comment": "Defaults from the rewritten SPEC 4.7 and the tests/conftest.py registry entry for E6. The gate is strict and relative: E > e_frac * E_max, with E_max the largest frame energy over all channels and all frames of the utterance (D43, D44).",
+  "sweep_factors": [0.25, 0.5, 1.0, 2.0, 4.0],
+  "d27_required_span": 4.0,
+  "predictions": [
+    "Q14 measured 12.4x at e_frac = 0.20 on a prototype that was then discarded, with no provenance record; this run is that figure re-measured against the shipped rule.",
+    "Q14 and proposal 5.6 state identical event counts across 'five decades of input scale' for drive scales 0.01 to 100. Counts are expected to be identical; the decade count is expected NOT to reproduce, since 0.01 to 100 is four decades of amplitude and eight of frame energy."
+  ]
+}
