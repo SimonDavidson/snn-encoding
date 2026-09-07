@@ -41,6 +41,7 @@ from . import metrics
 from .features import featurise
 from .frontend import Filterbank
 from .probes import LinearProbe
+from .reference import feature_bandwidth_bps, mel_features
 from .splits import speaker_disjoint_split
 from .tasks import (UNLABELLED, LabelSet, frame_labels, majority_floor,
                     shift_labels, stack_context)
@@ -202,20 +203,23 @@ def budget_cross_check(trains):
                     "needs the release format, which is blocked on Q07"}
 
 
-def run_t1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
-           test_fraction=0.3, seed=0, alpha=1e-4, control_offsets=(-1, 1),
-           timestamp_bits=20, polarity_bits=1):
-    """Score one operating point on T1, and run the Layer 2 controls with it.
+def score_t1(corpus, x, y, uid, *, labelset=None, test_fraction=0.3, seed=0,
+             alpha=1e-4, control_offsets=(-1, 1)):
+    """Split, fit and run the Layer 2 controls on an already-built dataset.
 
-    Returns a dict of everything the manifest should carry for this point:
-    the headline accuracy, both C2 floors, the C3 shuffled-label control, the
-    C5 misalignment controls, the C6 cross-check, the C4 split description, the
-    budget of equations (34)-(36), and the decoded information of equation (38).
+    Factored out of `run_t1` so that the spiking conditions and the R2
+    reference of proposal 5.9 go through *one* decoder path rather than two
+    that are meant to match. C4 requires identical decoding — "same probe
+    architectures, same optimiser, schedule, regularisation and stopping
+    criterion across all encoders" — and two copies could drift while each
+    still looked right on its own. This is the argument D30 made for E2 and E3
+    sharing one lattice rule, applied to the decoder.
+
+    Everything above the features is shared: the split, the probe, C2, C3, C5,
+    and the confusion matrix feeding equation (38). What differs between a
+    spiking condition and R2 is only what produced `x`.
     """
     labelset = labelset or LabelSet(corpus.labels)
-    t0 = time.time()
-
-    x, y, uid = build_dataset(trains, corpus, labelset, tau, hop, context)
     split = speaker_disjoint_split(corpus, test_fraction=test_fraction,
                                    seed=seed)
     train_mask = np.isin(uid, np.asarray(split.train, dtype=object))
@@ -247,8 +251,48 @@ def run_t1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
             shift_labels(y[uid == u.uid], k) for u in corpus])
         misaligned[str(k)] = fit_score(y_k)[1]
 
-    floor = majority_floor(y[test_mask])
     confusion = probe.confusion(x[test_mask], y[test_mask])
+    return {
+        "accuracy": accuracy,
+        "majority_floor": majority_floor(y[test_mask]),   # C2
+        "chance": labelset.chance,                        # C2
+        "shuffled_label_accuracy": shuffled_accuracy,     # C3
+        "misaligned_accuracy": misaligned,                # C5
+        "split": split.as_dict(),                         # C4
+        "decoded_information_bits": metrics.decoded_information(confusion),
+        "confusion": confusion.tolist(),
+        "n_frames_train": int(np.sum(train_mask & (y != UNLABELLED))),
+        "n_frames_test": int(np.sum(test_mask & (y != UNLABELLED))),
+        "n_features": int(x.shape[1]),
+        "probe_settings": probe.settings,                 # C4 fairness
+        "probe_converged": probe.converged_,
+        "probe_iterations": probe.n_iter_,
+        "_split": split,
+        "_test_mask": test_mask,
+        "_y": y,
+    }
+
+
+def run_t1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
+           test_fraction=0.3, seed=0, alpha=1e-4, control_offsets=(-1, 1),
+           timestamp_bits=20, polarity_bits=1):
+    """Score one spiking operating point on T1, with its budget and controls.
+
+    Returns a dict of everything the manifest should carry for this point:
+    the headline accuracy, both C2 floors, the C3 shuffled-label control, the
+    C5 misalignment controls, the C6 cross-check, the C4 split description, the
+    budget of equations (34)-(36), and the decoded information of equation (38).
+    """
+    labelset = labelset or LabelSet(corpus.labels)
+    t0 = time.time()
+
+    x, y, uid = build_dataset(trains, corpus, labelset, tau, hop, context)
+    out = score_t1(corpus, x, y, uid, labelset=labelset,
+                   test_fraction=test_fraction, seed=seed, alpha=alpha,
+                   control_offsets=control_offsets)
+    split, test_mask = out.pop("_split"), out.pop("_test_mask")
+    out.pop("_y")
+
     lam = corpus_event_rate(trains, corpus)
     n_ch = next(iter(trains.values())).n_channels
     # Equation (39) divides the decoded information by the mean number of
@@ -259,14 +303,8 @@ def run_t1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
     n_test_frames = max(1, int(np.sum(test_mask & (y != UNLABELLED))))
     mean_events_per_frame = test_events / n_test_frames
 
-    return {
-        "accuracy": accuracy,
-        "majority_floor": floor,                      # C2
-        "chance": labelset.chance,                    # C2
-        "shuffled_label_accuracy": shuffled_accuracy,  # C3
-        "misaligned_accuracy": misaligned,            # C5
+    out.update({
         "budget_cross_check": budget_cross_check(trains),  # C6
-        "split": split.as_dict(),                     # C4
         "lambda_events_per_s": lam,                   # eq (35)
         "rate_per_channel": lam / n_ch,               # eq (34)
         # Equation (36) at corpus scale. `metrics.bandwidth_bps` is per-train
@@ -280,17 +318,58 @@ def run_t1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
         "bandwidth_bits": {"channel": float(np.log2(n_ch)),
                            "timestamp": timestamp_bits,
                            "polarity": polarity_bits},
-        "decoded_information_bits": metrics.decoded_information(confusion),
-        "bits_per_event": (metrics.decoded_information(confusion)
+        "bits_per_event": (out["decoded_information_bits"]
                            / mean_events_per_frame
                            if mean_events_per_frame > 0 else 0.0),
-        "confusion": confusion.tolist(),
-        "n_frames_train": int(np.sum(train_mask & (y != UNLABELLED))),
-        "n_frames_test": int(np.sum(test_mask & (y != UNLABELLED))),
-        "n_features": int(x.shape[1]),
-        "probe_settings": probe.settings,             # C4 fairness
-        "probe_converged": probe.converged_,
-        "probe_iterations": probe.n_iter_,
         "featurisation": {"tau": tau, "hop": hop, "context": context},
         "seconds": time.time() - t0,
-    }
+    })
+    return out
+
+
+def run_t1_reference(corpus, *, labelset=None, n_mels=40, frame=0.025,
+                     hop=0.010, alignment="causal", context=0,
+                     test_fraction=0.3, seed=0, alpha=1e-4,
+                     control_offsets=(-1, 1), bits_per_feature=32,
+                     f_min=50.0, f_max=8000.0):
+    """R2, the non-spiking upper bound of proposal 5.9, on T1.
+
+    Same corpus, same labels, same split, same probe, same controls as every
+    spiking condition — only the features differ, which is the whole point of
+    a control. Emits no events, so equations (34)-(36) do not apply; what is
+    reported instead is the dense feature bandwidth R2 costs, which is the
+    quantity 6.3's argument for event-based representation is against.
+    """
+    labelset = labelset or LabelSet(corpus.labels)
+    t0 = time.time()
+
+    xs, ys, uids = [], [], []
+    for utt in corpus:
+        f = mel_features(utt, n_mels=n_mels, frame=frame, hop=hop,
+                         alignment=alignment, f_min=f_min, f_max=f_max)
+        y_utt = frame_labels(utt, hop, labelset, n_frames=f.shape[0])
+        xs.append(stack_context(f, context))
+        ys.append(y_utt)
+        uids.append(np.full(len(y_utt), utt.uid, dtype=object))
+    x, y, uid = np.concatenate(xs), np.concatenate(ys), np.concatenate(uids)
+
+    out = score_t1(corpus, x, y, uid, labelset=labelset,
+                   test_fraction=test_fraction, seed=seed, alpha=alpha,
+                   control_offsets=control_offsets)
+    for k in ("_split", "_test_mask", "_y"):
+        out.pop(k)
+
+    out.update({
+        "reference": "R2",
+        "lambda_events_per_s": 0.0,
+        "feature_bandwidth_bps": feature_bandwidth_bps(n_mels, hop,
+                                                       bits_per_feature),
+        "bandwidth_bits": {"per_feature": bits_per_feature,
+                           "features_per_frame": n_mels,
+                           "frames_per_s": 1.0 / hop},
+        "featurisation": {"n_mels": n_mels, "frame": frame, "hop": hop,
+                          "alignment": alignment, "context": context,
+                          "window": "hamming"},
+        "seconds": time.time() - t0,
+    })
+    return out
