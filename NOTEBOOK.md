@@ -1080,3 +1080,98 @@ blocking nothing. E6 is unblocked and unwritten.
 **Next:** E6 `TTFS` under D43 and D44 — nine tests, and its rate parameter is
 already verified, Q14 having measured `e_frac = 0.20` at 12.4x. After that the
 probe harness, which remains the schedule critical path and is still untouched.
+
+## 2026-09-07 | session: implementation
+**Did:** Implemented E6 `TTFS` under SPEC 4.7 as rewritten by D43 and D44. All
+nine of its tests green. **No test in the suite now fails for a reason inside
+`src/`** — the two remaining failures are Q19 and Q20 against E5, both raised
+before E5 was written. That closes the encoder block: E1 to E6 are done, which
+is the whole of proposal §9 weeks 5-7.
+
+**The three properties of one sentence, each paid for by a question.** The gate
+is `E > e_frac * E_max`: relative (Q14, because an absolute `e_min` sat 6.8
+decades below the quietest frame and gated nothing), strict (Q14, because a
+non-strict gate emits everywhere on silence when `E_max` is zero), and taken
+over all channels and all frames (Q16, because the per-channel reading is the
+more natural one to write and destroys the spectral profile). Each is argued in
+the class docstring rather than left as a line of code, because a Layer 3
+reimplementation would otherwise choose differently on all three.
+
+**Checked that `test_T6_2` actually bites.** D44 claims the rewritten test
+detects the per-channel `E_max` reading. It does: subclassing the encoder to
+take the maximum per channel gives a worst Pearson residual of **1.89**,
+against 3.3e-16 as shipped and a tolerance of 1e-9. Worth doing because the
+claim is the entire reason the test was changed from Spearman to Pearson, and a
+test believed to bite and not biting is worse than no test.
+
+**The knife edge in the frame count was real and is why I checked it.** SPEC
+4.7 gives `n_frames = floor((n*dt - frame)/hop) + 1`, and `test_T6_3` sets
+`frame == hop == n*dt`, so the expression is exactly zero and one frame is
+expected. Had `n*dt` come out at 0.024999999999999998 the floor would be -1,
+the encoder would produce nothing, and the failure would look like a defect in
+equation (29). It evaluates exactly, at every frame and hop the suite uses, and
+agrees with the integer-sample form everywhere. Measured rather than assumed.
+
+**Margins rather than passes.** G3 span 12.36x against D27's 4x; T6_1 maximum
+offset 2.22 samples inside the frame boundary; T6_2 worst |r+1| 3.3e-16 against
+1e-9; T6_3 latency error exactly **0.0** against a tolerance of 1.5 samples;
+G4 padded and unpadded `E_max` bit-identical at 1851.1720612197246, which is
+the figure Q14 quotes to six decimals.
+
+**Branches the suite does not reach, probed with warnings promoted to errors.**
+Mode validation, `e_frac <= 0` raising in log mode and *not* in lif mode, a
+drive shorter than one frame, an empty drive, `hop > frame`, `e_frac` at and
+above 1.0, and silence in both modes. No warnings, no nans escaping, state
+matrices correctly shaped at `(n_ch, 0)` on a sub-frame drive.
+
+**One reading recorded rather than raised, as with E5's poisson refractory.**
+Equation (29) is unbounded as `I` approaches `theta`: at `I = 1.001` it gives
+138 ms inside a 25 ms frame. `mode="lif"` suppresses such an event, on the
+reading that the neuron did not reach threshold within its window. Verified at
+the boundary — `I = 1.2` gives 35.8 ms and is suppressed, `I = 2.0` gives
+13.9 ms and fires. It is in the method docstring where a Layer 3
+reimplementation will look, and **not** in `DECISIONS.md`: `mode` is not a
+swept axis of proposal §6.6 and no test reaches the boundary. Unlike E5's
+poisson mode, though, nothing *logged* excludes lif mode from a future run, so
+Simon has the flag and it is his call whether it becomes a Dnn or a Qnn.
+
+**Q21 is the units of a figure, not the figure.** Re-measuring the two E6
+numbers that reach the paper draft from the Q14 prototype — which was discarded
+without a manifest entry — reproduced every one: 12.36x against 12.4x, `E_max`
+0.185 to 1.85e7, identical counts at every scale. What did not reproduce is
+"five decades of input scale", quoted in the Q14 answer and in proposal §5.6.
+It is five scale *points*, four decades of amplitude, eight of frame energy.
+The claim is understated rather than overstated, and nothing turns on it, but
+it is the third figure in three sessions quoted without the definition of what
+was measured, and it is in the document that goes to Oliver.
+
+**The survey report is now materially stale and I have not rebuilt it.**
+Rebuilding would make it worse. Its numbers come from `results/` at build time
+but its narrative is authored in the script, and six passages are now false:
+the status callout ("four of the six are implemented", "E5 and E6 are
+specified but blocked"), three table rows (E5 and E6 still shown as Blocked at
+0/12 and 0/9, with their superseded RATE_PARAMs `threshold` and `e_min`), and
+the caption asserting that both raise `NotImplementedError`. Correcting that is
+writing, not regeneration, and it is a document Simon has already sent to
+Oliver with a meeting tomorrow, so it is his call and not a mechanical rebuild.
+
+**Schedule.** Day 19, week 3 of 12 against the D11 start. Weeks 5-7 are now
+complete and weeks 1-2 are still not started: no data loader, no probe harness,
+no training code. The 2026-09-05 entry left a standing instruction to start the
+probe harness rather than an encoder if the schedule is the priority coming out
+of Tuesday's meeting with Oliver. There are no encoders left to start.
+
+**Tests:** 82 passed, 2 failed, 1 skipped, from 73/11/1. Failure sets diffed,
+not counted. Nine newly green: `T6_1`, `T6_2`, `T6_3`, and `G1`, `G2`, `G3`,
+`G4`, `G7`, `G8` for E6. `G7b` skips — E6 declares no refractory. The two
+remaining are `test_G3[E5]` (Q19) and `test_T5_3` (Q20). No regressions.
+**Results written:** `results/e6_e_frac_span.json`, registered under id
+`e6_e_frac_span`. The superseded `e6_rate_parameter_span` entry is left
+untouched under its own id rather than marked superseded, because it measured a
+different parameter rather than the same one differently.
+**Blocked on:** Q19 and Q20 for E5's last two tests. Q07, Q17, Q18, Q21 open
+and blocking nothing.
+**Next:** the probe harness — weeks 1-2 of §9, the schedule critical path, and
+now the only thing standing between the project and its first actual result.
+Nothing in the encoder set remains. Second candidate is the survey report's
+narrative, if it is wanted before Oliver sees it again.
