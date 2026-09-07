@@ -1395,3 +1395,114 @@ encoding. Two remaining failures unchanged: `test_G3[E5]` (Q19), `test_T5_3`
 **Next:** P1, the count-only baseline of §7.1, is now computable — equation
 (40)'s ceiling is R2 and it exists. After that T3 and T2, which the week 4 P2
 gate needs.
+
+## 2026-09-07 | session: implementation (third block)
+**Did:** Built and ran P1, the count-only baseline of §7.1, at segment level on
+E1 across the same six budget points as the morning's sweep. The machinery
+works and is tested. **Its answer on the stand-in corpus does not mean
+anything, and the more useful output of the day is why.**
+
+**Segment level, because §7.1's notation settles it.** `n_c` is indexed by
+channel and by nothing else, so the count representation has no time axis at
+all — which cannot be done on a frame grid, since the grid is itself timing.
+§4.1 already offers segment-level T1 as a first-class form of the task. The
+temporal and ceiling conditions produce a segment verdict by majority vote over
+the *unchanged* frame probe's predictions, because §7.1 says to run the same
+probes and inventing a segment-level pooling of equation (32) would put a free
+choice inside equation (40)'s numerator. D53.
+
+**The finding that matters: the index changes sign depending on a parameter
+§7.1 never mentions.** My first run fixed τ_φ = 5 ms. §6.1 requires τ_φ to be
+swept over {2, 5, 20} ms with each condition reported at its best, so I reran
+it. Three of six points flipped sign:
+
+| Λ | TII, τ_φ fixed at 5 ms | TII, τ_φ swept |
+|---|---|---|
+| 160 | −0.200 | **+0.200** |
+| 397 | −0.211 | **+0.158** |
+| 997 | −1.333 | −0.111 |
+| 15343 | +0.200 | +0.800 |
+
+The cause is structural. The count condition integrates a whole 60–140 ms
+segment; a 5 ms exponential kernel does not. So equation (40) was reading a
+mismatch of *integration windows* as an absence of temporal information. The
+swept run picks τ_φ = 20 ms — the longest value offered — at the two lowest
+budgets on every seed, which is exactly what that reading predicts. Q27, and I
+think the honest version of P1 equalises the windows rather than merely
+sweeping τ_φ, which needs Q22 settled first.
+
+**The second finding: this corpus cannot answer P1, and P1 correctly says so.**
+
+| Λ | count | temporal | ceiling | denominator | TII |
+|---|---|---|---|---|---|
+| 160 | 0.7870 | 0.8241 | 0.9722 | 0.1852 | +0.200 |
+| 397 | 0.8843 | 0.8981 | 0.9722 | 0.0880 | +0.158 |
+| 997 | 0.9306 | 0.9259 | 0.9722 | 0.0417 | −0.111 |
+| 2447 | 0.9583 | 0.9306 | 0.9722 | 0.0139 | undefined |
+| 6037 | 0.9583 | 0.9583 | 0.9722 | 0.0139 | undefined |
+| 15343 | 0.9491 | 0.9676 | 0.9722 | 0.0231 | +0.800 |
+
+At four of six budgets the denominator is under 0.042, which on 72 test
+segments is three segments. The index is undefined twice and swings from −0.111
+to +0.800 between adjacent points. It is noise, and I am not reporting it as
+anything else.
+
+The cause is in my synthesiser: each phone is a *stationary* resonance, so a
+segment's per-channel count vector is nearly a complete description of it, and
+counts reach 0.9583 where the mel ceiling reaches 0.9722. Real phones have
+formant transitions, and transitions are what a count discards. §7.1 calls this
+condition "a spectral profile task wearing a spiking costume" — which the
+stand-in is, by construction, and the diagnostic detected it. **The instrument
+works; what it is diagnosing is the corpus.** Q28 asks whether the stand-in
+should gain formant transitions or whether P1 waits for TIMIT. I lean to
+waiting, and I have deliberately not added transitions, because making the
+corpus more speech-like in order to obtain a more interesting index is close to
+the line CLAUDE.md draws around the battery being the design session's remit.
+
+**P-06 is neither confirmed nor contradicted.** It predicts a moderate index
+for T1. What was measured is +0.16 to +0.20 at the two lowest budgets and noise
+above them, on a corpus whose denominator collapses. That is not evidence
+either way and I am not recording it as a test of the prediction. §7 of the
+validation protocol wants a written investigation for a *contradicted*
+prediction; this is an uninformative one, which is a different thing and worth
+distinguishing.
+
+**Margins rather than passes.** C3 on the count condition: shuffled-label
+accuracy 0.056 to 0.125 against chance 0.125 and a floor of 0.194 — the segment
+split does not leak either, which is worth checking separately since it is a
+different partition from the frame split. C5's segment analogue, sliding the
+counting window 20 ms off the segment, costs 2.3 to 9.7 points at every budget,
+so the count features do depend on where their window sits. Counts against
+duration-normalised rates differ by at most 0.023, or 1.7 segments (Q26) —
+expected here, since the stand-in draws durations independently of phone, and
+therefore silent about TIMIT. The `ceiling_accuracies` hoist out of the
+per-point loop is bit-identical to the inline computation, and the cached path
+identical to the uncached one.
+
+**One seed saturates.** Split seed 1 gives a ceiling of 1.0000 at every offset —
+that speaker partition is trivially separable at 72 test segments. It is left in
+rather than dropped, and it is part of why the denominator is thin.
+
+**Two of my own tests failed when first written and both were the test's
+fault.** The second is worth recording: it asserted equation (40)'s guard
+rejects a denominator of `0.52 - 0.5`, which in floating point is
+0.020000000000000018 and clears a `<= 0.02` threshold. Checking that knife edge
+showed the guard is a floor and not a sufficiency test — just above it the
+index still exceeds 10 — so the denominator is now reported beside every index.
+
+**Tests:** 137 passed, 2 failed, 1 skipped, from 122/2/1. The 15 new ones are
+`tests/test_segments.py`. The one that earns its place asserts that
+`shift_labels` and `frame_segment_index` agree about what an offset means:
+`run_p1` shifts the probe's labels by `o` and separately attributes each vote to
+a segment using `o`, and if those drifted apart the result would be a plausible
+number produced by scoring against the wrong segment. Two remaining failures
+unchanged: `test_G3[E5]` (Q19), `test_T5_3` (Q20).
+**Results written:** `results/p1_count_only_e1_synthetic.json`, id
+`p1_count_only_e1_synthetic`. The τ_φ-fixed first run is superseded rather than
+deleted, so the sign change in Q27 stays visible in the manifest.
+**Blocked on:** unchanged for implementation. Q24 remains the question with most
+riding on it; Q27 and Q28 now decide whether P1 and the week 4 P2 gate can be
+run on the stand-in at all.
+**Next:** T3 and T2 adapters, which P2 needs. But Q28 says plainly that a P2 run
+on this corpus could not settle the gate it exists for, so the honest ordering
+may be to build both and hold the gate for TIMIT.
