@@ -1583,3 +1583,57 @@ independent of whatever Q19 decides.
 **Blocking?** for `test_T5_3` only. E5 is otherwise fully specified and I can
 implement it now; ten of its twelve tests pass on the prototype.
 **Answer:** (open)
+
+### Q21 — the "five decades of input scale" quoted for E6's scale invariance is four, or eight, depending on what is being counted
+**Raised:** 2026-09-07 by implementation session
+**Context:** implementing E6 under D43/D44 and re-measuring the two figures
+that reach the paper draft from the Q14 prototype, since that prototype was
+discarded and neither figure had a manifest entry (D35). The substance
+reproduces exactly. The units do not.
+
+**What reproduces.** The span at `e_frac = 0.20` is **12.36x**, against Q14's
+12.4x. `E_max` on `test_G4`'s padded and unpadded drive is bit-identical at
+1851.1720612197246, which is the figure Q14 quotes to six decimals. Event
+counts across drive scales 0.01 to 100 are identical, all 347, and `E_max`
+across that sweep runs 0.185 to 1.85e7, again Q14's figures. Recorded in
+`results/e6_e_frac_span.json`, with the encoder agreeing event count for event
+count with an independent simulation of its own rule.
+
+**What does not.** Q14's answer says "over drive scales 0.01 to 100 — five
+decades", and proposal 5.6 repeats it as "verified to give identical event
+counts across five decades of input scale". The sweep is five scale *points*:
+0.01, 0.1, 1, 10, 100. That is **four** decades of drive amplitude, and since
+frame energy goes as the square of amplitude, **eight** decades of frame
+energy — the quantity the gate is actually compared against, and the one that
+makes the claim strong. Five is neither.
+
+Nothing substantive turns on it. The scale invariance is real and is if
+anything understated: eight decades of energy is a better claim than five of
+anything. But this is the third figure in three sessions to be quoted without
+the definition of what was measured, which is what D45 and section 8 of the
+validation protocol were written for, and it is quoted in the proposal, which
+is a document that goes to Oliver.
+
+**Question:** how should proposal 5.6 read? And should the Q14 answer text
+carry a dated correction, as the Q03 answer now does under D45?
+
+**Options considered:**
+1. **"Four decades of drive amplitude, eight of frame energy."** Both figures,
+   both named. Longest, and the only version a reader cannot misread.
+2. **"Eight decades of frame energy."** The stronger and more relevant single
+   figure, since the gate compares energies. Shortest correct form.
+3. **"Five scale points spanning four decades."** Closest to the existing
+   sentence and explains where "five" came from.
+4. Leave it. Rejected: it is wrong on any reading, and the version that reaches
+   a referee should not be the one that has to be defended.
+
+Option 1 for the proposal, since it costs eight words. My own preference for
+the correction mechanism is the D45 one — a dated note leaving the original
+visible — rather than a silent edit, because the original figure is quoted in
+`results/` predictions and in a commit message, and a reader who finds "five
+decades" in the git history should be able to see what happened to it.
+
+**Blocking?** no. Blocks nothing at all. E6 is complete, all nine of its tests
+pass, and both `docs/proposal_v2.md` and the Q14 answer block are
+design-session text that I must not edit regardless.
+**Answer:** (open)

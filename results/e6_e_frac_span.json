@@ -1,0 +1,76 @@
+{
+  "counts": [
+    544,
+    462,
+    347,
+    192,
+    44
+  ],
+  "d27_pass": true,
+  "d27_required_span": 4.0,
+  "diagnostics": {
+    "ceiling_n_ch_times_n_frames": 792,
+    "encoder_cross_check": {
+      "counts_agree": true,
+      "definition": "spikeenc.encoders.TTFS at the base e_frac against this script's independent simulation of the same SPEC 4.7 rule, on the same drive",
+      "encoder_event_count": 347,
+      "frame_energy_max_abs_difference": 0.0,
+      "simulated_event_count": 347
+    },
+    "frame_energy_max": 1851.739845437557,
+    "frame_energy_median": 285.9076282780419,
+    "frame_energy_min": 6.242000912161771,
+    "frame_energy_p1": 6.773061384700878,
+    "gate_at_base_e_frac": 370.34796908751144,
+    "gate_definition": "gate = e_frac * E_max, E_max the largest frame energy over all channels and all frames; gate_log10_ratio_to_quietest_frame is log10(min frame energy / gate), so a negative value means the gate sits above the quietest frame and therefore gates something",
+    "gate_log10_ratio_to_quietest_frame": -1.7732861396180264,
+    "note": "the relative gate is scale-free, so unlike the absolute e_min of the superseded e6_rate_parameter_span run it cannot drift below the signal when the corpus changes",
+    "scale_invariance": {
+      "counts_identical_across_scales": true,
+      "decades_of_drive_amplitude": 4.0,
+      "decades_of_frame_energy": 8.0,
+      "definition": "the drive is multiplied by each scale and the full rule re-run; energy scales as the square of amplitude, so the two decade figures differ by a factor of two by construction",
+      "drive_amplitude_scales": [
+        0.01,
+        0.1,
+        1.0,
+        10.0,
+        100.0
+      ],
+      "event_count_per_scale_at_base_e_frac": [
+        347,
+        347,
+        347,
+        347,
+        347
+      ],
+      "frame_energy_max_per_scale": [
+        0.18517398454375572,
+        18.517398454375574,
+        1851.739845437557,
+        185173.9845437557,
+        18517398.454375573
+      ],
+      "n_scale_points": 5
+    }
+  },
+  "monotonic": true,
+  "param_values": [
+    0.05,
+    0.1,
+    0.2,
+    0.4,
+    0.8
+  ],
+  "rate_direction": -1,
+  "rate_param": "e_frac",
+  "rule": "e6_e_frac",
+  "span": 12.363636363636363,
+  "sweep_factors": [
+    0.25,
+    0.5,
+    1.0,
+    2.0,
+    4.0
+  ]
+}

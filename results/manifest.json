@@ -84,6 +84,19 @@
       "output": "results/e5_cycle_divisor_span.json",
       "date": "2026-09-06",
       "predictions": []
+    },
+    {
+      "id": "e6_e_frac_span",
+      "script": "scripts/measure_rate_parameter_span.py",
+      "config": "configs/e6_e_frac_span.json",
+      "commit": "c5314d001bc6be2477d14e08b0fc09e0c3cd1f74",
+      "seed": 0,
+      "output": "results/e6_e_frac_span.json",
+      "date": "2026-09-07",
+      "predictions": [
+        "Q14 measured 12.4x at e_frac = 0.20 on a prototype that was then discarded, with no provenance record; this run is that figure re-measured against the shipped rule.",
+        "Q14 and proposal 5.6 state identical event counts across 'five decades of input scale' for drive scales 0.01 to 100. Counts are expected to be identical; the decade count is expected NOT to reproduce, since 0.01 to 100 is four decades of amplitude and eight of frame energy."
+      ]
     }
   ]
 }
