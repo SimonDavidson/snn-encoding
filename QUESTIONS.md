@@ -1831,10 +1831,28 @@ uncompensated by default and a kernel lag that varies over a swept axis?
 Option 2 if compute allows, option 3 if it does not. I have implemented the
 offsets as `control_offsets` in the run config, so either is a config change.
 
+**Confirmed across the whole budget sweep, added after the run finished.**
+`results/probe_e1_t1_synthetic.json`, E1 on T1, 30 utterances, three split
+seeds per point, mean accuracy by offset:
+
+| Lambda | -2 | -1 | 0 | +1 |
+|---|---|---|---|---|
+| 160 | **0.5903** | 0.5560 | 0.4837 | 0.4110 |
+| 397 | 0.6812 | **0.7052** | 0.6163 | 0.5370 |
+| 997 | 0.6984 | **0.7564** | 0.6962 | 0.6162 |
+| 2447 | 0.7033 | **0.7791** | 0.7268 | 0.6478 |
+| 6037 | 0.7779 | **0.8414** | 0.7853 | 0.6876 |
+| 15343 | 0.8236 | **0.8996** | 0.8316 | 0.7332 |
+
+Offset -1 beats offset 0 at **every one of the six points**, by 4.5 to 6.8
+points, and at the lowest budget the optimum has moved to -2. It is systematic
+over two decades of Lambda rather than a property of one operating point, and
+the effect is the same size as the difference between the two extreme budget
+points on this corpus — which is to say, the same size as the thing the study
+is trying to measure.
+
 **Blocking?** no, and it is the most consequential of the three raised today.
 Every T1 number the harness produces is currently at offset zero and is
 therefore a lower bound on what that condition can do, by an amount that varies
-systematically with tau_phi and with whether group delay is compensated. The
-recorded sweep carries the full offset profile at every budget point so the size
-of the effect is visible rather than assumed.
+systematically with tau_phi and with whether group delay is compensated.
 **Answer:** (open)
