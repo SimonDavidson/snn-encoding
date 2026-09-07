@@ -1301,3 +1301,97 @@ a clean 3.12 venv with `-e ".[dev]"` and nothing else — numpy 2.5.3 against
 this box's 2.5.2 — and ran the skipped command: 25 passed in 40 s. That rules
 out a dependence on local state today; it is not the standing check, and it is
 me checking my own work. Q25.
+
+## 2026-09-07 | session: implementation (second block)
+**Did:** Built R2, the non-spiking upper bound of §5.9 — 40 mel bands, 25 ms
+windows, 10 ms hop — and recorded it on the same corpus, splits and probe as
+this morning's E1 sweep. This is the control §5.9 calls essential: "without it,
+a phone accuracy figure means nothing."
+
+**One decoder, not two that are meant to match.** `score_t1` is factored out of
+`run_t1` so R2 and every spiking condition run the same split, probe and
+controls, differing only in what produced the features. C4 asks for identical
+decoding; two implementations could drift while each still looked right alone.
+That is D30's argument for E2 and E3 sharing one lattice rule, applied a level
+up. D51. The refactor is bit-identical on the spiking path — all three seeds of
+the recorded sweep's first point reproduce exactly, confusion matrices
+included.
+
+**The window phase was a decision and §5.9 does not make it.** It fixes band
+count, window and hop, and says nothing about where the window sits relative to
+`t = k*hop`. Given what Q24 measured this morning, that is not a detail: a
+centred 25 ms window sees 12.5 ms of audio the strictly causal kernel of
+equation (32) cannot, so R2 would beat every spiking condition partly by seeing
+the future. Causal is the default, centred is available, the choice is recorded
+with the result. D52.
+
+**The result, and the thing in it that matters.**
+
+| condition | offset 0 | best offset | best |
+|---|---|---|---|
+| R2 causal | 0.8247 | -1 | **0.9133** |
+| R2 centred | **0.9307** | 0 | 0.9307 |
+| E1 at Λ=15343 | 0.8316 | -1 | 0.8996 |
+
+**At offset zero the upper bound is below the encoder** — E1 0.8316 against R2
+0.8247. Reported as it stands, a spiking encoder has beaten a mel filterbank,
+which is the sort of result that gets a paper rejected by someone who spots the
+alignment and the sort that gets it accepted by someone who does not. At each
+condition's own best offset the ordering is restored and the gap is 1.4 points.
+Nothing about the encoding differs between those readings; only which frame the
+labels were paired with. Q24 already carried the alignment question; it now
+also carries the fact that the answer decides whether the study's central
+control is above or below what it controls for.
+
+**The two R2 rows cross-check the diagnosis rather than restating it.** A
+centred window is displaced ~12.5 ms, or 1.25 frames, from a causal one. Its
+optimum duly sits at offset 0 where the causal window's sits at -1, and the two
+best values agree to within 1.7 points. The lag is a property of where the
+analysis window sits, and R2 has it as much as the spiking path does — which
+rules out the reading that this is something the encoders are doing.
+
+**The gap to the bound, which is what §5.9 exists to produce.** At each
+condition's best offset, against R2 causal at 0.9133:
+
+| Λ | E1 best | gap | % of R2 | event bandwidth |
+|---|---|---|---|---|
+| 160 | 0.5903 | 0.3230 | 64.6 % | 4 163 bps |
+| 397 | 0.7052 | 0.2081 | 77.2 % | 10 313 bps |
+| 997 | 0.7564 | 0.1569 | 82.8 % | 25 915 bps |
+| 2447 | 0.7791 | 0.1342 | 85.3 % | 63 623 bps |
+| 6036 | 0.8414 | 0.0719 | 92.1 % | 156 948 bps |
+| 15343 | 0.8996 | 0.0137 | 98.5 % | 398 929 bps |
+
+**And a finding that runs against the case for events, which is why it is worth
+stating plainly.** R2's dense features cost **128 000 bits per second** — 40
+values × 32 bits × 100 frames/s. E1 only reaches 98.5 per cent of R2's accuracy
+at Λ = 15343, where its event stream costs **398 929 bps**, three times more
+than the dense representation it is approximating. The two bandwidths cross at
+about Λ = 4900, where E1 sits near 92 per cent of the bound. On this corpus,
+at these declared widths, the event representation is *not* cheaper than mel
+features in the regime where it is competitive on accuracy.
+
+Both widths are declared parameters and the conclusion moves with them: 20 bits
+of timestamp is generous, and so is 32 bits per mel coefficient. The crossover
+is a statement about `b_t = 20`, `b_p = 1` and `32`, not about events in
+general, and §6.3 already insists the encoder's own cost be charged rather than
+hidden. But it is the first quantitative version of the study's central
+engineering question this project has produced, and it does not currently
+favour the answer the field assumes. Flagged rather than smoothed, per the
+working practice. It is a synthetic 8-class corpus and nothing here transfers
+to TIMIT; the number to watch is the shape, not the value.
+
+**Tests:** 122 passed, 2 failed, 1 skipped, from 107/2/1. Failure sets diffed.
+The 15 new ones are `tests/test_reference.py`. The one worth having asserts
+that R2's probe settings, split and frame counts are identical to a spiking
+condition's — true by construction under D51, and the test is there to notice
+if that stops. The causal window is asserted to contain no sample later than
+`t = k*hop`, which is the property that keeps the gap attributable to the
+encoding. Two remaining failures unchanged: `test_G3[E5]` (Q19), `test_T5_3`
+(Q20).
+**Results written:** `results/reference_r2_t1_synthetic.json`, id
+`reference_r2_t1_synthetic`, config `configs/reference_r2_t1_synthetic.json`.
+**Blocked on:** unchanged. Q24 is now the question with the most riding on it.
+**Next:** P1, the count-only baseline of §7.1, is now computable — equation
+(40)'s ceiling is R2 and it exists. After that T3 and T2, which the week 4 P2
+gate needs.
