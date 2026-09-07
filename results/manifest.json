@@ -97,6 +97,16 @@
         "Q14 measured 12.4x at e_frac = 0.20 on a prototype that was then discarded, with no provenance record; this run is that figure re-measured against the shipped rule.",
         "Q14 and proposal 5.6 state identical event counts across 'five decades of input scale' for drive scales 0.01 to 100. Counts are expected to be identical; the decade count is expected NOT to reproduce, since 0.01 to 100 is four decades of amplitude and eight of frame energy."
       ]
+    },
+    {
+      "id": "probe_e1_t1_synthetic",
+      "script": "scripts/run_probe.py",
+      "config": "configs/probe_e1_t1_synthetic.json",
+      "commit": "cc9bfafeba636b2ab4f46fdaba5d5680f1fed8de",
+      "seed": 0,
+      "output": "results/probe_e1_t1_synthetic.json",
+      "date": "2026-09-07",
+      "predictions": []
     }
   ]
 }
