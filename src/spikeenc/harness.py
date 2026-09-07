@@ -42,6 +42,8 @@ from .features import featurise
 from .frontend import Filterbank
 from .probes import LinearProbe
 from .reference import feature_bandwidth_bps, mel_features
+from .segments import (segment_counts, segment_table, segment_votes,
+                       temporal_information_index)
 from .splits import speaker_disjoint_split
 from .tasks import (UNLABELLED, LabelSet, frame_labels, majority_floor,
                     shift_labels, stack_context)
@@ -165,22 +167,33 @@ def calibrate_rate_param(corpus, encoder_name, target_lambda, n_channels,
     return mid, lam_mid, max_iter
 
 
-def build_dataset(trains, corpus, labelset, tau, hop, context):
+def build_dataset(trains, corpus, labelset, tau, hop, context,
+                  labels_only=False):
     """Featurise every utterance and pair each frame with its T1 label.
 
     Returns `(X, y, uid_of_frame)`. Frame `k` of an utterance takes the label
     of the segment containing `t = k * hop`, which is the instant SPEC section
     5 says that frame samples — features and targets are on one grid by
     construction, and control C5 checks that the construction is right.
+
+    With `labels_only`, `X` comes back as None and `trains` is not read. That
+    is for callers whose features come from somewhere other than an encoder —
+    R2 — and which need the labels and the frame-to-utterance map on exactly
+    the same grid.
     """
     xs, ys, uids = [], [], []
     for utt in corpus:
-        f = featurise(trains[utt.uid], tau=tau, hop=hop, split_polarity=True)
-        y = frame_labels(utt, hop, labelset, n_frames=f.shape[0])
-        xs.append(stack_context(f, context))
+        n_frames = int(np.floor(utt.duration / hop)) + 1
+        if not labels_only:
+            f = featurise(trains[utt.uid], tau=tau, hop=hop,
+                          split_polarity=True)
+            n_frames = f.shape[0]
+            xs.append(stack_context(f, context))
+        y = frame_labels(utt, hop, labelset, n_frames=n_frames)
         ys.append(y)
         uids.append(np.full(len(y), utt.uid, dtype=object))
-    return (np.concatenate(xs), np.concatenate(ys), np.concatenate(uids))
+    x = None if labels_only else np.concatenate(xs)
+    return (x, np.concatenate(ys), np.concatenate(uids))
 
 
 def budget_cross_check(trains):
@@ -373,3 +386,207 @@ def run_t1_reference(corpus, *, labelset=None, n_mels=40, frame=0.025,
         "seconds": time.time() - t0,
     })
     return out
+
+
+def _segment_masks(split, seg_uid):
+    """Segments inherit the speaker-disjoint split of the utterance they sit in."""
+    return (np.isin(seg_uid, np.asarray(split.train, dtype=object)),
+            np.isin(seg_uid, np.asarray(split.test, dtype=object)))
+
+
+def _score_segments(x, seg_label, train_mask, test_mask, n_classes, alpha):
+    """Fit a segment-level probe and return its test accuracy.
+
+    Same `LinearProbe` and same `alpha` as every other condition — C4 asks for
+    identical decoding, and P1 compares a count condition against a temporal
+    one, so a difference in the decoder would land squarely in equation (40).
+    """
+    keep_tr = train_mask & (seg_label != UNLABELLED)
+    keep_te = test_mask & (seg_label != UNLABELLED)
+    probe = LinearProbe(n_classes, alpha=alpha).fit(x[keep_tr],
+                                                    seg_label[keep_tr])
+    pred = probe.predict(x[keep_te])
+    return float(np.mean(pred == seg_label[keep_te])), probe
+
+
+def _score_frames_to_segments(x, y, uid, corpus, labelset, hop, offset,
+                              train_mask, seg_label, seg_test_mask, alpha):
+    """Fit the frame probe at `offset`, then majority-vote it onto segments.
+
+    The label shift and the frame-to-segment attribution use the same offset,
+    so a probe trained against the label at `(k + offset)*hop` has its vote
+    counted towards the segment containing that same instant. Getting those two
+    out of step would be a silent off-by-one of exactly the kind C5 exists for.
+    """
+    y_o = np.concatenate([shift_labels(y[uid == u.uid], offset)
+                          for u in corpus])
+    probe = LinearProbe(len(labelset), alpha=alpha).fit(x[train_mask],
+                                                        y_o[train_mask])
+    votes = segment_votes(probe.predict(x), uid, corpus, hop, len(labelset),
+                          n_segments=len(seg_label), offset_frames=offset)
+    keep = seg_test_mask & (seg_label != UNLABELLED) & (votes != UNLABELLED)
+    return float(np.mean(votes[keep] == seg_label[keep]))
+
+
+def mel_dataset(corpus, n_mels=40, frame=0.025, hop=0.010,
+                alignment="causal", context=0, f_min=50.0, f_max=8000.0):
+    """R2's features for the whole corpus, in corpus order.
+
+    Hoisted out of `run_p1` because R2 does not depend on the encoder or on its
+    rate parameter: the ceiling of equation (40) is the same at every budget
+    point, and computing it once is both faster and safer than computing it six
+    times and trusting the six to agree.
+    """
+    xs = []
+    for utt in corpus:
+        f = mel_features(utt, n_mels=n_mels, frame=frame, hop=hop,
+                         alignment=alignment, f_min=f_min, f_max=f_max)
+        xs.append(stack_context(f, context))
+    return np.concatenate(xs)
+
+
+def ceiling_accuracies(corpus, mel_x, *, labelset=None, hop=0.010,
+                       offsets=(-2, -1, 0), test_fraction=0.3, seed=0,
+                       alpha=1e-4):
+    """Segment-level accuracy of the R2 ceiling, at each offset.
+
+    Equation (40)'s denominator. Separate from `run_p1` because R2 depends on
+    neither the encoder nor its rate parameter, so a sweep computes this once
+    per split seed rather than once per budget point — and because computing it
+    six times and trusting the six to agree is a worse guarantee than computing
+    it once.
+    """
+    labelset = labelset or LabelSet(corpus.labels)
+    split = speaker_disjoint_split(corpus, test_fraction=test_fraction,
+                                   seed=seed)
+    seg_label, seg_uid, _, _, _ = segment_table(corpus, labelset)
+    _, seg_test = _segment_masks(split, seg_uid)
+
+    _, y, uid = build_dataset({u.uid: None for u in corpus}, corpus, labelset,
+                              0.005, hop, 0, labels_only=True)
+    frame_train = np.isin(uid, np.asarray(split.train, dtype=object))
+    return {str(o): _score_frames_to_segments(
+        mel_x, y, uid, corpus, labelset, hop, o, frame_train, seg_label,
+        seg_test, alpha) for o in offsets}
+
+
+def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
+           test_fraction=0.3, seed=0, alpha=1e-4, offsets=(-2, -1, 0),
+           n_mels=40, frame=0.025, alignment="causal", f_min=50.0,
+           f_max=8000.0, count_offset_control=0.020, mel_x=None,
+           ceiling=None):
+    """Preliminary experiment P1 (proposal 7.1) on T1, at segment level.
+
+    Four conditions on one speaker-disjoint split, all decoded by the same
+    probe at the same `alpha`:
+
+    - `count`   — per-channel event counts over the segment, no time axis.
+    - `rate`    — the same divided by segment duration, so duration carries no
+                  information (Q26).
+    - `temporal`— the frame probe on equation (32), majority-voted to segments.
+    - `ceiling` — R2's mel features, same probe, same vote.
+
+    and the temporal information index of equation (40) built from them. The
+    two frame-based conditions are scored at every offset in `offsets`, because
+    Q24 established that offset zero is not their best alignment and an index
+    computed there would understate the numerator and the denominator by
+    different amounts.
+    """
+    labelset = labelset or LabelSet(corpus.labels)
+    t0 = time.time()
+    n_classes = len(labelset)
+
+    split = speaker_disjoint_split(corpus, test_fraction=test_fraction,
+                                   seed=seed)
+    seg_label, seg_uid, _, _, _ = segment_table(corpus, labelset)
+    seg_train, seg_test = _segment_masks(split, seg_uid)
+
+    # --- the two count conditions, which have no frame grid at all ----------
+    counts = segment_counts(trains, corpus, normalise=False)
+    rates = segment_counts(trains, corpus, normalise=True)
+    a_count, count_probe = _score_segments(counts, seg_label, seg_train,
+                                           seg_test, n_classes, alpha)
+    a_rate, _ = _score_segments(rates, seg_label, seg_train, seg_test,
+                                n_classes, alpha)
+
+    # C3 for the count condition — permuted training labels must return to the
+    # floor here too, since the segment split is a different partition of the
+    # data from the frame split and could leak where the frame one does not.
+    rng = np.random.default_rng(seed + 991)
+    shuffled = seg_label.copy()
+    idx = np.flatnonzero(seg_train & (seg_label != UNLABELLED))
+    shuffled[idx] = seg_label[rng.permutation(idx)]
+    a_count_shuffled, _ = _score_segments(counts, shuffled, seg_train,
+                                          seg_test, n_classes, alpha)
+
+    # C5's segment-level analogue: slide the counting window off the segment.
+    # A count that does not care where its window sits is not measuring the
+    # segment, and the index would be built on nothing.
+    shifted = segment_counts(trains, corpus, offset=count_offset_control)
+    a_count_shifted, _ = _score_segments(shifted, seg_label, seg_train,
+                                         seg_test, n_classes, alpha)
+
+    # --- the two frame-based conditions -------------------------------------
+    x_t, y, uid = build_dataset(trains, corpus, labelset, tau, hop, context)
+    frame_train = np.isin(uid, np.asarray(split.train, dtype=object))
+
+    x_r2 = mel_dataset(corpus, n_mels=n_mels, frame=frame, hop=hop,
+                       alignment=alignment, context=context, f_min=f_min,
+                       f_max=f_max) if mel_x is None else mel_x
+
+    temporal = {}
+    for o in offsets:
+        temporal[str(o)] = _score_frames_to_segments(
+            x_t, y, uid, corpus, labelset, hop, o, frame_train, seg_label,
+            seg_test, alpha)
+    if ceiling is None:
+        ceiling = {str(o): _score_frames_to_segments(
+            x_r2, y, uid, corpus, labelset, hop, o, frame_train, seg_label,
+            seg_test, alpha) for o in offsets}
+
+    best_t = max(temporal, key=temporal.get)
+    best_c = max(ceiling, key=ceiling.get)
+    n_test_seg = int(np.sum(seg_test & (seg_label != UNLABELLED)))
+    floor = float(np.bincount(seg_label[seg_test & (seg_label != UNLABELLED)]
+                              ).max() / max(1, n_test_seg))
+
+    return {
+        "level": "segment",
+        "accuracy_count": a_count,
+        "accuracy_rate": a_rate,
+        "accuracy_temporal": temporal,
+        "accuracy_ceiling": ceiling,
+        "best_offset_temporal": best_t,
+        "best_offset_ceiling": best_c,
+        # Equation (40) two ways: at the literal offset zero, and with each
+        # frame-based condition at its own best alignment. Reported together
+        # because Q24 is open and the two readings differ.
+        "tii_at_zero": temporal_information_index(
+            temporal["0"], a_count, ceiling["0"]),
+        "tii_at_best": temporal_information_index(
+            temporal[best_t], a_count, ceiling[best_c]),
+        "tii_at_best_using_rate": temporal_information_index(
+            temporal[best_t], a_rate, ceiling[best_c]),
+        # Equation (40)'s denominator, reported because the index alone cannot
+        # be judged without it: a thin denominator makes a large index that
+        # reads as a strong result and is seed noise.
+        "tii_denominator_at_zero": ceiling["0"] - a_count,
+        "tii_denominator_at_best": ceiling[best_c] - a_count,
+        "majority_floor": floor,                          # C2
+        "chance": labelset.chance,                        # C2
+        "count_shuffled_accuracy": a_count_shuffled,      # C3
+        "count_window_shifted_accuracy": a_count_shifted,  # C5 analogue
+        "count_window_shift_s": count_offset_control,
+        "split": split.as_dict(),                         # C4
+        "lambda_events_per_s": corpus_event_rate(trains, corpus),
+        "n_segments_train": int(np.sum(seg_train & (seg_label != UNLABELLED))),
+        "n_segments_test": n_test_seg,
+        "n_features_count": int(counts.shape[1]),
+        "n_features_temporal": int(x_t.shape[1]),
+        "n_features_ceiling": int(x_r2.shape[1]),
+        "probe_settings": count_probe.settings,           # C4
+        "featurisation": {"tau": tau, "hop": hop, "context": context,
+                          "n_mels": n_mels, "frame": frame,
+                          "alignment": alignment},
+        "seconds": time.time() - t0,
+    }
