@@ -1,0 +1,36 @@
+{
+  "result_id": "t3_boundary_e1_synthetic",
+  "task": "T3",
+  "encoder": "E1",
+  "n_channels": 32,
+  "rate_params_from": "probe_e1_t1_synthetic",
+  "corpus": {
+    "kind": "synthetic",
+    "n_speakers": 10,
+    "utterances_per_speaker": 3,
+    "phones_per_utterance": 8,
+    "sample_rate": 16000,
+    "seed": 0,
+    "noise_level": 0.005
+  },
+  "featurisation": {
+    "tau": 0.005,
+    "hop": 0.010,
+    "n_mels": 40,
+    "frame": 0.025,
+    "alignment": "causal"
+  },
+  "t3": {
+    "tolerance": 0.020,
+    "label_tolerance_frames": 1,
+    "min_separation": 0.020,
+    "n_thresholds": 33
+  },
+  "contexts": [0, 2, 5],
+  "target_lambdas": [400, 2500, 16000],
+  "offsets": [-1, 0],
+  "probe": {"alpha": 0.0001},
+  "split": {"test_fraction": 0.3},
+  "split_seeds": [0, 1, 2],
+  "predictions": []
+}
