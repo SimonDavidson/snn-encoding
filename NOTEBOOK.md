@@ -1506,3 +1506,85 @@ run on the stand-in at all.
 **Next:** T3 and T2 adapters, which P2 needs. But Q28 says plainly that a P2 run
 on this corpus could not settle the gate it exists for, so the honest ordering
 may be to build both and hold the gate for TIMIT.
+
+## 2026-09-07 | session: implementation (fourth block)
+**Did:** Built T3, boundary detection (§4.3) — peak picking, one-to-one
+matching, precision/recall/F, the R-value, and frame AUC — and ran it on E1
+across three budgets and three context widths with R2 alongside. **T2 is not
+built.** I said at the start of this block that both in one session would be an
+unreviewable drop; it would have been, and T3 alone produced three questions.
+
+**The R-value was looked up, not recalled.** Räsänen, Laine and Altosaar,
+Interspeech 2009. `R = 1 − (|r₁| + |r₂|)/2`, `r₁ = √((1−HR)² + OS²)`,
+`r₂ = (−OS + HR − 1)/√2`, `OS = N_detected/N_ref − 1`. The proposal names the
+metric and gives neither formula nor citation, and writing one from memory is
+the thing the working practice forbids. Checked against the two points the
+definition pins: perfect segmentation gives exactly 1, and buying recall by
+doubling detections keeps F above 0.6 while dropping R by more than 0.3, which
+is the behaviour §4.3 wants it for.
+
+**A correction to my own reading, made in the same session that produced it.**
+A 12-utterance smoke test gave frame AUC 0.444 at context 0 — below chance —
+and I read that as the per-frame probe being *structurally incapable* of
+boundary detection. On the full 30-utterance corpus the same condition gives
+0.644, 0.521 and 0.684 at the three budgets, against shuffled controls at 0.50
+to 0.54. **The probe does learn at context zero.** The below-chance figure was a
+small-sample artefact of a 12-utterance corpus with 32 test segments, and the
+strong version of the claim was wrong. What survives is weaker and still
+matters, and it is what Q30 says.
+
+**What actually holds.** At context 0 no E1 condition beats evenly spaced
+boundaries at the reference rate:
+
+| condition | context | Λ | F | R-value | frame AUC | shuffled AUC |
+|---|---|---|---|---|---|---|
+| E1 | 0 | 397 | 0.4554 | +0.393 | 0.6438 | 0.5411 |
+| E1 | 0 | 2447 | 0.4468 | −0.476 | 0.5212 | 0.5181 |
+| E1 | 0 | 15343 | 0.4355 | +0.286 | 0.6843 | 0.5037 |
+| E1 | 2 | 15343 | 0.7448 | +0.776 | 0.8212 | 0.4705 |
+| E1 | 5 | 15343 | **0.7576** | +0.718 | **0.8581** | 0.4728 |
+| R2 | 0 | — | 0.6852 | +0.667 | 0.6888 | 0.5522 |
+| uniform baseline | — | — | 0.5873 | — | — | — |
+
+Context is what makes T3 viable: two frames of it take the same encoder at the
+same budget from 0.436 to 0.745. Q30.
+
+**E1 beats R2 on T3.** 0.7576 against 0.6852 on F, 0.8581 against 0.6888 on
+AUC, each at its own best context. §5.9 calls R2 "the non-spiking upper bound"
+and it does not bound this task. I believe the mechanism rather than a defect —
+25 ms windows hopped by 10 ms smear a transition that an event stream resolves
+at event precision, and §4.3 names transient timing as exactly what T3 rewards
+— but the honest position is that I do not know whether E1 beats R2 or beats
+*this* R2, whose window length was chosen for phone classification. Q31, and it
+should be settled before any T3 figure is quoted.
+
+**Why frame AUC is now reported beside every F-score.** They disagree. R2 at
+context 0 has AUC 0.6888 and F 0.6852; E1 at context 0, Λ=2447 has AUC 0.5212
+and F 0.4468 — but with an R-value of −0.476, meaning it reached that F by
+over-segmenting. F-score is the product of probe, threshold, peak picker and
+the corpus's boundary statistics; AUC is the probe alone. Without both, a
+detector firing at roughly the right rate is indistinguishable from one that
+works, which is the failure the R-value was invented for and which the first
+smoke test walked straight into. D56.
+
+**Margins rather than passes.** C3 shuffled-label controls sit at AUC 0.47 to
+0.55 across all twelve conditions — chance — so the split does not leak on T3
+either. The uniform baseline is a real floor and not a formality: it scores
+0.5873, above eight of the twelve learned conditions. `frame_auc` returns
+exactly 0.5 on a constant posterior via the tie correction, checked, because
+without it a probe that learned nothing would score by luck of tie ordering.
+
+**Tests:** 157 passed, 2 failed, 1 skipped, from 137/2/1. The 20 new ones are
+`tests/test_boundaries.py`. Two remaining failures unchanged: `test_G3[E5]`
+(Q19), `test_T5_3` (Q20).
+**Results written:** `results/t3_boundary_e1_synthetic.json`, id
+`t3_boundary_e1_synthetic`.
+**Blocked on:** unchanged for implementation. Q28's caveat applies to every
+number above — quasi-regular phone durations make the uniform baseline far
+stronger here than on real speech.
+**Next:** T2. It needs a decision this session did not reach: §4.2 wants the
+reference contour from a standard pitch tracker with a second tracker run
+against it to quantify disagreement, and neither exists on this box. On the
+stand-in the commanded f0 is exact, so T2 can be built and validated without a
+tracker — but the tracker question has to be answered before T2 runs on TIMIT,
+and it is worth raising before the code is written rather than after.
