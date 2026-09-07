@@ -68,6 +68,7 @@ def main(config_path):
     mel_x = mel_dataset(corpus, n_mels=feat["n_mels"], frame=feat["frame"],
                         hop=feat["hop"], alignment=feat["alignment"],
                         context=feat.get("context", 0))
+    print(f"tau_phi swept over {feat['taus']} (section 6.1)")
     ceilings = {}
     for s in cfg["split_seeds"]:
         ceilings[s] = ceiling_accuracies(
@@ -83,7 +84,8 @@ def main(config_path):
         value = p["rate_param"]
         trains = encode_corpus(corpus, cfg["encoder"], [value],
                                cfg["n_channels"], source["front_end"])[float(value)]
-        runs = [run_p1(corpus, trains, labelset=labelset, tau=feat["tau"],
+        runs = [run_p1(corpus, trains, labelset=labelset,
+                       taus=feat["taus"],
                        hop=feat["hop"], context=feat.get("context", 0),
                        test_fraction=cfg["split"]["test_fraction"], seed=s,
                        alpha=cfg["probe"]["alpha"], offsets=offsets,
@@ -94,9 +96,10 @@ def main(config_path):
 
         count = [r["accuracy_count"] for r in runs]
         rate = [r["accuracy_rate"] for r in runs]
-        best_t = [max(r["accuracy_temporal"].values()) for r in runs]
+        best_t = [r["best_accuracy_temporal"] for r in runs]
         best_c = [max(r["accuracy_ceiling"].values()) for r in runs]
-        zero_t = [r["accuracy_temporal"]["0"] for r in runs]
+        zero_t = [r["accuracy_temporal"][f'{feat["taus"][0]}']["0"]
+                  for r in runs]
         zero_c = [r["accuracy_ceiling"]["0"] for r in runs]
 
         point = {
@@ -110,6 +113,10 @@ def main(config_path):
             "accuracy_temporal_zero_mean": float(np.mean(zero_t)),
             "accuracy_ceiling_best_mean": float(np.mean(best_c)),
             "accuracy_ceiling_zero_mean": float(np.mean(zero_c)),
+            "best_tau_by_seed": [r["best_tau_temporal"] for r in runs],
+            "best_offset_by_seed": [r["best_offset_temporal"] for r in runs],
+            "tii_denominator_at_best": float(np.mean(best_c))
+                                       - float(np.mean(count)),
             # Equation (40) on the seed means, rather than the mean of
             # per-seed indices: a ratio of small differences is unstable
             # per seed, and averaging the ratio would weight the noisiest

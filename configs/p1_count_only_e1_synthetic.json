@@ -14,16 +14,35 @@
     "noise_level": 0.005
   },
   "featurisation": {
-    "tau": 0.005,
-    "hop": 0.010,
+    "hop": 0.01,
     "context": 0,
     "n_mels": 40,
     "frame": 0.025,
-    "alignment": "causal"
+    "alignment": "causal",
+    "taus": [
+      0.002,
+      0.005,
+      0.02
+    ]
   },
-  "offsets": [-2, -1, 0],
-  "probe": {"alpha": 0.0001},
-  "split": {"test_fraction": 0.3},
-  "split_seeds": [0, 1, 2],
-  "predictions": ["P-06"]
+  "offsets": [
+    -2,
+    -1,
+    0
+  ],
+  "probe": {
+    "alpha": 0.0001
+  },
+  "split": {
+    "test_fraction": 0.3
+  },
+  "split_seeds": [
+    0,
+    1,
+    2
+  ],
+  "predictions": [
+    "P-06"
+  ],
+  "supersede": true
 }

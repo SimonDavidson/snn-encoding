@@ -474,7 +474,7 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
            test_fraction=0.3, seed=0, alpha=1e-4, offsets=(-2, -1, 0),
            n_mels=40, frame=0.025, alignment="causal", f_min=50.0,
            f_max=8000.0, count_offset_control=0.020, mel_x=None,
-           ceiling=None):
+           ceiling=None, taus=None):
     """Preliminary experiment P1 (proposal 7.1) on T1, at segment level.
 
     Four conditions on one speaker-disjoint split, all decoded by the same
@@ -527,25 +527,34 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
                                          seg_test, n_classes, alpha)
 
     # --- the two frame-based conditions -------------------------------------
-    x_t, y, uid = build_dataset(trains, corpus, labelset, tau, hop, context)
+    taus = tuple(taus) if taus else (tau,)
+    _, y, uid = build_dataset({u.uid: None for u in corpus}, corpus, labelset,
+                              tau, hop, context, labels_only=True)
     frame_train = np.isin(uid, np.asarray(split.train, dtype=object))
 
     x_r2 = mel_dataset(corpus, n_mels=n_mels, frame=frame, hop=hop,
                        alignment=alignment, context=context, f_min=f_min,
                        f_max=f_max) if mel_x is None else mel_x
 
-    temporal = {}
-    for o in offsets:
-        temporal[str(o)] = _score_frames_to_segments(
+    temporal, n_features_temporal = {}, 0
+    for tv in taus:
+        x_t, _, _ = build_dataset(trains, corpus, labelset, tv, hop, context)
+        n_features_temporal = x_t.shape[1]
+        temporal[f"{tv}"] = {str(o): _score_frames_to_segments(
             x_t, y, uid, corpus, labelset, hop, o, frame_train, seg_label,
-            seg_test, alpha)
+            seg_test, alpha) for o in offsets}
     if ceiling is None:
         ceiling = {str(o): _score_frames_to_segments(
             x_r2, y, uid, corpus, labelset, hop, o, frame_train, seg_label,
             seg_test, alpha) for o in offsets}
 
-    best_t = max(temporal, key=temporal.get)
+    flat_t = {(tv, o): a for tv, byoff in temporal.items()
+              for o, a in byoff.items()}
+    best_tv, best_t = max(flat_t, key=flat_t.get)
     best_c = max(ceiling, key=ceiling.get)
+    # The literal offset-zero reading, at the first tau in the sweep, kept so
+    # the strict version of equation (40) is still recoverable.
+    zero_t = temporal[f"{taus[0]}"]["0"]
     n_test_seg = int(np.sum(seg_test & (seg_label != UNLABELLED)))
     floor = float(np.bincount(seg_label[seg_test & (seg_label != UNLABELLED)]
                               ).max() / max(1, n_test_seg))
@@ -557,16 +566,18 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
         "accuracy_temporal": temporal,
         "accuracy_ceiling": ceiling,
         "best_offset_temporal": best_t,
+        "best_tau_temporal": best_tv,
+        "best_accuracy_temporal": flat_t[(best_tv, best_t)],
         "best_offset_ceiling": best_c,
         # Equation (40) two ways: at the literal offset zero, and with each
         # frame-based condition at its own best alignment. Reported together
         # because Q24 is open and the two readings differ.
         "tii_at_zero": temporal_information_index(
-            temporal["0"], a_count, ceiling["0"]),
+            zero_t, a_count, ceiling["0"]),
         "tii_at_best": temporal_information_index(
-            temporal[best_t], a_count, ceiling[best_c]),
+            flat_t[(best_tv, best_t)], a_count, ceiling[best_c]),
         "tii_at_best_using_rate": temporal_information_index(
-            temporal[best_t], a_rate, ceiling[best_c]),
+            flat_t[(best_tv, best_t)], a_rate, ceiling[best_c]),
         # Equation (40)'s denominator, reported because the index alone cannot
         # be judged without it: a thin denominator makes a large index that
         # reads as a strong result and is seed noise.
@@ -582,10 +593,10 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
         "n_segments_train": int(np.sum(seg_train & (seg_label != UNLABELLED))),
         "n_segments_test": n_test_seg,
         "n_features_count": int(counts.shape[1]),
-        "n_features_temporal": int(x_t.shape[1]),
+        "n_features_temporal": int(n_features_temporal),
         "n_features_ceiling": int(x_r2.shape[1]),
         "probe_settings": count_probe.settings,           # C4
-        "featurisation": {"tau": tau, "hop": hop, "context": context,
+        "featurisation": {"taus": list(taus), "hop": hop, "context": context,
                           "n_mels": n_mels, "frame": frame,
                           "alignment": alignment},
         "seconds": time.time() - t0,
