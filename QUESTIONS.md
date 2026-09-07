@@ -1943,3 +1943,163 @@ configure.
 environment. `.github/workflows/tests.yml` is a design-session file listed in
 CLAUDE.md, so this is raised rather than fixed, per the precedence rule.
 **Answer:** (open)
+
+### Q26 — P1's count features: raw counts, or counts normalised by segment duration?
+**Raised:** 2026-09-07 by implementation session
+**Context:** implementing P1 (proposal 7.1), which specifies "the vector of
+per-channel event counts `n_c`, discarding event times entirely".
+
+**The problem with a raw count.** A count is a rate multiplied by a duration.
+Segment duration is itself a form of timing, and on real speech it is
+informative about phone identity — vowels and stops differ systematically in
+length. So a count-only probe on TIMIT could score partly by reading duration,
+which is precisely the quantity P1 is supposed to have removed, and equation
+(40)'s numerator would shrink for a reason that has nothing to do with what the
+encoding preserves.
+
+**Measured, and on this corpus it does not matter.** Both are computed and
+recorded. Count minus rate accuracy across the six budget points:
++0.023, 0.000, -0.005, -0.014, 0.000, +0.005. The largest is 1.7 test segments
+out of 72. That is expected — the stand-in draws segment durations uniformly
+and independently of phone identity, so there is no duration cue to read. It
+therefore says nothing about TIMIT, where there is one.
+
+**Question:** which is P1's headline figure? Both are recorded either way; what
+is being asked is which one equation (40) should use when the result is
+reported, and whether the answer changes on a corpus where duration is
+informative.
+
+**Options considered:**
+1. **Raw counts**, as 7.1 literally says, with the rate figure reported
+   alongside and the difference between them declared as the duration
+   contribution. Keeps the specified quantity and makes the contamination
+   visible rather than removing it silently.
+2. **Duration-normalised rates**, on the grounds that P1's question is about
+   timing and duration is timing. Cleaner as an instrument; departs from 7.1.
+3. Report the index both ways whenever they differ by more than the seed
+   spread, and only then.
+
+Option 1 with the difference always reported is what I have implemented, since
+it needs no change to 7.1 and loses nothing.
+
+**Blocking?** no. Both numbers are in
+`results/p1_count_only_e1_synthetic.json` at every point.
+**Answer:** (open)
+
+### Q27 — P1's index changes sign depending on whether tau_phi is swept, and 7.1 does not say
+**Raised:** 2026-09-07 by implementation session
+**Context:** running P1. The first run fixed `tau_phi = 5 ms` for the temporal
+condition. Section 6.1 requires that it be swept — "evaluating every encoder at
+every value in a set such as {2, 5, 20} milliseconds and reporting each encoder
+at its own best value" — so the run was repeated with the sweep. **Three of the
+six budget points changed the sign of their index.**
+
+| Lambda | TII, tau_phi fixed at 5 ms | TII, tau_phi swept over {2, 5, 20} ms |
+|---|---|---|
+| 160 | -0.200 | **+0.200** |
+| 397 | -0.211 | **+0.158** |
+| 997 | -1.333 | -0.111 |
+| 2447 | undefined | undefined |
+| 6037 | undefined | undefined |
+| 15343 | +0.200 | +0.800 |
+
+**Why it happens, which is structural rather than incidental.** The count
+condition integrates a whole segment, 60 to 140 ms on this corpus. A 5 ms
+exponential kernel integrates far less. So a comparison between them is a
+comparison of *integration windows* at least as much as of timing, and equation
+(40) reads the deficit as an absence of temporal information. The swept
+condition picks `tau_phi = 20 ms` — the longest value offered — at the two
+lowest budgets on every seed, which is what that reading predicts. Neither the
+count conditions nor the ceiling depend on `tau_phi`, so only the numerator
+moves.
+
+The consequence is that P1's headline claim — "how much of each task is
+solvable from event counts alone" — is not invariant to a featurisation
+parameter that 7.1 never mentions and 6.1 says must be swept. A negative index
+would be reported as "the task is not testing temporal coding", when part of
+what it measures is that the temporal condition was given a shorter window.
+
+**Question:** should 7.1 state that the temporal condition is taken at its best
+`tau_phi`, per 6.1? And is the comparison fair even then — a 20 ms kernel is
+still much shorter than the segment the count condition sees, so the residual
+window mismatch remains, just smaller.
+
+**Options considered:**
+1. **Sweep `tau_phi` and take the best**, which is 6.1's existing rule applied
+   without exception. Implemented. Removes most of the artefact and none of the
+   substance. Does not fully equalise the windows.
+2. **Equalise the integration windows explicitly** by giving the temporal
+   condition a context window spanning the segment, so that both conditions see
+   the same span and differ only in whether time within it is resolved. This is
+   the version that actually isolates timing, and it is what I would argue the
+   experiment means. It interacts with Q22, which asks whether a context window
+   is admitted at all.
+3. **State the confound and report the index as a lower bound** on the temporal
+   contribution, since any window mismatch biases it downward.
+
+Option 1 is done; I think option 2 is what P1 is for, but it needs Q22 settled
+first and it is a change to the experiment rather than to its implementation.
+
+**Blocking?** no, but P1 is a week 3 deliverable feeding the week 4 gate, and an
+index whose sign moves with an unstated parameter is not a basis for deciding
+whether a probe task stays in the battery.
+**Answer:** (open)
+
+### Q28 — the stand-in corpus cannot answer P1: its phones are stationary, so counts nearly reach the ceiling
+**Raised:** 2026-09-07 by implementation session
+**Context:** P1's denominator, `A_ceiling - A_count`, collapses on the
+synthetic corpus. Recorded values, three seeds, 72 test segments:
+
+| Lambda | count | temporal | ceiling (R2) | denominator | TII |
+|---|---|---|---|---|---|
+| 160 | 0.7870 | 0.8241 | 0.9722 | 0.1852 | +0.200 |
+| 397 | 0.8843 | 0.8981 | 0.9722 | 0.0880 | +0.158 |
+| 997 | 0.9306 | 0.9259 | 0.9722 | 0.0417 | -0.111 |
+| 2447 | 0.9583 | 0.9306 | 0.9722 | 0.0139 | undefined |
+| 6037 | 0.9583 | 0.9583 | 0.9722 | 0.0139 | undefined |
+| 15343 | 0.9491 | 0.9676 | 0.9722 | 0.0231 | +0.800 |
+
+At four of six budgets the denominator is at or under 0.042, which on 72 test
+segments is three segments. The index is undefined at two points and swings
+from -0.111 to +0.800 between adjacent ones. It is noise.
+
+**The cause is in the synthesiser and I put it there.** Each phone in the
+stand-in is a stationary resonance: fixed formants for the whole segment, with
+raised-cosine edges. So the per-channel event count over a segment is very
+nearly a complete description of the phone, and a count-only probe reaches 96
+per cent where a mel filterbank reaches 97. Real phones have formant
+transitions, and it is those transitions that a count discards and a temporal
+featurisation keeps.
+
+This is exactly the condition 7.1 describes — "a spectral profile task wearing
+a spiking costume" — and P1's diagnostic correctly detects it. The instrument
+works. What it is diagnosing is the corpus, not T1.
+
+**Question:** two, and the first is not mine to answer. Should the stand-in
+gain formant transitions between adjacent phones, so that P1 and the week 4 P2
+gate can be rehearsed on it? Or does P1 simply wait for TIMIT, on the grounds
+that a preliminary experiment about the validity of the battery must be run on
+the corpus the battery will be used on?
+
+I lean to waiting, and to adding transitions only as a way of testing the
+*harness*, never as a source of a reported index. But CLAUDE.md is explicit
+that the battery is the design session's remit — "Log it, raise it, and wait.
+Do not improvise a replacement task" — and making the stand-in more speech-like
+in order to obtain a more interesting index is close enough to that line that I
+have not done it.
+
+**Options considered:**
+1. **Wait for TIMIT.** P1's answer is reported only from the real corpus. The
+   machinery is built, tested and recorded, so the run is a day's work whenever
+   O2 clears.
+2. **Add formant transitions to the stand-in**, declared as a corpus version,
+   with existing results left against version 1 rather than regenerated. Lets
+   P1 and P2 be rehearsed. Risks a reported index that is a property of my
+   synthesiser's coarticulation model.
+3. Both: transitions added for harness rehearsal, and no index reported from
+   the stand-in under any circumstances.
+
+**Blocking?** for P1's and P2's *interpretation*, not for their implementation.
+Both can be run now and neither result can be believed. The week 4 gate is a
+decision about the battery and cannot be taken on synthetic data.
+**Answer:** (open)

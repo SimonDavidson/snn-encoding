@@ -117,6 +117,31 @@
       "output": "results/reference_r2_t1_synthetic.json",
       "date": "2026-09-07",
       "predictions": []
+    },
+    {
+      "id": "p1_count_only_e1_synthetic",
+      "script": "scripts/run_p1.py",
+      "config": "configs/p1_count_only_e1_synthetic.json",
+      "commit": "1f4b11a4413fccb62e710475541a1c14a879f556",
+      "seed": 0,
+      "output": "results/p1_count_only_e1_synthetic.json",
+      "date": "2026-09-07",
+      "predictions": [
+        "P-06"
+      ],
+      "superseded_by": "p1_count_only_e1_synthetic@2026-09-07"
+    },
+    {
+      "id": "p1_count_only_e1_synthetic",
+      "script": "scripts/run_p1.py",
+      "config": "configs/p1_count_only_e1_synthetic.json",
+      "commit": "dfab657cb5a4f71e2a53277c4194a2b1332fcea6",
+      "seed": 0,
+      "output": "results/p1_count_only_e1_synthetic.json",
+      "date": "2026-09-07",
+      "predictions": [
+        "P-06"
+      ]
     }
   ]
 }
