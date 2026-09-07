@@ -1287,3 +1287,17 @@ mel-filterbank bound, which P1's equation (40) needs as its ceiling and which
 nothing blocks. The survey report's narrative is now stale in seven passages
 rather than six — it describes no harness — and remains Simon's call, not a
 mechanical rebuild.
+
+**Addendum, same session, after the push.** CI went red on `fc24cd0` and I
+checked rather than assuming it was the known pair. It is: `test_G3[E5]` and
+`test_T5_3`, the same two, failing identically to the box — 2 failed, 82
+passed, 1 skipped in the known-answers job. No regression from today's work.
+But the run showed something I had not looked for: the workflow's second step,
+"Everything else", is **skipped**, because the Layer 1 step above it exits 1
+and Actions does not run what follows a failed step. So `tests/test_harness.py`
+has never run in CI and will not until Q19 and Q20 clear. The independent check
+CLAUDE.md justifies CI by is unavailable to precisely the newest code. I built
+a clean 3.12 venv with `-e ".[dev]"` and nothing else — numpy 2.5.3 against
+this box's 2.5.2 — and ran the skipped command: 25 passed in 40 s. That rules
+out a dependence on local state today; it is not the standing check, and it is
+me checking my own work. Q25.
