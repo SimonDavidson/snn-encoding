@@ -1,6 +1,6 @@
 """Encoders — the API surface of SPEC.md section 4.
 
-STATUS: E1-E5 implemented. E6 remains a skeleton.
+STATUS: E1-E6 implemented.
 
 Class attributes (NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND) and the
 __init__ signatures are part of the contract — the known-answer suite reads
@@ -674,19 +674,223 @@ class PhaseLocked(Encoder):
         return train
 
 
+
 class TTFS(Encoder):
-    """E6 — time to first spike. Equations (27)-(29).
+    """E6 — time to first spike. Equations (27)-(29), SPEC section 4.7.
 
-    Frame energy is the sum of squared drive samples in the frame, computed on
-    whatever drive is supplied, with no further transformation (SPEC 4.7).
+    The sparsest scheme in the set, and the exact inverse of E1: all the
+    information is in *when* the single event of a channel-frame arrives and
+    none of it is in how many events there are. The event budget is bounded
+    exactly at `n_channels / hop` events per second, which no other encoder
+    here can promise.
+
+    The drive is framed, the energy of each channel-frame is measured, and a
+    channel emits once in a frame at a latency that decreases with that energy.
+    `mode="log"` maps energy to latency by equation (28); `mode="lif"` by the
+    closed-form first-passage time of a LIF under constant current, equation
+    (29). `mode` is not one of the swept axes of proposal section 6.6 -- the
+    SPEC 4.7 default `"log"` is what the comparison runs use.
+
+    **The gate is relative, strict, and over the whole utterance.** A channel
+    emits in frame m when `E_c[m] > e_frac * E_max`, with `E_max` the largest
+    frame energy over *all* channels and *all* frames. Three properties of that
+    sentence are load-bearing and each was paid for:
+
+    - *Relative*, because the absolute `e_min` of the earlier draft sat 6.8
+      decades below the quietest frame of the test drive and gated nothing,
+      giving `test_G3` a span of exactly 1.00x. No absolute default can suit
+      both a synthetic drive and real audio through the front end. Q14, D43.
+    - *Strict*, because on an all-zero drive `E_max` is zero and a non-strict
+      gate emits in every channel of every frame, which violates the silence
+      clause of SPEC 4.1. Strictness also removes the clipping rule that
+      proposal 5.6 asks for: see `_log_offsets`. Q14, D43.
+    - *Over all channels*, not per channel. A per-channel maximum is the more
+      natural reading and it is wrong: it maps every channel's own loudest
+      frame to latency zero, which flattens the spectral profile that is the
+      entire content of a time-to-first-spike snapshot. `test_T6_2` detects
+      the mistake, by asserting a Pearson correlation of exactly -1 within a
+      frame, which holds only if every channel shares one pair of
+      normalisation constants. Q14, Q16, D44.
+
+    The cost is that E6 is the only encoder in the battery with utterance-level
+    normalisation -- E1 to E5 are level-sensitive -- so at matched budget E6
+    gets a scale invariance the others do not. Recorded in SPEC 4.7 and D43 as
+    a limitation for the paper rather than left for a referee to find.
+
+    Unipolar: every event carries polarity +1. A latency code has no second
+    polarity to carry, there being no such thing as a negative first spike.
+
+    Note that with `hop < frame` -- the declared default, 10 ms against 25 ms --
+    two events in the *same* channel from *adjacent* frames can share a
+    timestamp, when their offsets differ by exactly one hop. That is legal:
+    `SpikeTrain` orders ties and `test_T6_1` counts finite offsets rather than
+    distinct times. It is also why the state matrices exist. Frame membership
+    is not recoverable from event times at `hop < frame`, so the T6 tests read
+    `state["offsets"]` and `state["energy"]` directly. D44.
     """
-    NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND = "E6", "e_min", -1, "envelope"
+    NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND = "E6", "e_frac", -1, "envelope"
 
-    def __init__(self, n_channels, e_min=1e-6, frame=0.025, hop=0.010,
+    def __init__(self, n_channels, e_frac=0.20, frame=0.025, hop=0.010,
                  tau_m=0.02, theta=1.0, mode="log"):
-        self.n_channels, self.e_min = n_channels, e_min
+        self.n_channels, self.e_frac = n_channels, e_frac
         self.frame, self.hop = frame, hop
         self.tau_m, self.theta, self.mode = tau_m, theta, mode
 
+    # -- framing -----------------------------------------------------------
+
+    def _frame_energies(self, d, dt):
+        """Equation (27): the sum of squared drive samples in each frame.
+
+        Computed on whatever drive is supplied with no further transformation,
+        as SPEC 4.7 requires, so that a test can reproduce it independently --
+        `test_T6_3` does exactly that, with `np.sum(drive[0] ** 2)`.
+
+        Frame m covers `[m*hop, m*hop + frame)` and there are
+        `floor((n_samples*dt - frame)/hop) + 1` of them, which is SPEC 4.7
+        verbatim and is evaluated in seconds for that reason: it is the formula
+        a Layer 3 reimplementation works from. The integer-sample form
+        `(n - round(frame/dt)) // round(hop/dt) + 1` agrees with it at every
+        frame and hop the suite uses, including the knife-edge case of
+        `test_T6_3` where `frame == hop == n*dt` makes the expression exactly
+        zero and one frame is expected rather than none. Checked rather than
+        assumed, because a value of -1e-16 there would floor to -1, yield zero
+        frames, and silently produce an encoder that emits nothing.
+
+        A drive shorter than one frame gives zero frames and hence no events,
+        rather than raising: SPEC 4.1 makes an empty train legal.
+        """
+        n_ch, n = d.shape
+        n_frames = max(int(np.floor((n * dt - self.frame) / self.hop)) + 1, 0)
+        energy = np.zeros((n_ch, n_frames), dtype=np.float64)
+        for m in range(n_frames):
+            i0 = int(round(m * self.hop / dt))
+            i1 = min(int(round((m * self.hop + self.frame) / dt)), n)
+            energy[:, m] = np.sum(d[:, i0:i1] ** 2, axis=1)
+        return energy
+
+    # -- energy-to-latency maps --------------------------------------------
+
+    def _log_offsets(self, e, e_max, e_min):
+        """Equation (28), the direct logarithmic map:
+
+            offset = T_f * (1 - (log E - log E_min) / (log E_max - log E_min))
+
+        `E_min` is the gate itself, `e_frac * E_max`. The two roles proposal
+        5.6 gives it -- emission gate and normalisation floor -- are one
+        quantity here, which is what makes the equation evaluable: a floor of
+        zero would send `log E_min` to -inf and every offset to nan, and Q16
+        found two of E6's own tests passing `e_min=0.0`. D44.
+
+        Two consequences, and neither needs a rule of its own. A frame at the
+        gate maps to `T_f` and a frame at `E_max` maps to zero, and because the
+        gate is *strict*, anything that fires has `log E - log E_min > 0` and
+        so an offset strictly inside its frame. Proposal 5.6's "clipped to the
+        frame" is therefore unreachable rather than implemented, and the one
+        event Q16 measured landing on the next window's edge was an artefact of
+        the non-strict gate. `test_T6_1` asserts the strictness directly.
+
+        The denominator is written as `log E_max - log E_min` rather than the
+        algebraically equal and better-conditioned `-log e_frac`, because
+        equation (28) is written that way and SPEC section 1 is explicit about
+        the cost of a Layer 3 reimplementation differing from this one in the
+        last bits. It cannot vanish when anything fires: some `E > E_min` and
+        every `E <= E_max`, so `E_min < E_max` strictly.
+        """
+        return self.frame * (1.0 - (np.log(e) - np.log(e_min))
+                             / (np.log(e_max) - np.log(e_min)))
+
+    def _lif_offsets(self, e):
+        """Equation (29), the first-passage time of a LIF under constant
+        current I proportional to the frame energy:
+
+            offset = tau_m * log(I / (I - theta))    for I > theta
+
+        The constant of proportionality is 1, so `I = E_c[m]`. SPEC 4.7 gives
+        no `gain` for this encoder, and `test_T6_3` computes its expected
+        latency from `I = np.sum(drive[0] ** 2)`, which is the frame energy
+        itself; anything else would fail it.
+
+        **A reading SPEC 4.7 does not fix.** Equation (29) is unbounded as
+        I approaches theta from above -- at I = 1.001 and theta = 1 it gives
+        138 ms, five and a half times the default 25 ms frame -- and the
+        specification says nothing about a latency exceeding the frame that
+        produced it. Such an event is suppressed here, on the reading that the
+        neuron simply did not reach threshold inside its window, so there is no
+        first spike in that frame. The alternative readings are to clip to
+        `T_f`, which stacks unrelated energies onto one timestamp, or to emit
+        outside the frame, which puts the event in a later frame's territory
+        and breaks the invariant `test_T6_1` asserts for the log map.
+
+        Recorded here rather than raised as a question: `mode` is not a swept
+        axis of proposal section 6.6, the comparison runs use the SPEC 4.7
+        default `"log"`, and the only test of this branch drives it at I = 4.0,
+        well clear of the boundary. It is a reading a Layer 3 reimplementation
+        must know about, which is why it is written where one will look.
+        """
+        lat = np.full(e.shape, np.nan, dtype=np.float64)
+        spiking = e > self.theta
+        i = e[spiking]
+        lat[spiking] = self.tau_m * np.log(i / (i - self.theta))
+        # NaN compares False, so a non-spiking entry stays NaN rather than
+        # being re-flagged here.
+        lat[lat >= self.frame] = np.nan
+        return lat
+
+    # -- the encoder -------------------------------------------------------
+
     def encode_from_drive(self, drive, dt, seed=None, return_state=False):
-        raise NotImplementedError("E6: equations (27)-(29)")
+        """Equations (27)-(29). Deterministic: `seed` is accepted for interface
+        uniformity and unused.
+
+        `e_frac >= 1` puts the gate at or above the largest frame energy in the
+        utterance and so emits nothing at all. That is coherent rather than an
+        error -- a gate above the maximum gates everything -- and is left to
+        produce an empty train, which SPEC 4.1 makes legal.
+        """
+        if self.mode not in ("log", "lif"):
+            raise ValueError(f"unknown mode {self.mode!r}; expected "
+                             "'log' or 'lif'")
+        if self.mode == "log" and self.e_frac <= 0.0:
+            raise ValueError(
+                f"e_frac must be positive in mode='log', got {self.e_frac!r}: "
+                "under D44 it is both the emission gate and the normalisation "
+                "floor E_min of equation (28), and the value is legal as a "
+                "gate but not as a floor -- log E_min would be -inf and every "
+                "offset nan")
+        if self.frame <= 0.0 or self.hop <= 0.0:
+            raise ValueError(f"frame and hop must be positive, got "
+                             f"frame={self.frame!r}, hop={self.hop!r}")
+
+        d = self._check_drive(drive)
+        n = d.shape[1]
+        energy = self._frame_energies(d, dt)
+        offsets = np.full(energy.shape, np.nan, dtype=np.float64)
+
+        # E_max over all channels and all frames, and the gate below it. On
+        # silence E_max is 0.0, the strict gate admits nothing, and no
+        # logarithm of zero is ever taken.
+        e_max = float(energy.max()) if energy.size else 0.0
+        e_min = self.e_frac * e_max
+        gated = energy > e_min
+
+        if np.any(gated):
+            if self.mode == "log":
+                offsets[gated] = self._log_offsets(energy[gated], e_max, e_min)
+            else:
+                offsets[gated] = self._lif_offsets(energy[gated])
+
+        emit = np.isfinite(offsets)
+        chan, frame_idx = np.nonzero(emit)
+        times = frame_idx * self.hop + offsets[chan, frame_idx]
+
+        train = SpikeTrain.from_events(
+            channel=chan,
+            time=times,
+            polarity=np.ones(chan.size, dtype=np.int8),
+            n_channels=self.n_channels,
+            duration=n * dt,
+            params=self._params(dt=dt),
+        )
+        if return_state:
+            return train, {"energy": energy, "offsets": offsets}
+        return train
