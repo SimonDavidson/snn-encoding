@@ -1856,3 +1856,62 @@ Every T1 number the harness produces is currently at offset zero and is
 therefore a lower bound on what that condition can do, by an amount that varies
 systematically with tau_phi and with whether group delay is compensated.
 **Answer:** (open)
+
+### Q25 — a long-lived Layer 1 failure blinds CI to every other test file
+**Raised:** 2026-09-07 by implementation session
+**Context:** pushing `tests/test_harness.py`, the first test file in the
+repository other than the known-answer suite. It has never run in CI and will
+not until Q19 and Q20 are answered.
+
+**The mechanism.** `.github/workflows/tests.yml` runs two steps in the
+`known-answers` job: "Layer 1 known-answer tests" on
+`tests/test_known_answers.py`, then "Everything else" on the rest of `tests/`.
+The second step has careful handling for pytest's exit code 5 — written when
+`test_known_answers.py` was the only file and the step collected nothing — but
+it never reaches it. `test_G3[E5]` (Q19) and `test_T5_3` (Q20) have failed
+since 2026-09-06, so the first step exits 1 and GitHub Actions skips the
+second. The last five CI runs are all red for those two tests alone, and in
+every one of them "Everything else" is listed as skipped rather than run.
+
+**Why it matters.** CLAUDE.md's own case for CI is that it "runs the
+known-answer suite on every push, in a clean environment you did not
+configure", and that a green local run with a red CI run means something on the
+box is making a test pass that should not. That check is exactly what a new
+test file most needs and is precisely what a new test file cannot currently
+get. The 25 harness tests are the ones with the most box-specific risk in them,
+since they exercise a corpus generator, a hand-written optimiser and a
+filterbank rather than closed-form arithmetic.
+
+**Verified by hand in the meantime, which is not a substitute.** I built a
+clean Python 3.12 venv, installed `-e ".[dev]"` into it — numpy 2.5.3 against
+the box's 2.5.2, scipy 1.18.1, pytest 9.1.1, no scikit-learn, no torch — and
+ran the exact command the skipped step would run. 25 passed in 40 s. That
+tells us the tests are not depending on the box's numpy build or on anything
+locally installed. It does not tell us they will keep not doing so, which is
+the part only CI can do, and it is a check I ran on my own code.
+
+**Question:** should the workflow let the second step run regardless of the
+first? The two obvious mechanisms are `continue-on-error: true` on the Layer 1
+step, or `if: always()` on "Everything else"; either keeps the job red when
+Layer 1 fails while still reporting the rest. There may be a reason to prefer
+failing fast that I am not seeing, in which case the answer is that new test
+files go unchecked until the queue clears, which is worth knowing deliberately.
+
+**Options considered:**
+1. **`if: always()` on "Everything else".** Smallest change, keeps both
+   results visible, job still fails.
+2. **Split into two jobs.** Layer 1 and the rest run independently and report
+   separately; clearest signal, since "Layer 1 red, harness green" is a
+   different state from "both red" and a reader can see which.
+3. **Leave it.** Defensible if the intent is that nothing else matters while a
+   known-answer test is failing — but that intent is currently costing
+   the check on the newest and least-verified code in the repository.
+
+Option 2 if the workflow is being touched anyway; option 1 if not. I have no
+strong view beyond wanting the harness tests checked somewhere I did not
+configure.
+
+**Blocking?** no. Nothing is blocked and every test passes locally in a clean
+environment. `.github/workflows/tests.yml` is a design-session file listed in
+CLAUDE.md, so this is raised rather than fixed, per the precedence rule.
+**Answer:** (open)
