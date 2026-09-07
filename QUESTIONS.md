@@ -1637,3 +1637,204 @@ decades" in the git history should be able to see what happened to it.
 pass, and both `docs/proposal_v2.md` and the Q14 answer block are
 design-session text that I must not edit regardless.
 **Answer:** (open)
+
+### Q22 — the linear probe "applied per frame": is a single 10 ms frame the intended reading?
+**Raised:** 2026-09-07 by implementation session
+**Context:** writing the linear probe of proposal 6.2 for the T1 path. The
+sentence is "multinomial logistic regression on the featurisation of equation
+(32), applied per frame for T1 and T3". Implemented literally, the probe sees
+one frame of `2 * N_ch` features and nothing else.
+
+**Why it matters more than it looks.** Layer 2 control C1 anchors the whole
+pipeline against published TIMIT numbers — 82.68 per cent frame accuracy
+(Ponghiran and Roy), 15.77 per cent PER (Bittar and Garner) — and states that a
+result far below that band means the pipeline is broken and nothing downstream
+is interpretable. But every TIMIT result in that band is produced by a decoder
+with temporal context: Ponghiran and Roy's is an LSTM, Bittar and Garner's an
+LSTM with CTC. A per-frame linear probe on a 10 ms frame is a much weaker
+decoder than either, and there is no reason to expect it to reach 82 per cent
+on anything. If it does not, C1 cannot distinguish "the pipeline is broken"
+from "the probe is per-frame as specified".
+
+The nonlinear probe is a bidirectional GRU and does have context, so it is the
+one that could reasonably be held against the anchor. That suggests C1 is a
+statement about the nonlinear probe specifically, but section 4 does not say
+so, and the nonlinear probe does not exist yet.
+
+**Question:** three things, which may have one answer. Is `context = 0` the
+intended reading of 6.2? Is C1's anchor band meant to apply to the linear
+probe, the nonlinear probe, or the pipeline's best number? And if a context
+window is admitted, is it a shared swept axis like tau_phi — available to every
+encoder equally and reported at each encoder's best — or one fixed value?
+
+**Options considered:**
+1. **Literal: `context = 0`.** Cleanest reading, and the probe genuinely
+   measures per-frame linear accessibility, which is what the accessibility gap
+   of equation (33) is about. C1 then has to be restated as applying to the
+   nonlinear probe.
+2. **A fixed context window**, conventionally +/- 5 frames, declared in the
+   methods. Comparable to standard TIMIT practice and keeps C1 meaningful for
+   the linear probe, at the cost of the probe no longer being per-frame.
+3. **Context as a shared swept axis**, exactly as 6.1 already treats tau_phi:
+   every encoder evaluated at every value, each reported at its own best, the
+   chosen value stated. Consistent with an existing rule in the same section,
+   and it costs a factor of |context values| in compute on every condition.
+
+Implemented as option 1 with `context` a config field defaulting to 0, so
+whichever answer comes back is a config change and not a code change. I have no
+view on which is right; the interaction with C1 is the part I cannot resolve
+from the documents.
+
+**Blocking?** no. The harness runs and the recorded result names its context
+setting. It blocks the *interpretation* of any C1 check once TIMIT arrives, and
+it should be settled before the week 8 screen commits compute to a grid.
+**Answer:** (open)
+
+### Q23 — the logarithmic branch of equation (10) leaves E1, E4 and E6 with no usable operating range
+**Raised:** 2026-09-07 by implementation session
+**Context:** running the probe harness end to end for the first time. E1 at the
+SPEC 4.2 default produced **zero events** on ordinary audio, which is what sent
+me looking.
+
+**The measurement.** `log(e_c + eps)` is negative wherever the envelope is
+below 1.0, which for a peak-normalised utterance through a gammatone bank is
+everywhere: on the synthetic corpus the drive spans **[-13.62, -0.96]**, and
+100.0 per cent of samples are negative. E1 thresholds the membrane against an
+absolute zero, so:
+
+| `theta` | events | Lambda |
+|---|---|---|
+| +1.0 (SPEC default) | 0 | 0 |
+| 0.0 | 0 | 0 |
+| -1.0 | 419616 | 512000 |
+| -16.0 | 419616 | 512000 |
+
+There are two regimes and nothing between them. At `theta >= 0` the membrane
+never reaches threshold and no channel fires. At `theta < 0` the reset level
+V = 0 already exceeds threshold, so every channel fires at every sample and
+Lambda pins at `N_ch / dt = 512000`, the hard ceiling. The rate parameter has no
+span whatever, which is the condition D27 and `test_G3` exist to detect — but
+G3 runs on `conftest`'s synthetic drive, which is positive, so nothing in the
+suite sees this.
+
+**It is not confined to E1.** E4 thresholds the same way. E6 takes the *energy*
+of the drive, and the square of a large negative number is large, so its gate
+selects the frames where `log(e + eps)` is most negative — the quietest ones.
+Measured on one utterance, the correlation between E6's own per-frame energy
+and the true audio RMS is **+0.394** under power compression and **-0.280**
+under log. The encoder inverts.
+
+E2 and E3 are unaffected, because both respond to *changes* in the drive and an
+additive offset cancels exactly. That is the pattern: log compression is
+incompatible with any encoder that compares the drive against an absolute zero,
+and harmless to any encoder that differentiates it first.
+
+**Why this is a design question and not a bug.** Nothing is wrong with the
+encoders — each matches its equations, and every known-answer test passes. The
+issue is that 5.0 and 6.6 both declare the compression method a swept axis, and
+half the encoder set cannot traverse it. A screen that sweeps compression would
+record E1, E4 and E6 as producing nothing under log and conclude something
+false about the encoders.
+
+**Options considered:**
+1. **Shift the log branch to a non-negative form**, `u = log(1 + e/eps)`, which
+   is `log(e + eps) - log(eps)`, equals zero in silence, and preserves the
+   logarithmic character exactly. It changes equation (10) and SPEC section 3.
+   It also makes SPEC 4.1's silence requirement hold by construction rather
+   than, as now, by the drive being far below any positive threshold.
+2. **Declare log compression incompatible with E1, E4 and E6** and exclude that
+   cell from the sweep, as D40 excludes E5's poisson mode from 6.4. Honest, and
+   it leaves a hole in a declared axis.
+3. **Normalise the drive per utterance** before encoding. Rejected on sight:
+   C1 forbids per-encoder preprocessing, and SPEC 4.1 forbids `encode_from_drive`
+   from scaling its input, for reasons that are the whole basis of Layer 1.
+4. **Sweep only power compression.** What I have done to get a result today,
+   as an interim measure and not a proposal. It is the other branch of the same
+   equation and a declared axis value, so nothing is being invented.
+
+Option 1 is the one I would argue for, because the offset is a constant and
+therefore invisible to E2 and E3, which means it costs nothing where the
+current form works and fixes it where it does not. But it edits SPEC and an
+equation, which is not mine to do.
+
+**Blocking?** for the compression axis only. The harness runs under power
+compression and the recorded sweep says so. It blocks any run that sweeps
+compression, and it should be settled before the week 8 screen, which 9 lists
+as sweeping a coarse parameter grid.
+**Answer:** (open)
+
+### Q24 — C5 does not hold as written: accuracy *rises* at offset -1, and the optimum moves with tau_phi
+**Raised:** 2026-09-07 by implementation session
+**Context:** the first end-to-end T1 run. C5 says to "offset labels by plus and
+minus one frame and confirm accuracy drops measurably". Minus one frame does
+not drop. It gains 6.8 points.
+
+**The measurement.** E1 at Lambda = 2000, 32 channels, 12 utterances, linear
+probe, labels shifted against features and the probe refitted at each offset so
+that what is measured is whether the alignment carries information:
+
+| group delay | tau_phi | -2 | -1 | 0 | +1 | best |
+|---|---|---|---|---|---|---|
+| uncompensated | 5 ms | 0.6556 | **0.7343** | 0.6667 | 0.5701 | -1 |
+| uncompensated | 20 ms | **0.8520** | 0.8000 | 0.6844 | 0.5642 | -2 |
+| compensated | 5 ms | 0.6073 | 0.7045 | **0.7640** | 0.5940 | 0 |
+| compensated | 20 ms | 0.8550 | **0.8955** | 0.7109 | 0.6209 | -1 |
+
+**Two independent lags, and the control is reading their sum.** Turning on
+`compensate_group_delay` (D19, D24) moves the optimum from -1 to 0 at
+tau_phi = 5 ms, which is what identifies the first lag as the gammatone bank
+and confirms that the D24 machinery removes it. The second lag is the
+featurisation kernel itself: equation (32) is causal, so frame k's feature is
+dominated by events already past, and going from tau_phi = 5 ms to 20 ms moves
+the optimum one further frame earlier in both rows. Neither is a defect. Both
+are consequences of choices already taken deliberately.
+
+**Why it is worth more than a correction to a checklist item.** tau_phi is a
+*shared swept axis* under 6.1, evaluated over {2, 5, 20} ms with each encoder
+reported at its own best value. The optimal label alignment moves with tau_phi.
+So a study that fixes the alignment at zero and sweeps tau_phi is not comparing
+encoders at their best — it is imposing on each tau_phi a misalignment penalty
+that grows with tau_phi, and then selecting the tau_phi that suffers least from
+it. At 20 ms compensated the penalty is **18.5 points**, 0.7109 against 0.8955.
+That is far larger than any difference between encoders this study expects to
+resolve, and it would fall hardest on exactly the encoders whose natural
+timescale is long, which is the confound 6.1's own caveat about tau_phi was
+written to avoid.
+
+**Question:** two, and the second is the one that matters. Should C5's pass
+criterion be restated — "accuracy is maximised at zero offset", say, rather
+than "drops at both offsets", since as written it presumes the conclusion? And
+how should labels be aligned to frames, given a front-end lag that D19 leaves
+uncompensated by default and a kernel lag that varies over a swept axis?
+
+**Options considered:**
+1. **Fix alignment at zero, compensate group delay, accept the kernel lag.**
+   Simplest. Penalises large tau_phi by construction, which is the confound
+   above, unmitigated.
+2. **Sweep the alignment offset as a declared shared axis**, each encoder
+   reported at its best, exactly as 6.1 already treats tau_phi. Symmetric with
+   an existing rule in the same section, and it is the only option that needs
+   no analysis to be correct. Costs a factor of |offsets| in probe fits, which
+   is the cheap part of a condition.
+3. **Correct analytically**: shift labels by the declared front-end lag of D24
+   plus the kernel's first moment, which for equation (32) sampled at `hop` is
+   tau_phi. Cheapest, and it makes the correction a stated quantity rather than
+   a fitted one — but it is exact only if the two lags are additive and the
+   first moment is the right summary of a causal kernel's delay, neither of
+   which I have checked.
+4. **Make the featurisation kernel symmetric.** Rejected, and worth recording
+   why: a non-causal kernel leaks post-boundary information into the
+   pre-boundary feature, which for T3 boundary detection is the same objection
+   D41 raised against Hilbert magnitude for E5's gate, in a battery where T3 is
+   one task in three.
+
+Option 2 if compute allows, option 3 if it does not. I have implemented the
+offsets as `control_offsets` in the run config, so either is a config change.
+
+**Blocking?** no, and it is the most consequential of the three raised today.
+Every T1 number the harness produces is currently at offset zero and is
+therefore a lower bound on what that condition can do, by an amount that varies
+systematically with tau_phi and with whether group delay is compensated. The
+recorded sweep carries the full offset profile at every budget point so the size
+of the effect is visible rather than assumed.
+**Answer:** (open)
