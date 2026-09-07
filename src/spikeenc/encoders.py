@@ -1,6 +1,6 @@
 """Encoders — the API surface of SPEC.md section 4.
 
-STATUS: E1, E2, E3 and E4 implemented. E5-E6 remain skeletons.
+STATUS: E1-E5 implemented. E6 remains a skeleton.
 
 Class attributes (NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND) and the
 __init__ signatures are part of the contract — the known-answer suite reads
@@ -10,9 +10,11 @@ Equation numbers refer to docs/proposal_v2.md.
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-02
-Last modified: 2026-09-04
+Last modified: 2026-09-07
 """
 import numpy as np
+from scipy.signal import butter, sosfilt
+
 from .spiketrain import SpikeTrain
 
 # A last-spike index far enough in the past that no channel starts refractory.
@@ -503,20 +505,173 @@ class ALIF(Encoder):
 
 
 class PhaseLocked(Encoder):
-    """E5 — phase-locked fine structure. Equations (24)-(26).
+    """E5 — phase-locked fine structure. SPEC section 4.6, equations (24)-(26).
 
-    Consumes the subband waveform, not the envelope.
+    Consumes the subband waveform, not the envelope: the whole point of this
+    encoder is to represent the carrier that the envelope discards.
+
+    The rate parameter is `cycle_divisor`, not `threshold`. Q11 measured
+    `threshold` moving the event count by 1.04x over the standard sweep, because
+    the count is bounded above by the number of upward zero crossings — a
+    property of the carrier and the drive, not of any parameter — and the
+    threshold only gates quiet passages. `cycle_divisor` moves the count as 1/k
+    while leaving frequency resolution and per-event timing precision untouched,
+    which matters because E5 is in the battery to test whether fine timing buys
+    anything: reaching a low budget by discarding channels would remove
+    frequency resolution at the same time and confound the result. D40.
     """
-    NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND = "E5", "threshold", -1, "subband"
+    NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND = ("E5", "cycle_divisor", -1,
+                                                    "subband")
 
-    def __init__(self, n_channels, threshold=0.05, gamma=1.0, f_lock=1500.0,
-                 refractory=0.001, mode="deterministic", centre_frequencies=None):
-        self.n_channels, self.threshold, self.gamma = n_channels, threshold, gamma
+    def __init__(self, n_channels, cycle_divisor=4, threshold=0.05,
+                 env_cutoff=100.0, gamma=1.0, f_lock=1500.0, refractory=0.001,
+                 mode="deterministic", centre_frequencies=None,
+                 lambda_max=200.0, z_0=0.0):
+        if cycle_divisor != int(cycle_divisor) or int(cycle_divisor) < 1:
+            raise ValueError("cycle_divisor must be a positive integer, got "
+                             f"{cycle_divisor!r}")
+        self.n_channels = n_channels
+        self.cycle_divisor = int(cycle_divisor)
+        self.threshold, self.env_cutoff, self.gamma = threshold, env_cutoff, gamma
         self.f_lock, self.refractory, self.mode = f_lock, refractory, mode
         self.centre_frequencies = centre_frequencies
+        self.lambda_max, self.z_0 = lambda_max, z_0
+
+    # -- internal signals --------------------------------------------------
+
+    def _internal_envelope(self, drive, dt):
+        """Half-wave rectification then a fourth-order Butterworth lowpass at
+        `env_cutoff`, matching the filter family of equation (9). D41.
+
+        This is computed here rather than taken from the front end because
+        `encode_from_drive` receives the subband waveform. SPEC section 4.1
+        forbids further filtering, compression, scaling or normalisation of the
+        *drive*; this is an internal gating signal and the drive itself reaches
+        the event rule untouched.
+
+        Hilbert magnitude is the obvious alternative and is rejected: the
+        analytic signal uses the whole record, so the gate at time t would
+        depend on signal after t. For a battery whose T3 probe is boundary
+        detection that leaks post-boundary information into the pre-boundary
+        gate, and it would do so for one encoder out of six. The cost is that
+        `env_cutoff` is a fixed constant rather than the channel-relative
+        cutoff of D21, since there are no channel bandwidths here to use.
+        """
+        nyquist = 0.5 / dt
+        sos = butter(4, min(self.env_cutoff / nyquist, 0.99), btype="low",
+                     output="sos")
+        return sosfilt(sos, np.maximum(drive, 0.0), axis=-1)
+
+    def _above_lock(self):
+        """Channels whose centre frequency exceeds `f_lock`. With
+        `centre_frequencies` None every channel is treated as below cutoff,
+        which is what `encode_from_drive` sees unless a caller supplies them."""
+        if self.centre_frequencies is None:
+            return np.zeros(self.n_channels, dtype=bool)
+        return np.asarray(self.centre_frequencies, dtype=np.float64) > self.f_lock
+
+    # -- event rules -------------------------------------------------------
+
+    def _locked_events(self, x, env, dt):
+        """SPEC 4.6 deterministic rule, in the order the specification states
+        it: upward zero crossings of the subband; discard those where the
+        envelope does not exceed `threshold`; of the survivors keep every
+        `cycle_divisor`-th, counting from the first survivor in this channel;
+        then apply `refractory`.
+
+        The refractory comparison is an integer sample difference, as
+        `_integrate_and_fire` does, and not a difference of absolute times.
+        `(i + s) * dt - (j + s) * dt` is not bit-identical to `i * dt - j * dt`,
+        so an interval of exactly `refractory / dt` samples decides differently
+        at different offsets and `test_G4` fails by a handful of events.
+        """
+        crossings = np.where((x[:-1] <= 0.0) & (x[1:] > 0.0))[0] + 1
+        survivors = crossings[env[crossings] > self.threshold]
+        kept = survivors[::self.cycle_divisor]
+        if self.refractory <= 0.0:
+            return kept
+        out, last = [], _NEVER
+        for i in kept:
+            if (i - last) * dt >= self.refractory:
+                out.append(i)
+                last = i
+        return np.asarray(out, dtype=np.int64)
+
+    def _poisson_events(self, x, dt, rng):
+        """Inhomogeneous Poisson, equations (24)-(25).
+
+            z = max(x, 0) ** gamma
+            lambda = lambda_max * z / (z + z_0)
+
+        `z_0 = 0` is the default and makes the saturation trivial: the
+        intensity is `lambda_max` wherever the rectified signal is positive.
+        Guarded so that z = 0 gives zero intensity rather than 0/0.
+
+        SPEC 4.6 does not say whether `refractory` applies here. It is applied,
+        because it is a declared parameter of the encoder and a refractory
+        period is physiological; the reading is recorded here rather than
+        raised, since this mode is excluded from the six-encoder comparison of
+        section 6.4 and from `test_G3` and `test_G4`, and no test exercises it.
+        """
+        z = np.maximum(x, 0.0) ** self.gamma
+        denom = z + self.z_0
+        lam = np.where(denom > 0.0, self.lambda_max * z / np.where(denom > 0.0,
+                                                                   denom, 1.0), 0.0)
+        fired = rng.random(x.size) < lam * dt
+        idx = np.flatnonzero(fired)
+        if self.refractory <= 0.0:
+            return idx
+        out, last = [], _NEVER
+        for i in idx:
+            if (i - last) * dt >= self.refractory:
+                out.append(i)
+                last = i
+        return np.asarray(out, dtype=np.int64)
+
+    # -- the encoder -------------------------------------------------------
 
     def encode_from_drive(self, drive, dt, seed=None, return_state=False):
-        raise NotImplementedError("E5: upward zero crossings above threshold")
+        if self.mode not in ("deterministic", "poisson"):
+            raise ValueError(f"unknown mode {self.mode!r}; expected "
+                             "'deterministic' or 'poisson'")
+        if self.mode == "poisson" and seed is None:
+            raise ValueError("mode='poisson' requires a seed: the draws must be "
+                             "reproducible for test_G1 and for the manifest")
+
+        d = self._check_drive(drive)
+        n = d.shape[1]
+        env = self._internal_envelope(d, dt)
+        above = self._above_lock()
+        rng = np.random.default_rng(seed)
+
+        channels, times = [], []
+
+        # Channels above f_lock revert to envelope-driven LIF behaviour. Built
+        # as an LIF instance on the internal envelope rather than as a copy of
+        # its constants, so that "E5 with f_lock below every centre frequency
+        # equals E1 on the same envelope" is an identity a test can assert
+        # rather than an agreement two code paths happen to reach. D41.
+        if np.any(above):
+            idx_above = np.flatnonzero(above)
+            fallback = LIF(n_channels=int(idx_above.size))
+            sub = fallback.encode_from_drive(env[idx_above], dt)
+            channels.extend(idx_above[sub.channel].tolist())
+            times.extend(sub.time.tolist())
+
+        for c in np.flatnonzero(~above):
+            if self.mode == "deterministic":
+                idx = self._locked_events(d[c], env[c], dt)
+            else:
+                idx = self._poisson_events(d[c], dt, rng)
+            channels.extend([int(c)] * idx.size)
+            times.extend((idx * dt).tolist())
+
+        train = SpikeTrain.from_events(
+            channels, times, np.ones(len(times), dtype=np.int8),
+            self.n_channels, n * dt, self._params())
+        if return_state:
+            return train, {"envelope": env}
+        return train
 
 
 class TTFS(Encoder):

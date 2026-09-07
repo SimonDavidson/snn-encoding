@@ -1014,3 +1014,69 @@ from Q10's own table, not recomputed here.
 Nothing else.
 **Next (implementation session):** E5 under D40 and D41, then E6 under D43 and
 D44. E4's Layer 1 completes when the rewritten `test_T4_3` goes green.
+
+## 2026-09-07 | session: implementation
+**Did:** Implemented E5 `PhaseLocked` under SPEC 4.6 as rewritten by D40 and
+D41. Ten of its twelve tests green; the two that are not are Q19 and Q20, both
+raised before the encoder was written and neither fixable from `src/`.
+
+**Prototyped against the real tests before writing anything.** The habit paid
+twice. `test_G4` failed by sixteen events, and the cause was mine: the
+refractory compared absolute event times, and `(i+s)*dt - (j+s)*dt` is not
+bit-identical to `i*dt - j*dt`, so an interval of exactly `refractory/dt`
+samples — and 1 ms is exactly 16 samples at 16 kHz — decides differently at
+different offsets. `_integrate_and_fire` already uses the integer sample
+difference `(i - last) * dt` for precisely this reason, so the fix was to
+follow the house convention rather than invent one, and no new decision is
+needed. The `e5_cycle_divisor_span` probe had the same defect and its recorded
+result was re-run and superseded: 3.54x rather than the 3.48x first reported.
+
+**Q20 was the second thing the prototype found.** `test_T5_3` cannot pass at
+D40's `cycle_divisor` default of 4. The harmonic complex has exactly one upward
+zero crossing per F0 period, which is *why* the pooled ISI histogram peaked at
+1/F0; keeping every k-th survivor moves the peak to k/F0, so the test asserts
+8.00 ms against a measured 32.12 ms. No implementation reading avoids it. This
+is the test whose docstring calls F0 recovery "the one job the encoder exists
+to do", so it is worth more than a red tick.
+
+**Verified beyond the suite.** SPEC 4.6 states an identity that no test
+asserts: E5 with `f_lock` below every centre frequency must equal E1 on the
+same internal envelope, event for event. My first check of it was **vacuous** —
+`speechlike` is quiet enough that the rectified, lowpassed envelope never
+reaches the LIF's threshold of 1.0, so both sides produced zero events and
+agreed trivially. Re-run at 6x and 12x amplitude the identity holds properly,
+24 and 183 events, bit-identical in channel, time and polarity. A mixed bank
+routes correctly too: with `f_lock = 1500` and centre frequencies 300, 800,
+3000, 6000 the counts are 661, 661, 24, 24, the last two matching a standalone
+LIF on those channels' envelopes. Recording the vacuous first attempt because a
+check that passes on empty output is worse than no check.
+
+**One reading recorded rather than raised.** SPEC 4.6 does not say whether
+`refractory` applies in `mode="poisson"`. It is applied, on the grounds that it
+is a declared parameter of the encoder and a refractory period is
+physiological. Not raised as a question because that mode is excluded from the
+comparison of section 6.4 and from `test_G3` and `test_G4`, and no test
+exercises it; the reading is in the method docstring where a Layer 3
+reimplementation will find it.
+
+**A test that passes for the wrong reason, flagged and not yet raised.**
+`test_T5_2` asserts vector strength below 0.35 above `f_lock`, and it passes —
+but with **zero events**, not with unlocked ones. The internal envelope of a
+unit-amplitude 5 kHz tone is about 0.313, well under the fallback LIF's
+threshold of 1.0, so nothing fires, and `metrics.vector_strength` returns 0.0
+for fewer than two events by SPEC section 6. The assertion is satisfied by
+silence rather than by loss of locking. Simon has the flag; whether it becomes
+a question is his call, since the queue already carries Q19 and Q20 against
+this encoder.
+
+**Tests:** 73 passed, 11 failed, 1 skipped, from 63/21/1. Ten newly green:
+`T5_1`, `T5_2`, `T5_4` at both sigmas, and `G1`, `G2`, `G4`, `G7`, `G7b`, `G8`
+for E5. Failure sets diffed, not counted; no regressions. The eleven remaining
+are E6 (9), `test_G3[E5]` (Q19) and `test_T5_3` (Q20).
+**Results written:** `results/e5_cycle_divisor_span.json` re-recorded under the
+corrected refractory, the first entry marked superseded in the manifest.
+**Blocked on:** Q19 and Q20 for E5's last two tests; Q07, Q17, Q18 open and
+blocking nothing. E6 is unblocked and unwritten.
+**Next:** E6 `TTFS` under D43 and D44 — nine tests, and its rate parameter is
+already verified, Q14 having measured `e_frac = 0.20` at 12.4x. After that the
+probe harness, which remains the schedule critical path and is still untouched.
