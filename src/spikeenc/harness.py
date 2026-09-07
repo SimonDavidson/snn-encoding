@@ -203,7 +203,8 @@ def budget_cross_check(trains):
 
 
 def run_t1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
-           test_fraction=0.3, seed=0, alpha=1e-4, control_offsets=(-1, 1)):
+           test_fraction=0.3, seed=0, alpha=1e-4, control_offsets=(-1, 1),
+           timestamp_bits=20, polarity_bits=1):
     """Score one operating point on T1, and run the Layer 2 controls with it.
 
     Returns a dict of everything the manifest should carry for this point:
@@ -268,7 +269,17 @@ def run_t1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
         "split": split.as_dict(),                     # C4
         "lambda_events_per_s": lam,                   # eq (35)
         "rate_per_channel": lam / n_ch,               # eq (34)
-        "bandwidth_bps": lam * (np.log2(n_ch) + 20 + 1),  # eq (36)
+        # Equation (36) at corpus scale. `metrics.bandwidth_bps` is per-train
+        # and cannot be summed over utterances of unequal length, so the
+        # formula is applied to the corpus Lambda here; the bit widths are
+        # parameters carrying that function's defaults rather than literals,
+        # so the two cannot drift apart silently, and they are reported below
+        # because a bandwidth without its declared widths is not a figure.
+        "bandwidth_bps": lam * (float(np.log2(n_ch)) + timestamp_bits
+                                + polarity_bits),     # eq (36)
+        "bandwidth_bits": {"channel": float(np.log2(n_ch)),
+                           "timestamp": timestamp_bits,
+                           "polarity": polarity_bits},
         "decoded_information_bits": metrics.decoded_information(confusion),
         "bits_per_event": (metrics.decoded_information(confusion)
                            / mean_events_per_frame
