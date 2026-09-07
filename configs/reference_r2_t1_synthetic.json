@@ -1,0 +1,29 @@
+{
+  "result_id": "reference_r2_t1_synthetic",
+  "reference": "R2",
+  "corpus": {
+    "kind": "synthetic",
+    "n_speakers": 10,
+    "utterances_per_speaker": 3,
+    "phones_per_utterance": 8,
+    "sample_rate": 16000,
+    "seed": 0,
+    "noise_level": 0.005
+  },
+  "features": {
+    "n_mels": 40,
+    "frame": 0.025,
+    "hop": 0.010,
+    "f_min": 50.0,
+    "f_max": 8000.0,
+    "context": 0
+  },
+  "alignments": ["causal", "centred"],
+  "bits_per_feature": 32,
+  "probe": {"alpha": 0.0001},
+  "split": {"test_fraction": 0.3},
+  "split_seeds": [0, 1, 2],
+  "control_offsets": [-2, -1, 1],
+  "compare_with": "probe_e1_t1_synthetic",
+  "predictions": []
+}
