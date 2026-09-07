@@ -1175,3 +1175,115 @@ and blocking nothing.
 now the only thing standing between the project and its first actual result.
 Nothing in the encoder set remains. Second candidate is the survey report's
 narrative, if it is wanted before Oliver sees it again.
+
+## 2026-09-07 | session: implementation
+**Did:** Built the probe harness — weeks 1-2 of §9, the schedule critical path,
+untouched until today. Corpus interface, synthetic stand-in corpus,
+speaker-disjoint splits, T1 frame labelling, the linear probe of §6.2, budget
+calibration, and the Layer 2 controls. **The first end-to-end result the
+project has produced**: E1 on T1 across six budget points, recorded under
+provenance. Accuracy rises monotonically with budget, 0.4837 at Λ=160 to
+0.8316 at Λ=15343, against a majority floor of 0.2079 and chance of 0.125.
+
+**The point of a corpus with a known answer.** TIMIT is still blocked on O2 —
+now twenty days — so the harness is written against an interface and the
+stand-in is synthesised: a source-filter corpus with per-speaker vocal tract
+scaling and f0, phone labels, boundaries and an exact f0 contour. That is not
+a placeholder. On a real corpus every accuracy is plausible, so nothing
+distinguishes "the encoder lost the information" from "the harness mislabelled
+every frame"; on this one the ground truth is generated, so it does. When TIMIT
+arrives, only the loader changes.
+
+**Two findings, and neither was what I set out to look for.**
+
+**E1 emits nothing on audio at the SPEC defaults.** Equation (10)'s logarithmic
+branch gives `log(e + eps)`, negative wherever the envelope is below 1.0, which
+through a gammatone bank is everywhere: the drive spans [-13.62, -0.96] and
+100 per cent of samples are negative. E1 thresholds the membrane against an
+absolute zero, so `theta >= 0` gives zero events and `theta < 0` gives 419616 —
+every channel at every sample, Λ pinned at the 512000 ceiling. There is no
+usable range between the two regimes. E4 thresholds the same way; E6 squares
+the drive, so its gate selects the *quietest* frames, and the correlation
+between its own per-frame energy and true audio RMS runs +0.394 under power
+compression and **-0.280** under log. The encoder inverts. E2 and E3 are immune,
+because both differentiate the drive and an additive offset cancels exactly.
+Nothing here is a defect in an encoder — every known-answer test still passes,
+because `test_G3` runs on `conftest`'s drive, which is positive. It is that
+§5.0 and §6.6 declare compression a swept axis and half the encoder set cannot
+traverse it. Q23.
+
+**C5 found a real misalignment rather than confirming there was none.** The
+control says to offset labels by ±1 frame and confirm accuracy drops. Minus one
+does not drop; it gains, at **every one of the six budget points**, by 4.5 to
+6.8 points. Two independent lags, separated by measurement rather than argued:
+turning on `compensate_group_delay` moves the optimum from -1 to 0 at
+τ_φ = 5 ms, which identifies the first as the gammatone bank and confirms D24's
+machinery removes it; the second is the causal kernel of equation (32) and
+moves with τ_φ, one further frame between 5 ms and 20 ms. The consequence is
+larger than the control: τ_φ is a *shared swept axis* under §6.1 with each
+encoder reported at its own best value, so fixing alignment at zero imposes a
+penalty that grows with τ_φ — 18.5 points at 20 ms compensated — and then
+selects the τ_φ that suffers least from it. That falls hardest on encoders with
+a long natural timescale, which is the confound §6.1's own τ_φ caveat exists to
+avoid. Q24, and the most consequential of the three raised today.
+
+**The probe is written out rather than imported, and that was forced.** CI
+installs `.[dev]` — numpy, scipy, pytest — and runs every file in `tests/`, and
+the workflow is a design-session file I may not edit. A probe needing
+scikit-learn would make its own tests unrunnable in the one environment that
+checks them independently. So it is ~60 lines of multinomial logistic
+regression on scipy's L-BFGS-B, checked against scikit-learn *out of tree* at
+`C = 1/(n*alpha)`: coefficients agree to 8.2e-06 and 1.1e-06 max absolute
+difference on two shapes, predictions agree exactly. D49.
+
+**Sweeps are specified in event rate, not in parameter values.** Forced by the
+same finding as Q23: a rate parameter's usable range depends on the drive
+scale, so a config naming `theta` values would not be portable across the row
+of encoders it has to be run over. `calibrate_rate_param` bisects, oriented by
+the declared `RATE_DIRECTION`, and the six targets span two decades of Λ as
+§6.4 requires. D50.
+
+**Margins rather than passes.** C3 shuffled-label accuracy 0.1038 to 0.1409
+against chance 0.1250 and a floor of 0.2079 — the split does not leak. C6
+agrees at every point. Calibration lands within 5 per cent of target in 8 to 9
+bisections. Bits per event falls 0.607 to 0.014 as Λ rises over two decades,
+which is §6.3's caveat about that quantity appearing in the data unprompted.
+The bandwidth refactor is bit-identical: 4162.701235807103 recomputes exactly.
+
+**What is deliberately absent, and said in the module docstring rather than
+left to be noticed.** The nonlinear probe, and therefore the accessibility gap
+of equation (33) — it needs a tensor library this box does not have, on 8 CPU
+cores with no GPU, and I would not commit to an architecture without first
+measuring what a GRU costs here. T2 and T3, both of which need decisions not
+taken. **C1**, the upper-bound anchor, which is a statement about TIMIT and
+cannot be evaluated against a stand-in — the result file carries that as a
+`caveat` field, because a number from this harness says the pipeline is
+self-consistent, not that it is calibrated. C7 and the strong form of C6, both
+statements about a release event format that cannot be written before Q07
+settles whether ON and OFF are channels or a polarity bit.
+
+**Schedule.** Day 19, week 3. Weeks 1-2 now have their spine, though not their
+deliverable, which names TIMIT. Weeks 5-7 remain complete. P1, the count-only
+baseline, is now reachable: it is this harness with the featurisation replaced
+by per-channel counts, and equation (40) needs the R2 ceiling, which does not
+exist yet.
+
+**Tests:** 107 passed, 2 failed, 1 skipped, from 82/2/1. Failure sets diffed,
+not counted. The 25 new ones are `tests/test_harness.py` — mine, not Layer 1;
+the harness has no SPEC contract, since SPEC §8 declares the pipeline
+deliberately unspecified, so what is testable is that the machinery does what
+it claims and that the controls *bite*. C3, C4 and C5 are each tested twice:
+once that they pass on a correct pipeline, once that they fail on one broken in
+the way that control exists to catch. 39 s, numpy and scipy only. The two
+remaining failures are `test_G3[E5]` (Q19) and `test_T5_3` (Q20), unchanged.
+**Results written:** `results/probe_e1_t1_synthetic.json`, registered under id
+`probe_e1_t1_synthetic`, config `configs/probe_e1_t1_synthetic.json`.
+**Blocked on:** Q19 and Q20 for E5's last two tests. Q07 blocks the release
+format and so C6/C7. Q17, Q18, Q21, Q22, Q23, Q24 open. Q23 blocks the
+compression axis; Q24 blocks nothing but affects every T1 number produced.
+**Next:** P1, the count-only baseline of §7.1, is the cheapest real
+experiment now reachable and is week 3 work. Alternatively R2, the non-spiking
+mel-filterbank bound, which P1's equation (40) needs as its ceiling and which
+nothing blocks. The survey report's narrative is now stale in seven passages
+rather than six — it describes no harness — and remains Simon's call, not a
+mechanical rebuild.
