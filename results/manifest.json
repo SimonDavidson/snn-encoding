@@ -107,6 +107,16 @@
       "output": "results/probe_e1_t1_synthetic.json",
       "date": "2026-09-07",
       "predictions": []
+    },
+    {
+      "id": "reference_r2_t1_synthetic",
+      "script": "scripts/run_reference.py",
+      "config": "configs/reference_r2_t1_synthetic.json",
+      "commit": "2ec89ef2730bcb31008885bc8204e5bf1c18e58b",
+      "seed": 0,
+      "output": "results/reference_r2_t1_synthetic.json",
+      "date": "2026-09-07",
+      "predictions": []
     }
   ]
 }

@@ -1851,6 +1851,34 @@ the effect is the same size as the difference between the two extreme budget
 points on this corpus — which is to say, the same size as the thing the study
 is trying to measure.
 
+**R2 makes this sharper: at offset zero the upper bound is not an upper
+bound.** Added after `results/reference_r2_t1_synthetic.json`. R2 is proposal
+5.9's non-spiking control, run on the same corpus, splits and probe:
+
+| condition | offset 0 | best offset | best |
+|---|---|---|---|
+| R2, causal window | 0.8247 | -1 | **0.9133** |
+| R2, centred window | **0.9307** | 0 | 0.9307 |
+| E1 at Lambda = 15343 | 0.8316 | -1 | 0.8996 |
+
+**At offset zero, E1 beats R2** — 0.8316 against 0.8247. The encoder outscores
+the bound every accuracy in the study is supposed to be reported as a gap to.
+At each condition's own best offset the ordering is restored and the gap is
+1.4 points, 0.8996 against 0.9133. Nothing about the encoding changed between
+those two readings; only which frame the labels were paired with.
+
+The two R2 rows also cross-check the diagnosis rather than merely restating it.
+A centred 25 ms window is displaced about 12.5 ms — 1.25 frames — from a causal
+one, and sure enough its optimum sits at offset 0 where the causal window's
+sits at -1, and the two best values agree to within 1.7 points. The lag is a
+property of where the analysis window sits, exactly as claimed, and it is not
+peculiar to the spiking path: R2 has it too.
+
+So this is not only a question about how to score the encoders. **It decides
+whether the study's central control is above or below the thing it is
+controlling for**, and a reader handed the offset-zero row would conclude a
+spiking encoder had beaten a mel filterbank.
+
 **Blocking?** no, and it is the most consequential of the three raised today.
 Every T1 number the harness produces is currently at offset zero and is
 therefore a lower bound on what that condition can do, by an amount that varies

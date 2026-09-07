@@ -1,0 +1,944 @@
+{
+  "caveat": "Synthetic stand-in corpus. Layer 2 control C1 anchors R2 against published TIMIT accuracy (82.68 per cent frame level, Ponghiran and Roy) and cannot be evaluated here: R2 is the condition C1 is really about, so until TIMIT arrives this bound is internally comparable only.",
+  "compare_with": "probe_e1_t1_synthetic",
+  "conditions": [
+    {
+      "accuracy_by_seed": [
+        0.7948369565217391,
+        0.8517006802721089,
+        0.8274894810659187
+      ],
+      "accuracy_mean": 0.8246757059532556,
+      "accuracy_std": 0.02853609586958371,
+      "alignment": "causal",
+      "best_offset": "-1",
+      "best_offset_accuracy": 0.9132918018183588,
+      "offset_profile": {
+        "-1": 0.9132918018183588,
+        "-2": 0.8811320529012857,
+        "1": 0.722229504782728
+      },
+      "runs": [
+        {
+          "accuracy": 0.7948369565217391,
+          "bandwidth_bits": {
+            "features_per_frame": 40,
+            "frames_per_s": 100.0,
+            "per_feature": 32
+          },
+          "chance": 0.125,
+          "confusion": [
+            [
+              88,
+              3,
+              2,
+              4,
+              1,
+              2,
+              2,
+              1
+            ],
+            [
+              3,
+              49,
+              1,
+              2,
+              0,
+              1,
+              2,
+              0
+            ],
+            [
+              1,
+              0,
+              21,
+              22,
+              0,
+              1,
+              3,
+              0
+            ],
+            [
+              1,
+              5,
+              1,
+              76,
+              0,
+              0,
+              6,
+              3
+            ],
+            [
+              31,
+              0,
+              2,
+              0,
+              31,
+              2,
+              2,
+              1
+            ],
+            [
+              0,
+              1,
+              2,
+              1,
+              0,
+              92,
+              1,
+              8
+            ],
+            [
+              7,
+              2,
+              0,
+              1,
+              0,
+              3,
+              92,
+              3
+            ],
+            [
+              5,
+              3,
+              2,
+              4,
+              0,
+              2,
+              1,
+              136
+            ]
+          ],
+          "decoded_information_bits": 1.8395460801214951,
+          "feature_bandwidth_bps": 128000.0,
+          "featurisation": {
+            "alignment": "causal",
+            "context": 0,
+            "frame": 0.025,
+            "hop": 0.01,
+            "n_mels": 40,
+            "window": "hamming"
+          },
+          "lambda_events_per_s": 0.0,
+          "majority_floor": 0.2078804347826087,
+          "misaligned_accuracy": {
+            "-1": 0.8817056396148556,
+            "-2": 0.8676880222841226,
+            "1": 0.7028885832187071
+          },
+          "n_features": 40,
+          "n_frames_test": 736,
+          "n_frames_train": 1697,
+          "probe_converged": true,
+          "probe_iterations": 354,
+          "probe_settings": {
+            "alpha": 0.0001,
+            "max_iter": 500,
+            "n_classes": 8,
+            "optimiser": "L-BFGS-B",
+            "probe": "linear_multinomial_logreg",
+            "standardise": true,
+            "tol": 1e-08
+          },
+          "reference": "R2",
+          "seconds": 37.34413027763367,
+          "shuffled_label_accuracy": 0.11141304347826086,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 0,
+            "test_speakers": [
+              "S02",
+              "S04",
+              "S06"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S03",
+              "S05",
+              "S07",
+              "S08",
+              "S09"
+            ]
+          }
+        },
+        {
+          "accuracy": 0.8517006802721089,
+          "bandwidth_bits": {
+            "features_per_frame": 40,
+            "frames_per_s": 100.0,
+            "per_feature": 32
+          },
+          "chance": 0.125,
+          "confusion": [
+            [
+              97,
+              5,
+              5,
+              4,
+              8,
+              0,
+              0,
+              2
+            ],
+            [
+              3,
+              66,
+              1,
+              1,
+              2,
+              5,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              64,
+              4,
+              3,
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              5,
+              4,
+              117,
+              3,
+              2,
+              3,
+              6
+            ],
+            [
+              4,
+              0,
+              2,
+              3,
+              54,
+              0,
+              0,
+              1
+            ],
+            [
+              5,
+              1,
+              1,
+              2,
+              1,
+              82,
+              1,
+              2
+            ],
+            [
+              3,
+              1,
+              1,
+              2,
+              0,
+              2,
+              63,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              1,
+              2,
+              2,
+              1,
+              83
+            ]
+          ],
+          "decoded_information_bits": 2.0295052483599796,
+          "feature_bandwidth_bps": 128000.0,
+          "featurisation": {
+            "alignment": "causal",
+            "context": 0,
+            "frame": 0.025,
+            "hop": 0.01,
+            "n_mels": 40,
+            "window": "hamming"
+          },
+          "lambda_events_per_s": 0.0,
+          "majority_floor": 0.19047619047619047,
+          "misaligned_accuracy": {
+            "-1": 0.9476584022038568,
+            "-2": 0.9037656903765691,
+            "1": 0.7493112947658402
+          },
+          "n_features": 40,
+          "n_frames_test": 735,
+          "n_frames_train": 1698,
+          "probe_converged": true,
+          "probe_iterations": 322,
+          "probe_settings": {
+            "alpha": 0.0001,
+            "max_iter": 500,
+            "n_classes": 8,
+            "optimiser": "L-BFGS-B",
+            "probe": "linear_multinomial_logreg",
+            "standardise": true,
+            "tol": 1e-08
+          },
+          "reference": "R2",
+          "seconds": 38.47549796104431,
+          "shuffled_label_accuracy": 0.11428571428571428,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 1,
+            "test_speakers": [
+              "S04",
+              "S07",
+              "S08"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S02",
+              "S03",
+              "S05",
+              "S06",
+              "S09"
+            ]
+          }
+        },
+        {
+          "accuracy": 0.8274894810659187,
+          "bandwidth_bits": {
+            "features_per_frame": 40,
+            "frames_per_s": 100.0,
+            "per_feature": 32
+          },
+          "chance": 0.125,
+          "confusion": [
+            [
+              106,
+              2,
+              4,
+              2,
+              12,
+              3,
+              0,
+              0
+            ],
+            [
+              5,
+              69,
+              0,
+              0,
+              1,
+              6,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              71,
+              15,
+              0,
+              3,
+              2,
+              0
+            ],
+            [
+              0,
+              1,
+              3,
+              47,
+              2,
+              0,
+              0,
+              2
+            ],
+            [
+              16,
+              0,
+              4,
+              2,
+              64,
+              0,
+              0,
+              0
+            ],
+            [
+              6,
+              2,
+              2,
+              0,
+              0,
+              129,
+              3,
+              6
+            ],
+            [
+              0,
+              1,
+              1,
+              1,
+              0,
+              2,
+              43,
+              3
+            ],
+            [
+              5,
+              1,
+              1,
+              0,
+              0,
+              2,
+              0,
+              61
+            ]
+          ],
+          "decoded_information_bits": 1.969188283857061,
+          "feature_bandwidth_bps": 128000.0,
+          "featurisation": {
+            "alignment": "causal",
+            "context": 0,
+            "frame": 0.025,
+            "hop": 0.01,
+            "n_mels": 40,
+            "window": "hamming"
+          },
+          "lambda_events_per_s": 0.0,
+          "majority_floor": 0.20757363253856942,
+          "misaligned_accuracy": {
+            "-1": 0.9105113636363636,
+            "-2": 0.8719424460431655,
+            "1": 0.7144886363636364
+          },
+          "n_features": 40,
+          "n_frames_test": 713,
+          "n_frames_train": 1720,
+          "probe_converged": true,
+          "probe_iterations": 316,
+          "probe_settings": {
+            "alpha": 0.0001,
+            "max_iter": 500,
+            "n_classes": 8,
+            "optimiser": "L-BFGS-B",
+            "probe": "linear_multinomial_logreg",
+            "standardise": true,
+            "tol": 1e-08
+          },
+          "reference": "R2",
+          "seconds": 33.811670541763306,
+          "shuffled_label_accuracy": 0.1697054698457223,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 2,
+            "test_speakers": [
+              "S00",
+              "S02",
+              "S07"
+            ],
+            "train_speakers": [
+              "S01",
+              "S03",
+              "S04",
+              "S05",
+              "S06",
+              "S08",
+              "S09"
+            ]
+          }
+        }
+      ],
+      "seconds": 109.63888835906982
+    },
+    {
+      "accuracy_by_seed": [
+        0.9103260869565217,
+        0.963265306122449,
+        0.9186535764375876
+      ],
+      "accuracy_mean": 0.9307483231721861,
+      "accuracy_std": 0.028466689400158226,
+      "alignment": "centred",
+      "best_offset": "0",
+      "best_offset_accuracy": 0.9307483231721861,
+      "offset_profile": {
+        "-1": 0.8640632716751105,
+        "-2": 0.7558680552906191,
+        "1": 0.8594657655711803
+      },
+      "runs": [
+        {
+          "accuracy": 0.9103260869565217,
+          "bandwidth_bits": {
+            "features_per_frame": 40,
+            "frames_per_s": 100.0,
+            "per_feature": 32
+          },
+          "chance": 0.125,
+          "confusion": [
+            [
+              101,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0
+            ],
+            [
+              2,
+              56,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              18,
+              30,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              0,
+              91,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              22,
+              0,
+              0,
+              0,
+              46,
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              1,
+              0,
+              101,
+              0,
+              3
+            ],
+            [
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              107,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              1,
+              0,
+              0,
+              150
+            ]
+          ],
+          "decoded_information_bits": 2.5280976405015916,
+          "feature_bandwidth_bps": 128000.0,
+          "featurisation": {
+            "alignment": "centred",
+            "context": 0,
+            "frame": 0.025,
+            "hop": 0.01,
+            "n_mels": 40,
+            "window": "hamming"
+          },
+          "lambda_events_per_s": 0.0,
+          "majority_floor": 0.2078804347826087,
+          "misaligned_accuracy": {
+            "-1": 0.8514442916093535,
+            "-2": 0.7465181058495822,
+            "1": 0.8335625859697386
+          },
+          "n_features": 40,
+          "n_frames_test": 736,
+          "n_frames_train": 1697,
+          "probe_converged": true,
+          "probe_iterations": 185,
+          "probe_settings": {
+            "alpha": 0.0001,
+            "max_iter": 500,
+            "n_classes": 8,
+            "optimiser": "L-BFGS-B",
+            "probe": "linear_multinomial_logreg",
+            "standardise": true,
+            "tol": 1e-08
+          },
+          "reference": "R2",
+          "seconds": 35.14064335823059,
+          "shuffled_label_accuracy": 0.11548913043478261,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 0,
+            "test_speakers": [
+              "S02",
+              "S04",
+              "S06"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S03",
+              "S05",
+              "S07",
+              "S08",
+              "S09"
+            ]
+          }
+        },
+        {
+          "accuracy": 0.963265306122449,
+          "bandwidth_bits": {
+            "features_per_frame": 40,
+            "frames_per_s": 100.0,
+            "per_feature": 32
+          },
+          "chance": 0.125,
+          "confusion": [
+            [
+              114,
+              2,
+              1,
+              0,
+              3,
+              0,
+              1,
+              0
+            ],
+            [
+              0,
+              77,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              67,
+              7,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              135,
+              3,
+              0,
+              0,
+              1
+            ],
+            [
+              4,
+              0,
+              0,
+              0,
+              60,
+              0,
+              0,
+              0
+            ],
+            [
+              1,
+              0,
+              1,
+              0,
+              0,
+              93,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              71,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              91
+            ]
+          ],
+          "decoded_information_bits": 2.7106620013464444,
+          "feature_bandwidth_bps": 128000.0,
+          "featurisation": {
+            "alignment": "centred",
+            "context": 0,
+            "frame": 0.025,
+            "hop": 0.01,
+            "n_mels": 40,
+            "window": "hamming"
+          },
+          "lambda_events_per_s": 0.0,
+          "majority_floor": 0.19047619047619047,
+          "misaligned_accuracy": {
+            "-1": 0.8870523415977961,
+            "-2": 0.7656903765690377,
+            "1": 0.8925619834710744
+          },
+          "n_features": 40,
+          "n_frames_test": 735,
+          "n_frames_train": 1698,
+          "probe_converged": true,
+          "probe_iterations": 179,
+          "probe_settings": {
+            "alpha": 0.0001,
+            "max_iter": 500,
+            "n_classes": 8,
+            "optimiser": "L-BFGS-B",
+            "probe": "linear_multinomial_logreg",
+            "standardise": true,
+            "tol": 1e-08
+          },
+          "reference": "R2",
+          "seconds": 35.24740242958069,
+          "shuffled_label_accuracy": 0.1469387755102041,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 1,
+            "test_speakers": [
+              "S04",
+              "S07",
+              "S08"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S02",
+              "S03",
+              "S05",
+              "S06",
+              "S09"
+            ]
+          }
+        },
+        {
+          "accuracy": 0.9186535764375876,
+          "bandwidth_bits": {
+            "features_per_frame": 40,
+            "frames_per_s": 100.0,
+            "per_feature": 32
+          },
+          "chance": 0.125,
+          "confusion": [
+            [
+              121,
+              0,
+              1,
+              0,
+              5,
+              1,
+              0,
+              1
+            ],
+            [
+              0,
+              79,
+              0,
+              0,
+              0,
+              2,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              74,
+              19,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              2,
+              0,
+              52,
+              0,
+              0,
+              1,
+              0
+            ],
+            [
+              19,
+              1,
+              0,
+              1,
+              65,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              0,
+              0,
+              145,
+              0,
+              2
+            ],
+            [
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              50,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              69
+            ]
+          ],
+          "decoded_information_bits": 2.5225080237676973,
+          "feature_bandwidth_bps": 128000.0,
+          "featurisation": {
+            "alignment": "centred",
+            "context": 0,
+            "frame": 0.025,
+            "hop": 0.01,
+            "n_mels": 40,
+            "window": "hamming"
+          },
+          "lambda_events_per_s": 0.0,
+          "majority_floor": 0.20757363253856942,
+          "misaligned_accuracy": {
+            "-1": 0.8536931818181818,
+            "-2": 0.7553956834532374,
+            "1": 0.8522727272727273
+          },
+          "n_features": 40,
+          "n_frames_test": 713,
+          "n_frames_train": 1720,
+          "probe_converged": true,
+          "probe_iterations": 184,
+          "probe_settings": {
+            "alpha": 0.0001,
+            "max_iter": 500,
+            "n_classes": 8,
+            "optimiser": "L-BFGS-B",
+            "probe": "linear_multinomial_logreg",
+            "standardise": true,
+            "tol": 1e-08
+          },
+          "reference": "R2",
+          "seconds": 33.282459020614624,
+          "shuffled_label_accuracy": 0.11640953716690042,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 2,
+            "test_speakers": [
+              "S00",
+              "S02",
+              "S07"
+            ],
+            "train_speakers": [
+              "S01",
+              "S03",
+              "S04",
+              "S05",
+              "S06",
+              "S08",
+              "S09"
+            ]
+          }
+        }
+      ],
+      "seconds": 103.67228031158447
+    }
+  ],
+  "corpus": {
+    "duration_s": 24.1593125,
+    "kind": "synthetic",
+    "n_speakers": 10,
+    "n_utterances": 30,
+    "name": "synthetic(seed=0)",
+    "noise_level": 0.005,
+    "phones_per_utterance": 8,
+    "sample_rate": 16000,
+    "seed": 0,
+    "utterances_per_speaker": 3
+  },
+  "feature_bandwidth_bps": 128000.0,
+  "features": {
+    "context": 0,
+    "f_max": 8000.0,
+    "f_min": 50.0,
+    "frame": 0.025,
+    "hop": 0.01,
+    "n_mels": 40
+  },
+  "probe": {
+    "alpha": 0.0001
+  },
+  "reference": "R2",
+  "split": {
+    "test_fraction": 0.3
+  },
+  "split_seeds": [
+    0,
+    1,
+    2
+  ],
+  "task": "T1"
+}
