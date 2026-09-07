@@ -133,6 +133,15 @@ class LinearProbe:
     def predict(self, x):
         return np.argmax(self.decision_function(x), axis=1)
 
+    def predict_proba(self, x):
+        """Class posteriors. T3 picks peaks in a boundary posterior, so it needs
+        a calibrated-ish score rather than a hard decision; the softmax of the
+        logits is what multinomial logistic regression is fitted to produce."""
+        z = self.decision_function(x)
+        z = z - z.max(axis=1, keepdims=True)
+        e = np.exp(z)
+        return e / e.sum(axis=1, keepdims=True)
+
     def score(self, x, y):
         """Frame-level accuracy over labelled frames."""
         y = np.asarray(y, dtype=np.int64)

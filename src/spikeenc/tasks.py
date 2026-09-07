@@ -1,10 +1,10 @@
 """Probe tasks — turning an utterance's annotation into per-frame targets.
 
-Only T1 (phone classification, proposal 4.1) is wired up here. T2 and T3 need
-decisions that have not been taken — a reference pitch tracker and the
-declaration of its disagreement with a second tracker for T2 (proposal 4.2),
-and a peak-picking rule with a tolerance for T3 (proposal 4.3) — and building
-them now would be guessing at those.
+T1 (phone classification, 4.1) and T3 (boundary detection, 4.3) are wired up
+here; T3's peak picking and metrics live in `boundaries.py`. T2 is not, and
+needs a decision this session did not reach: 4.2 wants a reference contour from
+a standard pitch tracker with a second tracker run against it to quantify
+disagreement, and neither tracker exists here.
 
 **The frame grid is not a choice made here.** SPEC section 5 fixes it: frame
 `k` samples at `t = k * hop`, and there are `floor(duration / hop) + 1` frames.
@@ -108,6 +108,33 @@ def shift_labels(y, k):
         if -k < len(y):
             out[-k:] = y[:k]
     return out
+
+
+def boundary_labels(utterance, hop, tolerance_frames=1, n_frames=None):
+    """T3 targets: 1 where a reference boundary is near the frame instant.
+
+    A frame is positive when an interior segment boundary lies within
+    `tolerance_frames` of `t = k*hop`. Some tolerance is unavoidable — a
+    boundary almost never falls exactly on a frame instant, and a
+    zero-tolerance target would be positive for a handful of frames in an
+    utterance and negative for hundreds, which no probe would learn.
+
+    This is *not* the scoring tolerance of proposal 4.3. That one is twenty
+    milliseconds and governs whether a detection counts as a hit; this one
+    governs what the probe is trained to call a boundary. They are independent
+    and 4.3 mentions only the first (Q29).
+    """
+    t = frame_times(utterance.duration, hop)
+    if n_frames is not None and n_frames != len(t):
+        raise ValueError(
+            f"frame count disagreement for {utterance.uid}: {n_frames} frames "
+            f"against the SPEC section 5 grid's {len(t)}")
+    y = np.zeros(len(t), dtype=np.int64)
+    bounds = utterance.boundaries()
+    if bounds.size:
+        near = np.min(np.abs(t[:, None] - bounds[None, :]), axis=1)
+        y[near <= tolerance_frames * hop + 1e-12] = 1
+    return y
 
 
 def stack_context(x, context):

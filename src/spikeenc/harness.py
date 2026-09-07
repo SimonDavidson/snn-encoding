@@ -41,12 +41,14 @@ from . import metrics
 from .features import featurise
 from .frontend import Filterbank
 from .probes import LinearProbe
+from .boundaries import (DEFAULT_TOLERANCE, frame_auc, pick_peaks,
+                         score_boundaries, uniform_baseline)
 from .reference import feature_bandwidth_bps, mel_features
 from .segments import (segment_counts, segment_table, segment_votes,
                        temporal_information_index)
 from .splits import speaker_disjoint_split
-from .tasks import (UNLABELLED, LabelSet, frame_labels, majority_floor,
-                    shift_labels, stack_context)
+from .tasks import (UNLABELLED, LabelSet, boundary_labels, frame_labels,
+                    majority_floor, shift_labels, stack_context)
 
 
 def encoder_class(name):
@@ -599,5 +601,139 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
         "featurisation": {"taus": list(taus), "hop": hop, "context": context,
                           "n_mels": n_mels, "frame": frame,
                           "alignment": alignment},
+        "seconds": time.time() - t0,
+    }
+
+
+def _per_utterance(values, uid, corpus):
+    """Split a corpus-wide frame array back into per-utterance arrays."""
+    return [values[uid == u.uid] for u in corpus]
+
+
+def run_t3(corpus, trains, *, tau=0.005, hop=0.010, context=0,
+           test_fraction=0.3, seed=0, alpha=1e-4, offsets=(-2, -1, 0),
+           tolerance=DEFAULT_TOLERANCE, label_tolerance_frames=1,
+           min_separation=0.020, n_thresholds=49, features=None):
+    """T3, boundary detection (proposal 4.3), on one operating point.
+
+    The probe is binary logistic regression per frame — 6.2's rule for T1 and
+    T3 — and its boundary posterior is turned into instants by `pick_peaks`,
+    matched to the reference by `match_boundaries`, and scored by
+    `score_boundaries`.
+
+    **The detection threshold is chosen on the training split and applied
+    unchanged to test.** It has to be chosen somehow: F-score at a single
+    operating point is meaningless without one, and 4.3 does not name it.
+    Choosing it on test would tune a free parameter against the number being
+    reported, which is the thing C5 and the fairness constraints exist to
+    prevent, and it would flatter every encoder by an amount depending on how
+    peaked its posterior happened to be.
+
+    `features=None` builds the equation (32) featurisation; passing an array
+    instead scores any other frame-wise representation on the same task, which
+    is how the R2 ceiling is obtained for T3.
+    """
+    t0 = time.time()
+    labelset = LabelSet(corpus.labels)
+    split = speaker_disjoint_split(corpus, test_fraction=test_fraction,
+                                   seed=seed)
+
+    if features is None:
+        x, _, uid = build_dataset(trains, corpus, labelset, tau, hop, context)
+    else:
+        x = features
+        _, _, uid = build_dataset({u.uid: None for u in corpus}, corpus,
+                                  labelset, tau, hop, context, labels_only=True)
+    train_mask = np.isin(uid, np.asarray(split.train, dtype=object))
+
+    y = np.concatenate([
+        boundary_labels(u, hop, tolerance_frames=label_tolerance_frames)
+        for u in corpus])
+
+    train_utts = [u for u in corpus if u.uid in set(split.train)]
+    test_utts = [u for u in corpus if u.uid in set(split.test)]
+
+    def fit_and_score(y_all, offset):
+        y_o = np.concatenate([shift_labels(y_all[uid == u.uid], offset)
+                              for u in corpus])
+        keep = train_mask & (y_o != UNLABELLED)
+        probe = LinearProbe(2, alpha=alpha).fit(x[keep], y_o[keep])
+        posterior = probe.predict_proba(x)[:, 1]
+        by_utt = dict(zip([u.uid for u in corpus],
+                          _per_utterance(posterior, uid, corpus)))
+
+        # Threshold chosen on train, applied to test. Swept over the observed
+        # posterior range rather than [0, 1]: a probe whose posterior never
+        # exceeds 0.3 would otherwise be scored entirely at zero detections.
+        lo, hi = float(posterior.min()), float(posterior.max())
+        grid = np.linspace(lo, hi, n_thresholds)[:-1]
+        best_thr, best_f = grid[0] if grid.size else 0.5, -1.0
+        for thr in grid:
+            pred = [pick_peaks(by_utt[u.uid], hop, thr, min_separation)
+                    for u in train_utts]
+            f = score_boundaries(pred, [u.boundaries() for u in train_utts],
+                                 tolerance)["f_score"]
+            if f > best_f:
+                best_thr, best_f = float(thr), f
+
+        pred_test = [pick_peaks(by_utt[u.uid], hop, best_thr, min_separation)
+                     for u in test_utts]
+        scored = score_boundaries(pred_test,
+                                  [u.boundaries() for u in test_utts],
+                                  tolerance)
+        scored["threshold"] = best_thr
+        scored["train_f_score"] = best_f
+        # The probe on its own, before any threshold or peak picker touches it.
+        test_mask = np.isin(uid, np.asarray(split.test, dtype=object))
+        valid = test_mask & (y_o != UNLABELLED)
+        scored["frame_auc"] = frame_auc(posterior[valid], y_o[valid])
+        return scored
+
+    by_offset = {str(o): fit_and_score(y, o) for o in offsets}
+    best = max(by_offset, key=lambda k: by_offset[k]["f_score"])
+
+    # C3 — permuted training labels. A detector fitted on shuffled boundaries
+    # must not localise anything, and if it does the split leaks.
+    rng = np.random.default_rng(seed + 991)
+    y_shuffled = y.copy()
+    idx = np.flatnonzero(train_mask)
+    y_shuffled[idx] = y[rng.permutation(idx)]
+    shuffled = fit_and_score(y_shuffled, int(best))
+
+    # C2 for a detection task — evenly spaced boundaries at the reference rate.
+    # This is the strategy the R-value exists to penalise, so it is the floor
+    # any reported F-score has to clear.
+    baseline = score_boundaries(
+        uniform_baseline([u.duration for u in test_utts],
+                         [len(u.boundaries()) for u in test_utts]),
+        [u.boundaries() for u in test_utts], tolerance)
+
+    return {
+        "task": "T3",
+        "by_offset": by_offset,
+        "best_offset": best,
+        "f_score": by_offset[best]["f_score"],
+        "r_value": by_offset[best]["r_value"],
+        "precision": by_offset[best]["precision"],
+        "recall": by_offset[best]["recall"],
+        "over_segmentation": by_offset[best]["over_segmentation"],
+        "f_score_at_zero": by_offset["0"]["f_score"],
+        "frame_auc": by_offset[best]["frame_auc"],
+        "frame_auc_at_zero": by_offset["0"]["frame_auc"],
+        "shuffled_f_score": shuffled["f_score"],           # C3
+        "shuffled_r_value": shuffled["r_value"],           # C3
+        "shuffled_frame_auc": shuffled["frame_auc"],       # C3
+        "uniform_baseline": baseline,                      # C2
+        "split": split.as_dict(),                          # C4
+        "lambda_events_per_s": (corpus_event_rate(trains, corpus)
+                                if features is None else 0.0),
+        "n_test_utterances": len(test_utts),
+        "positive_frame_rate": float(np.mean(y[train_mask])),
+        "settings": {"tolerance": tolerance,
+                     "label_tolerance_frames": label_tolerance_frames,
+                     "min_separation": min_separation,
+                     "n_thresholds": n_thresholds,
+                     "tau": tau, "hop": hop, "context": context,
+                     "threshold_selected_on": "train"},
         "seconds": time.time() - t0,
     }
