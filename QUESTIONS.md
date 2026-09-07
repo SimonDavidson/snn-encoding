@@ -2103,3 +2103,147 @@ have not done it.
 Both can be run now and neither result can be believed. The week 4 gate is a
 decision about the battery and cannot be taken on synthetic data.
 **Answer:** (open)
+
+### Q29 — T3 has two tolerances and proposal 4.3 names only one
+**Raised:** 2026-09-07 by implementation session
+**Context:** implementing T3. 4.3 gives "precision, recall and F-score at a
+fixed tolerance, conventionally twenty milliseconds". That is the *scoring*
+tolerance: how near a detection must be to count as a hit. A frame-wise probe
+needs a second, independent one — how near a reference boundary must be for a
+frame to be a positive *training* example.
+
+**They cannot be the same number and one of them cannot be zero.** Measured: at
+zero training tolerance, an utterance of 45 frames with 4 boundaries has
+**zero** positive frames, because a boundary essentially never falls exactly on
+a frame instant. At ±1 frame it has 8. So the training target must have a
+tolerance, and 10 ms is not obviously the right one when scoring uses 20 ms.
+
+Set to ±1 frame and declared in `settings.label_tolerance_frames` on every
+result. It is a free parameter that moves the positive rate, which moves the
+probe's operating point, which moves the F-score.
+
+**Question:** what should the training tolerance be, and should it be tied to
+the scoring tolerance (±2 frames at a 10 ms hop would match 4.3's 20 ms) or
+left independent and swept?
+
+**Options considered:**
+1. **±1 frame**, as implemented. Narrowest target that is learnable.
+2. **Tied to the scoring tolerance**, so a frame is positive exactly when a
+   detection there would be scored a hit. Defensible and self-consistent, and
+   it removes a free parameter.
+3. **Swept as a declared axis**, like tau_phi.
+
+Option 2 is the one I would argue for, since it makes the target and the metric
+agree by construction, but it is a change to what 4.3 specifies.
+
+**Blocking?** no. Declared on every result.
+**Answer:** (open)
+
+### Q30 — at the literal per-frame reading, T3 scores below a trivial baseline
+**Raised:** 2026-09-07 by implementation session
+**Context:** the first T3 run, `results/t3_boundary_e1_synthetic.json`. E1 and
+R2, three split seeds, 30 utterances, 210 interior boundaries, 20 ms tolerance.
+Frame AUC is the probe alone; F-score is the probe plus threshold plus peak
+picker.
+
+| condition | context | Lambda | F | R-value | frame AUC | shuffled AUC |
+|---|---|---|---|---|---|---|
+| E1 | 0 | 397 | 0.4554 | +0.393 | 0.6438 | 0.5411 |
+| E1 | 0 | 2447 | 0.4468 | -0.476 | 0.5212 | 0.5181 |
+| E1 | 0 | 15343 | 0.4355 | +0.286 | 0.6843 | 0.5037 |
+| E1 | 2 | 15343 | 0.7448 | +0.776 | 0.8212 | 0.4705 |
+| E1 | 5 | 15343 | **0.7576** | +0.718 | **0.8581** | 0.4728 |
+| R2 | 0 | — | 0.6852 | +0.667 | 0.6888 | 0.5522 |
+| uniform baseline | — | — | 0.5873 | — | — | — |
+
+**At `context = 0` — 6.2's literal reading — not one E1 condition beats evenly
+spaced boundaries at the reference rate.** F runs 0.436 to 0.455 against the
+baseline's 0.587. With two frames of context the same encoder at the same
+budget reaches 0.745, and with five, 0.758. The probe *is* learning at context
+zero — AUC 0.64 to 0.68 against a shuffled control at 0.50 to 0.54 — but not
+enough to clear the trivial strategy.
+
+The reason is structural: a boundary is a relation between adjacent frames, and
+a single frame carries no representation of one. Whatever the probe achieves at
+context zero it achieves from absolute spectral shape, not from change.
+
+**This is Q22 with a sharper edge.** There, the question was whether a
+per-frame linear probe is strong enough for T1 to reach C1's anchor band. Here
+it is whether T3 is a well-posed task at all under the same reading, and the
+measurement says it is not: a task whose best result is worse than a metronome
+is not measuring the encoder.
+
+**Question:** should T3 carry a context window by specification rather than by
+sweep? And if context is admitted for T3, is it admitted for T1 too — the two
+are the same clause of 6.2.
+
+**Options considered:**
+1. **Context as a shared swept axis** for both T1 and T3, each condition at its
+   best, as 6.1 already does for tau_phi. Consistent, and what is implemented.
+2. **A fixed context for T3 only**, declared in the methods, with T1 left
+   per-frame. Defensible on the grounds that the tasks differ in kind, but it
+   makes 6.2's single sentence mean two things.
+3. **Delta features** — append the frame-to-frame difference to the
+   featurisation, the standard treatment for exactly this problem, which gives
+   a per-frame probe access to change without a window. Cheapest, and it keeps
+   the probe per-frame in the sense 6.2 means.
+
+Option 3 is worth considering seriously and I have not implemented it, because
+it changes the featurisation of equation (32), which is shared across every
+encoder and is not mine to alter.
+
+**Blocking?** no. Every T3 number is recorded with its context and its AUC.
+**Answer:** (open)
+
+### Q31 — R2 is not an upper bound on T3: E1 beats it
+**Raised:** 2026-09-07 by implementation session
+**Context:** the same run. Proposal 5.9 calls R2 "the non-spiking upper bound"
+and says every accuracy should be reported as a gap to it.
+
+**On T3 the gap is negative.** Each condition at its own best context:
+
+| condition | best context | F | R-value | frame AUC |
+|---|---|---|---|---|
+| E1 at Lambda = 15343 | 5 | **0.7576** | +0.718 | **0.8581** |
+| R2 | 0 | 0.6852 | +0.667 | 0.6888 |
+
+E1 exceeds R2 by 7.2 points of F and 0.169 of AUC. It is not a threshold
+artefact: AUC is measured before any threshold or peak picker, and the shuffled
+controls sit at chance for both.
+
+**I think this is real rather than a defect, and the mechanism is the one the
+study was set up to find.** R2's features are 25 ms windows hopped by 10 ms, so
+a boundary's timing is smeared across a window an order of magnitude wider than
+the phenomenon. An event stream carries transition timing at the resolution of
+the events themselves. T3 is the task in the battery that rewards exactly that,
+and 4.3 says so — "temporal precision at the scale of tens of milliseconds;
+faithful representation of envelope transients". A representation built to
+resolve transients beating one built to resolve spectra on a transient task is
+the expected direction, not a surprise.
+
+But it makes "upper bound" the wrong name, and 5.9's instruction to report
+every accuracy as a gap to R2 produces a negative gap that reads as an error.
+
+**Question:** how should R2 be described and used for T3? It remains the right
+reference point for T1 and probably for T2. Is it a bound at all, or a
+comparison point that happens to be an upper bound on some tasks?
+
+**Options considered:**
+1. **Rename it.** "Non-spiking reference" rather than "upper bound", with the
+   per-task statement that it bounds T1 and T2 and does not bound T3. Costs a
+   word and removes a claim the data does not support.
+2. **Give R2 a fairer front end for T3** — a shorter window, or delta features
+   — on the grounds that 25 ms is a choice made for phone classification and
+   T3 should not be scored against a deliberately blunt control. This is the
+   Q30 concern applied to the reference rather than the encoder, and until it
+   is settled the comparison above is between an encoder at its best and a
+   reference at a setting chosen for a different task.
+3. Leave it and report the negative gap with an explanation.
+
+Option 2 first, then 1. The honest position is that I do not yet know whether
+E1 beats R2 or beats *this* R2, and 5.9 fixes 25 ms without saying whether that
+is meant to hold for all three tasks.
+
+**Blocking?** no, and it should be settled before any T3 figure reaches the
+paper. On this corpus the caveat of Q28 applies to every number above.
+**Answer:** (open)

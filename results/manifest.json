@@ -142,6 +142,16 @@
       "predictions": [
         "P-06"
       ]
+    },
+    {
+      "id": "t3_boundary_e1_synthetic",
+      "script": "scripts/run_t3.py",
+      "config": "configs/t3_boundary_e1_synthetic.json",
+      "commit": "5a5aafb22a94cbd94feceb631e94fb2dd5c51d57",
+      "seed": 0,
+      "output": "results/t3_boundary_e1_synthetic.json",
+      "date": "2026-09-07",
+      "predictions": []
     }
   ]
 }
