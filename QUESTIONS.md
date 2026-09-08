@@ -2244,6 +2244,139 @@ Option 2 first, then 1. The honest position is that I do not yet know whether
 E1 beats R2 or beats *this* R2, and 5.9 fixes 25 ms without saying whether that
 is meant to hold for all three tasks.
 
+**T2 does the same thing, added 2026-09-08.** At five frames of context and
+the top budget, E1 reaches a within-utterance Pearson r of **0.5755** against
+R2's **0.4991**, and an RMSE of 1.430 semitones against 1.676. So R2 fails to
+bound two of the three tasks, not one. It still bounds T1 comfortably (0.9133
+against E1's 0.8996). Whatever wording replaces "upper bound" therefore has to
+be per-task rather than a single caveat, and option 2 above — whether a 25 ms
+window chosen for phone classification is the right reference for the other two
+tasks — now applies to T2 as well.
+
 **Blocking?** no, and it should be settled before any T3 figure reaches the
 paper. On this corpus the caveat of Q28 applies to every number above.
+**Answer:** (open)
+
+### Q32 — T2's Pearson correlation: pooled over voiced frames, or per utterance?
+**Raised:** 2026-09-08 by implementation session
+**Context:** implementing T2. Proposal 4.2 asks for "Pearson correlation between
+estimated and reference contour over voiced frames". "Contour" is a
+per-utterance object; "over voiced frames" reads as pooling. The two readings
+give very different numbers and measure different things.
+
+**Why it is not a detail.** Speakers differ in mean f0 far more than a contour
+moves within one utterance — on the stand-in, 101 to 155 Hz between speakers
+against about one to three semitones of declination inside an utterance. A
+pooled correlation is therefore dominated by between-speaker variance, and a
+predictor that emits a single constant per utterance — in effect estimating
+voice height — scores near-perfectly on it while tracking no contour at all.
+That is asserted in `tests/test_f0.py` as a test rather than a comment: a
+constant-per-utterance predictor scores pooled r > 0.99 and cannot be scored
+per utterance at all, having no variance to correlate.
+
+4.2 places T2 "at the opposite corner of the demand space from T1" and grounds
+it in phase locking to the glottal cycle. A figure winnable by voice height
+would make T2 partly the speaker task D02 removed from the battery, and the
+spanning argument of 4.4 — which P2 is a decision gate on — rests on T2 not
+being that.
+
+**Measured, at every condition.** The gap between the two runs 0.09 to 0.39.
+At E1's best condition, per-utterance 0.5755 against pooled 0.9142; R2's, 0.4991
+against 0.8738. So roughly a third of the pooled figure is voice height in both.
+
+**Simon's decision, 2026-09-08:** per-utterance is the headline, pooled reported
+beside it so the gap is visible. Implemented and recorded that way. Logged here
+because it changes what T2 measures and the design session should see it.
+
+**Question for the design session:** confirm, and decide whether 4.2 should say
+so explicitly. Also whether the gap itself is worth reporting as a quantity —
+it is a cheap measure of how much speaker identity an encoding retains, which
+4.5 wants known before release and currently has no instrument for.
+
+**Blocking?** no. Both are recorded at every condition.
+**Answer:** per-utterance headline (SD, 2026-09-08); design session to confirm
+and decide the proposal wording.
+
+### Q33 — T2's ridge regression: in hertz or in semitones?
+**Raised:** 2026-09-08 by implementation session
+**Context:** 6.2 says "ridge regression per frame for the F~0~ contour" without
+naming the target space. 4.2 reports RMSE in semitones and gives the reason:
+the perceptual and physiological scale is logarithmic, and 10 Hz means
+something different at 100 Hz and at 300 Hz.
+
+Fitting in hertz and converting afterwards minimises squared *hertz* error,
+which weights high-f0 frames more heavily than the reported metric does — the
+estimator and the metric would disagree about what counts as a good fit.
+Fitting in semitones makes them agree.
+
+**Simon's decision, 2026-09-08:** semitone space. Implemented, with the
+reference frequency recorded on every result (100 Hz; any constant works, since
+a change of reference is a constant offset that alters no correlation and no
+RMSE, but a predicted semitone value is meaningless without it).
+
+**Question for the design session:** confirm, and whether 4.2 or 6.2 should
+state it.
+
+**Blocking?** no.
+**Answer:** semitones (SD, 2026-09-08); design session to confirm.
+
+### Q34 — a single fixed ridge penalty produces predictions 468 octaves wide
+**Raised:** 2026-09-08 by implementation session
+**Context:** the first T2 run recorded **RMSE 5617 semitones** against a
+constant-predictor floor of 4.4, at the lowest budget with five frames of
+context. 5617 semitones is 468 octaves.
+
+**Two causes, and the first one was not it.** `features.featurise` leaves the
+OFF half of the polarity-split vector at zero for a unipolar encoder, by
+design, so 32 of E1's 64 features have exactly zero variance and `cond(X'X)` is
+infinite at *every* operating point. That was worth fixing on its own — the
+probes now drop zero-variance columns rather than rescaling them — but it was
+not the cause: ridge is exactly invariant to all-zero columns, which take
+`w = 0` either way, and the re-run reproduced 5617 byte for byte.
+
+The cause is the informative columns. At `Lambda = 160` events are sparse
+enough that feature standard deviations span 37x; standardisation turns the
+rare ones into spikes of ±39, and the context-stacked copies of them are
+near-collinear. A penalty of 1.0 against a Gram diagonal of order n is then no
+regularisation at all, the small eigendirections are unconstrained, and the
+weights and predictions diverge. **The correlation survived it** — 0.179, an
+ordinary-looking number — because correlation is scale-free. Only the RMSE
+showed it, which is the argument for always reporting both.
+
+**Fixed by selection, not by picking a bigger constant.** The penalty is swept
+and chosen on speakers held out inside the training split, never on test — the
+same rule as T3's detection threshold, and for the same reason. C4's identical
+regularisation is satisfied by offering every condition the same grid:
+identical procedure rather than identical value.
+
+**And the first grid was truncated.** The failing condition selected the grid
+maximum 1e5 on all three seeds while its validation RMSE was still falling
+steeply — 346 at 1e4, 68 at 1e5. Extending to 1e9 brought it to 4.43 against a
+floor of 4.434. Nine of ten conditions now sit clearly below their floor; that
+one sits exactly at it, which is the honest outcome for the sparsest condition
+rather than a fixed number.
+
+**Question:** should 6.2 or 6.5 state that the probe's regularisation is
+selected per condition on a held-out portion of training data, rather than
+fixed? C5 asks for "a fixed number of hyperparameter trials per encoder, drawn
+by the same search strategy, with the number stated", which is close to this
+but is written about encoder hyperparameters rather than probe ones — and C4
+asks for "same regularisation" across encoders, which a per-condition selection
+satisfies only under the reading that the *procedure* is what must be identical.
+
+**Options considered:**
+1. **Selection on held-out training speakers**, as implemented, with the grid
+   and the chosen value recorded per condition. Reads C4 as identical
+   procedure.
+2. **One fixed penalty for all conditions**, chosen once. Reads C4 literally,
+   and is what produced the 468-octave prediction: no single value serves both
+   64 dense features at high budget and 704 sparse ones at low.
+3. Fixed penalty, with conditions whose fit is ill-conditioned excluded and
+   reported as such.
+
+Option 1, and I do not think option 2 is viable, but the C4 reading is the
+design session's to make.
+
+**Blocking?** no. Every T2 condition records its grid, its chosen value and its
+validation curve.
 **Answer:** (open)

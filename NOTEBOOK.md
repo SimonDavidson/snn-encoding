@@ -1588,3 +1588,97 @@ against it to quantify disagreement, and neither exists on this box. On the
 stand-in the commanded f0 is exact, so T2 can be built and validated without a
 tracker — but the tracker question has to be answered before T2 runs on TIMIT,
 and it is worth raising before the code is written rather than after.
+
+## 2026-09-08 | session: implementation (fifth block)
+**Did:** Built T2, the f0 contour task (§4.2) — ridge probe in semitone space,
+a separate voicing probe, both correlations — and ran it on E1 across four
+budgets and two context widths with R2 alongside. **The probe battery now has
+all three tasks.** Simon settled the two open choices before I wrote code:
+per-utterance correlation as the headline, semitone target space. D57.
+
+**The headline result.**
+
+| condition | ctx | Λ | r/utt | pooled | RMSE (st) | floor | voicing |
+|---|---|---|---|---|---|---|---|
+| E1 | 5 | 15343 | **0.5755** | 0.9142 | **1.430** | 4.415 | 0.9921 |
+| R2 | 5 | — | 0.4991 | 0.8738 | 1.676 | 4.413 | 0.9939 |
+| E1 | 0 | 15343 | 0.3264 | 0.7145 | 3.039 | 4.427 | 0.9787 |
+| R2 | 0 | — | 0.3353 | 0.5524 | 3.161 | 4.427 | 0.9488 |
+
+Shuffled-label controls run −0.13 to +0.05 — chance — at every condition, and
+voicing accuracy 0.94 to 0.99 against a 0.50 floor.
+
+**The pooled/per-utterance gap is large and consistent: 0.09 to 0.39.** At the
+best conditions, roughly a third of the pooled figure is voice height rather
+than contour. `tests/test_f0.py` asserts the mechanism directly — a predictor
+emitting one constant per utterance, with no contour information whatever,
+scores pooled r > 0.99 and cannot be scored per utterance at all. Q32. Worth
+noting the gap is itself a cheap measure of how much speaker identity an
+encoding retains, which §4.5 wants known before release and has no instrument
+for.
+
+**R2 fails to bound T2 as well as T3.** E1 at five frames of context reaches
+0.5755 against R2's 0.4991. Q31 now covers two of the three tasks; only T1 is
+bounded (0.9133 against 0.8996). Whatever replaces "upper bound" has to be
+per-task.
+
+**A prediction of mine that was wrong, and a diagnosis that was wrong.** The
+first T2 run recorded **RMSE 5617 semitones** — 468 octaves — against a floor
+of 4.4. I diagnosed it as the zero-variance columns: `featurise` leaves the OFF
+half at zero for a unipolar encoder, so 32 of E1's 64 features are constant and
+`cond(X'X)` is infinite at *every* operating point. That was real and is fixed
+(D58). It was not the cause. Ridge is exactly invariant to all-zero columns —
+they take `w = 0` either way — and the re-run reproduced 5617 byte for byte.
+
+The cause was the informative columns: at Λ=160 their standard deviations span
+37×, standardisation turns rare events into spikes of ±39, the context-stacked
+copies are near-collinear, and a penalty of 1.0 against a Gram diagonal of order
+n is no regularisation at all. **The correlation survived it at an
+ordinary-looking 0.179, because correlation is scale-free.** Only the RMSE
+showed it. That is the argument for reporting both, and it is the same shape as
+the T3 lesson that an F-score without an AUC cannot be interpreted.
+
+Fixed by sweeping the penalty and selecting it on speakers held out inside the
+training split — never on test, the same rule as T3's threshold. D59. **And the
+first grid was truncated**: the failing condition picked the maximum 1e5 on all
+three seeds while validation RMSE was still falling steeply, 346 at 1e4 and 68
+at 1e5. Extending to 1e9 brought it to 4.433 against a floor of 4.434. Nine of
+ten conditions now sit clearly below their floor and that one sits exactly at
+it, which is the honest outcome for the sparsest condition. Q34.
+
+**I also predicted the zero-column fix would be bit-identical for
+classification, and it was not.** Five of six budget points in the recorded T1
+sweep reproduce exactly; Λ=160 moves by 0.0005 — a fifth of one test frame out
+of 339, against a seed spread of 0.0167 at that point. L-BFGS builds its Hessian
+approximation from the full parameter vector, so removing coordinates whose
+gradient is identically zero still changes the trajectory and the
+finite-tolerance stopping point. Measured rather than assumed, which is the only
+reason I know it.
+
+**Consequence, and it is a loose end.** `probe_e1_t1_synthetic`,
+`reference_r2_t1_synthetic`, `p1_count_only_e1_synthetic` and
+`t3_boundary_e1_synthetic` were all produced before D58. They are correct
+records of the code at the commits they name, and they differ from what the
+current tree produces by at most 0.0005 at one budget point of one of them. But
+D35's point is that a commit hash records provenance only if the tree that
+produced the number is the tree the hash names, so they should be re-run and
+superseded. That is four mechanical config-driven runs, about 75 minutes, and I
+have not done it — it is the first thing to do next session, before anything is
+built on top of them.
+
+**Tests:** 173 passed, 2 failed, 1 skipped, from 157/2/1. The 16 new ones are
+`tests/test_f0.py`. Also fixed: `RidgeProbe` standardised before checking for an
+empty fit, so the guard raised the right error having already emitted five
+RuntimeWarnings; verified under `-W error::RuntimeWarning`. Two remaining
+failures unchanged: `test_G3[E5]` (Q19), `test_T5_3` (Q20).
+**Results written:** `results/t2_f0_contour_e1_synthetic.json`, superseding two
+earlier entries of the same id — the 5617 one and the truncated-grid one, both
+left visible in the manifest.
+**Blocked on:** unchanged. Q28's caveat applies: the stand-in's contour is a
+linear declination moving one to three semitones, where real speech carries
+accents and question intonation and moves far more, so the within-utterance
+correlation here is measured against a contour with little to track.
+**Next:** re-run the four pre-D58 results and supersede them. Then P2 — the week
+4 gate — for which all three tasks and the four corruption operators of
+`corrupt.py` now exist, though Q28 says plainly that a P2 run on this corpus
+cannot settle the gate it exists for.

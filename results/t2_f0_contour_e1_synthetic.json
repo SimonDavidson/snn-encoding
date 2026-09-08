@@ -1,0 +1,4730 @@
+{
+  "caveat": "Synthetic stand-in corpus, whose f0 contour is a linear declination within each utterance and moves only about one to three semitones. Real speech carries accents and question intonation and moves far more, so the within-utterance correlation here is measured against a contour with little to track. The reference is the commanded f0 and is exact, so the two-tracker noise floor 4.2 requires does not apply and has not been measured; it must be before any TIMIT figure is reported.",
+  "conditions": [
+    {
+      "condition": "E1",
+      "context": 0,
+      "floor_rmse_semitones": 4.403840323419284,
+      "lambda_events_per_s": 160.1038936848886,
+      "pearson_per_utterance": 0.16763082305535468,
+      "pearson_pooled": 0.3023471165966912,
+      "pearson_std": 0.06901841037662586,
+      "ridge_alpha_chosen": [
+        1.0,
+        1000.0,
+        1000000000.0
+      ],
+      "rmse_semitones": 4.2827341137972,
+      "runs": [
+        {
+          "best_offset": "-2",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 3.626898984907538,
+              "n_test_frames": 366,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.240717016549778,
+              "pearson_pooled": 0.30445923546866044,
+              "probe_settings": {
+                "alpha": 1.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 4.95789322938628,
+                "10.0": 4.972539312940226,
+                "100.0": 5.056357571712588,
+                "1000.0": 5.333867611722345,
+                "10000.0": 5.723666497189634,
+                "100000.0": 5.813085129789938,
+                "1000000.0": 5.823137485824002,
+                "10000000.0": 5.8241551220579515,
+                "100000000.0": 5.824257011127605,
+                "1000000000.0": 5.824267201290488
+              },
+              "rmse_semitones": 3.64516382279957
+            },
+            "-2": {
+              "floor_rmse_semitones": 3.6161975937941353,
+              "n_test_frames": 362,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.2437364775226073,
+              "pearson_pooled": 0.3212084065238413,
+              "probe_settings": {
+                "alpha": 1.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 4.924457619196923,
+                "10.0": 4.940624226138061,
+                "100.0": 5.016131906213061,
+                "1000.0": 5.302376598913046,
+                "10000.0": 5.705749353403583,
+                "100000.0": 5.797553222631387,
+                "1000000.0": 5.807859690584377,
+                "10000000.0": 5.808902898615582,
+                "100000000.0": 5.8090073464746865,
+                "1000000000.0": 5.809017792532616
+              },
+              "rmse_semitones": 3.576257243615876
+            },
+            "0": {
+              "floor_rmse_semitones": 3.637779793603321,
+              "n_test_frames": 370,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.23883515492434762,
+              "pearson_pooled": 0.29978949214142797,
+              "probe_settings": {
+                "alpha": 1.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 5.041008073617973,
+                "10.0": 5.058462687406809,
+                "100.0": 5.13149162410123,
+                "1000.0": 5.381305437496647,
+                "10000.0": 5.7449309070796515,
+                "100000.0": 5.828790198512813,
+                "1000000.0": 5.838226396495436,
+                "10000000.0": 5.839181755907436,
+                "100000000.0": 5.83927741062141,
+                "1000000000.0": 5.839286977281927
+              },
+              "rmse_semitones": 3.6505364896782617
+            }
+          },
+          "floor_rmse_semitones": 3.6161975937941353,
+          "lambda_events_per_s": 160.1038936848886,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.2437364775226073,
+          "pearson_per_utterance_at_zero": 0.23883515492434762,
+          "pearson_pooled": 0.3212084065238413,
+          "ridge_alpha_chosen": 1.0,
+          "rmse_semitones": 3.576257243615876,
+          "seconds": 0.14298605918884277,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.07935134787126187,
+          "shuffled_pearson_pooled": -0.08439428521064073,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 0,
+            "test_speakers": [
+              "S02",
+              "S04",
+              "S06"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S03",
+              "S05",
+              "S07",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9484679665738162,
+          "voicing_floor": 0.5041782729805014
+        },
+        {
+          "best_offset": "-2",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.995037262105633,
+              "n_test_frames": 473,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.10845545111769701,
+              "pearson_pooled": 0.23799878610747943,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 3.1663228354409614,
+                "10.0": 3.1075754680008774,
+                "100.0": 2.8786364360286183,
+                "1000.0": 2.636471593322141,
+                "10000.0": 2.908181838498623,
+                "100000.0": 3.0132066895501266,
+                "1000000.0": 3.0256465531390364,
+                "10000000.0": 3.026912471013819,
+                "100000000.0": 3.027039284969726,
+                "1000000000.0": 3.0270519685898867
+              },
+              "rmse_semitones": 4.665908529128068
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.975426143115867,
+              "n_test_frames": 469,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.10909658987634224,
+              "pearson_pooled": 0.23815783657939157,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 3.171217831968398,
+                "10.0": 3.1117079255628823,
+                "100.0": 2.8686223939265965,
+                "1000.0": 2.6195145313874866,
+                "10000.0": 2.9100108895126278,
+                "100000.0": 3.0163037630784215,
+                "1000000.0": 3.028811562390591,
+                "10000000.0": 3.030083528400952,
+                "100000000.0": 3.0302109395320636,
+                "1000000000.0": 3.0302236827931748
+              },
+              "rmse_semitones": 4.652049276312163
+            },
+            "0": {
+              "floor_rmse_semitones": 5.014790783842066,
+              "n_test_frames": 477,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1020076642891587,
+              "pearson_pooled": 0.23224260854896983,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 3.034839826571397,
+                "10.0": 3.01706422914453,
+                "100.0": 2.863405634831406,
+                "1000.0": 2.6513325632894755,
+                "10000.0": 2.9104570684019393,
+                "100000.0": 3.010988745192245,
+                "1000000.0": 3.0229211712182917,
+                "10000000.0": 3.024135745463763,
+                "100000000.0": 3.0242574190462364,
+                "1000000000.0": 3.024269588568939
+              },
+              "rmse_semitones": 4.697434658782266
+            }
+          },
+          "floor_rmse_semitones": 4.975426143115867,
+          "lambda_events_per_s": 160.1038936848886,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.10909658987634224,
+          "pearson_per_utterance_at_zero": 0.1020076642891587,
+          "pearson_pooled": 0.23815783657939157,
+          "ridge_alpha_chosen": 1000.0,
+          "rmse_semitones": 4.652049276312163,
+          "seconds": 0.17591619491577148,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": 0.06342511335205203,
+          "shuffled_pearson_pooled": 0.05805195970169788,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 1,
+            "test_speakers": [
+              "S04",
+              "S07",
+              "S08"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S02",
+              "S03",
+              "S05",
+              "S06",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9637377963737797,
+          "voicing_floor": 0.6541143654114365
+        },
+        {
+          "best_offset": "-2",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.634129339149377,
+              "n_test_frames": 440,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.13931890618960402,
+              "pearson_pooled": 0.34328148495098554,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 5.010400391931854,
+                "10.0": 5.397440221907229,
+                "100.0": 6.2535851558780156,
+                "1000.0": 3.6017694852301587,
+                "10000.0": 1.87621788788393,
+                "100000.0": 1.7596014309949561,
+                "1000000.0": 1.7535689459558257,
+                "10000000.0": 1.7530381082594224,
+                "100000000.0": 1.7529857667207105,
+                "1000000000.0": 1.7529805400074632
+              },
+              "rmse_semitones": 4.634127939220312
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.619897233347851,
+              "n_test_frames": 436,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.15005940176711446,
+              "pearson_pooled": 0.34767510668684076,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 4.756102661020411,
+                "10.0": 5.093098194175825,
+                "100.0": 5.875959980539718,
+                "1000.0": 3.54201347542994,
+                "10000.0": 1.869607947285337,
+                "100000.0": 1.750723097480079,
+                "1000000.0": 1.7443941506271763,
+                "10000000.0": 1.7438337377332158,
+                "100000000.0": 1.7437784405762493,
+                "1000000000.0": 1.7437729183214397
+              },
+              "rmse_semitones": 4.619895821463558
+            },
+            "0": {
+              "floor_rmse_semitones": 4.64853553130989,
+              "n_test_frames": 444,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1359480494226371,
+              "pearson_pooled": 0.3381520294553197,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 4.388468946987888,
+                "10.0": 4.721388492973669,
+                "100.0": 5.749984599773362,
+                "1000.0": 3.508841777919193,
+                "10000.0": 1.8803989746889598,
+                "100000.0": 1.76865072852349,
+                "1000000.0": 1.763001053871032,
+                "10000000.0": 1.762507690179465,
+                "100000000.0": 1.7624590883787636,
+                "1000000000.0": 1.7624542355631225
+              },
+              "rmse_semitones": 4.648534178684532
+            }
+          },
+          "floor_rmse_semitones": 4.619897233347851,
+          "lambda_events_per_s": 160.1038936848886,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.15005940176711446,
+          "pearson_per_utterance_at_zero": 0.1359480494226371,
+          "pearson_pooled": 0.34767510668684076,
+          "ridge_alpha_chosen": 1000000000.0,
+          "rmse_semitones": 4.619895821463558,
+          "seconds": 0.1870715618133545,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.0748160666386217,
+          "shuffled_pearson_pooled": -0.09661730642910006,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 2,
+            "test_speakers": [
+              "S00",
+              "S02",
+              "S07"
+            ],
+            "train_speakers": [
+              "S01",
+              "S03",
+              "S04",
+              "S05",
+              "S06",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9597122302158273,
+          "voicing_floor": 0.6273381294964029
+        }
+      ],
+      "shuffled_pearson_per_utterance": -0.03024743371927718,
+      "shuffled_pearson_pooled": -0.04098654397934764,
+      "voice_height_share": 0.13471629354133655,
+      "voicing_accuracy": 0.9573059977211411,
+      "voicing_floor": 0.5952102559627802
+    },
+    {
+      "condition": "E1",
+      "context": 0,
+      "floor_rmse_semitones": 4.424155936931079,
+      "lambda_events_per_s": 396.6586383615014,
+      "pearson_per_utterance": 0.14510688446618805,
+      "pearson_pooled": 0.2370345087309221,
+      "pearson_std": 0.030930412000750623,
+      "ridge_alpha_chosen": [
+        100.0,
+        1000.0,
+        1000000000.0
+      ],
+      "rmse_semitones": 4.244335159957305,
+      "runs": [
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 3.626898984907538,
+              "n_test_frames": 366,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1726330094324816,
+              "pearson_pooled": 0.3387807182760081,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 5.696718041094455,
+                "10.0": 5.537487778448596,
+                "100.0": 5.073183338403867,
+                "1000.0": 5.196766331914519,
+                "10000.0": 5.68786986927384,
+                "100000.0": 5.808920225932106,
+                "1000000.0": 5.822714265148285,
+                "10000000.0": 5.82411273172907,
+                "100000000.0": 5.824252771411138,
+                "1000000000.0": 5.824266777312005
+              },
+              "rmse_semitones": 3.498183407115686
+            },
+            "-2": {
+              "floor_rmse_semitones": 3.6161975937941353,
+              "n_test_frames": 362,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.156192709393805,
+              "pearson_pooled": 0.14480270031588566,
+              "probe_settings": {
+                "alpha": 10.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 10.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 4.895496276069213,
+                "10.0": 4.8070663108181115,
+                "100.0": 4.853277553238058,
+                "1000.0": 5.178810021131512,
+                "10000.0": 5.672915448613242,
+                "100000.0": 5.793667074167765,
+                "1000000.0": 5.807463890146087,
+                "10000000.0": 5.808863245328197,
+                "100000000.0": 5.809003380412096,
+                "1000000000.0": 5.8090173959190174
+              },
+              "rmse_semitones": 9.842406502698633
+            },
+            "0": {
+              "floor_rmse_semitones": 3.637779793603321,
+              "n_test_frames": 370,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.17978787568762009,
+              "pearson_pooled": 0.33505739437299,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 5.708083825772993,
+                "10.0": 5.5513966876588965,
+                "100.0": 5.102563663819103,
+                "1000.0": 5.2373675352585165,
+                "10000.0": 5.709660154178208,
+                "100000.0": 5.8247202116773655,
+                "1000000.0": 5.837813154172544,
+                "10000000.0": 5.83914036833344,
+                "100000000.0": 5.839273271229678,
+                "1000000000.0": 5.83928656333641
+              },
+              "rmse_semitones": 3.532873537160859
+            }
+          },
+          "floor_rmse_semitones": 3.637779793603321,
+          "lambda_events_per_s": 396.6586383615014,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.17978787568762009,
+          "pearson_per_utterance_at_zero": 0.17978787568762009,
+          "pearson_pooled": 0.33505739437299,
+          "ridge_alpha_chosen": 100.0,
+          "rmse_semitones": 3.532873537160859,
+          "seconds": 0.13607382774353027,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": 0.07697607075563274,
+          "shuffled_pearson_pooled": -0.010107304128197535,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 0,
+            "test_speakers": [
+              "S02",
+              "S04",
+              "S06"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S03",
+              "S05",
+              "S07",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9144021739130435,
+          "voicing_floor": 0.5027173913043478
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.995037262105633,
+              "n_test_frames": 473,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.12191816202721853,
+              "pearson_pooled": 0.24604218701272662,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 3.263112741393596,
+                "10.0": 3.104271976218845,
+                "100.0": 2.8008920119669343,
+                "1000.0": 2.55235106217729,
+                "10000.0": 2.8809950735816687,
+                "100000.0": 3.009757802154082,
+                "1000000.0": 3.0252918220079943,
+                "10000000.0": 3.0268768958322854,
+                "100000000.0": 3.0270357264270773,
+                "1000000000.0": 3.0270516127253733
+              },
+              "rmse_semitones": 4.534772908090146
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.975426143115867,
+              "n_test_frames": 469,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.10453617401970984,
+              "pearson_pooled": 0.21851636000884114,
+              "probe_settings": {
+                "alpha": 100000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 19.209026239979398,
+                "10.0": 20.02202187526017,
+                "100.0": 16.685023186613385,
+                "1000.0": 7.732150699250057,
+                "10000.0": 3.113123422029858,
+                "100000.0": 3.006290878278549,
+                "1000000.0": 3.0274297753524806,
+                "10000000.0": 3.02994147150612,
+                "100000000.0": 3.030196694988335,
+                "1000000000.0": 3.030222257950187
+              },
+              "rmse_semitones": 4.959800489567112
+            },
+            "0": {
+              "floor_rmse_semitones": 5.014790783842066,
+              "n_test_frames": 477,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1351563836092181,
+              "pearson_pooled": 0.22808859638044177,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 3.264148187086324,
+                "10.0": 3.0725773707378843,
+                "100.0": 2.746030543418191,
+                "1000.0": 2.5395501896934896,
+                "10000.0": 2.879628397542524,
+                "100000.0": 3.0071619871896917,
+                "1000000.0": 3.022528378316901,
+                "10000000.0": 3.024096361089747,
+                "100000000.0": 3.0242534795538947,
+                "1000000000.0": 3.024269194609151
+              },
+              "rmse_semitones": 4.580237194861441
+            }
+          },
+          "floor_rmse_semitones": 5.014790783842066,
+          "lambda_events_per_s": 396.6586383615014,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.1351563836092181,
+          "pearson_per_utterance_at_zero": 0.1351563836092181,
+          "pearson_pooled": 0.22808859638044177,
+          "ridge_alpha_chosen": 1000.0,
+          "rmse_semitones": 4.580237194861441,
+          "seconds": 0.1710186004638672,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.06188381774265834,
+          "shuffled_pearson_pooled": -0.09806351769245591,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 1,
+            "test_speakers": [
+              "S04",
+              "S07",
+              "S08"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S02",
+              "S03",
+              "S05",
+              "S06",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9387755102040817,
+          "voicing_floor": 0.6489795918367347
+        },
+        {
+          "best_offset": "-2",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.634129339149377,
+              "n_test_frames": 440,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.12011942768912694,
+              "pearson_pooled": 0.399986703188046,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 4.749970104147794,
+                "10.0": 3.914798241640225,
+                "100.0": 2.883960872129403,
+                "1000.0": 2.1908037212600178,
+                "10000.0": 1.7883907827523084,
+                "100000.0": 1.7553068309200075,
+                "1000000.0": 1.7531961967933913,
+                "10000000.0": 1.7530014132868985,
+                "100000000.0": 1.7529821030358015,
+                "1000000000.0": 1.752980173697109
+              },
+              "rmse_semitones": 4.634127658062582
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.619897233347851,
+              "n_test_frames": 436,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.12037639410172599,
+              "pearson_pooled": 0.14795753543933457,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 3.235369314608869,
+                "10.0": 2.9226074752219855,
+                "100.0": 2.684181474198786,
+                "1000.0": 2.1451870300396956,
+                "10000.0": 1.7791845934628072,
+                "100000.0": 1.7462099891552607,
+                "1000000.0": 1.7440005923215398,
+                "10000000.0": 1.7437949731160858,
+                "100000000.0": 1.743774570040457,
+                "1000000000.0": 1.7437725313271333
+              },
+              "rmse_semitones": 4.619894747849614
+            },
+            "0": {
+              "floor_rmse_semitones": 4.64853553130989,
+              "n_test_frames": 444,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1153347836645538,
+              "pearson_pooled": 0.3982373834393775,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 4.8581757249234085,
+                "10.0": 3.985264299825316,
+                "100.0": 2.882603570994077,
+                "1000.0": 2.1777348537705725,
+                "10000.0": 1.7916507998749611,
+                "100000.0": 1.7640685483153573,
+                "1000000.0": 1.762597734838672,
+                "10000000.0": 1.7624679203894145,
+                "100000000.0": 1.7624551170340998,
+                "1000000000.0": 1.762453838485013
+              },
+              "rmse_semitones": 4.648533956381103
+            }
+          },
+          "floor_rmse_semitones": 4.619897233347851,
+          "lambda_events_per_s": 396.6586383615014,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.12037639410172599,
+          "pearson_per_utterance_at_zero": 0.1153347836645538,
+          "pearson_pooled": 0.14795753543933457,
+          "ridge_alpha_chosen": 1000000000.0,
+          "rmse_semitones": 4.619894747849614,
+          "seconds": 0.30068159103393555,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.04271780838472976,
+          "shuffled_pearson_pooled": 0.07299399859716617,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 2,
+            "test_speakers": [
+              "S00",
+              "S02",
+              "S07"
+            ],
+            "train_speakers": [
+              "S01",
+              "S03",
+              "S04",
+              "S05",
+              "S06",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9769784172661871,
+          "voicing_floor": 0.6273381294964029
+        }
+      ],
+      "shuffled_pearson_per_utterance": -0.009208518457251784,
+      "shuffled_pearson_pooled": -0.011725607741162427,
+      "voice_height_share": 0.09192762426473405,
+      "voicing_accuracy": 0.9433853671277707,
+      "voicing_floor": 0.5930117042124952
+    },
+    {
+      "condition": "E1",
+      "context": 0,
+      "floor_rmse_semitones": 4.433702036251759,
+      "lambda_events_per_s": 2447.0481103301263,
+      "pearson_per_utterance": 0.20204611538180525,
+      "pearson_pooled": 0.4651980913919563,
+      "pearson_std": 0.07877326335630438,
+      "ridge_alpha_chosen": [
+        1.0,
+        1000.0,
+        1000000000.0
+      ],
+      "rmse_semitones": 3.8610168195565593,
+      "runs": [
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 3.626898984907538,
+              "n_test_frames": 366,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.2549333460919075,
+              "pearson_pooled": 0.4743110853548184,
+              "probe_settings": {
+                "alpha": 1.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 4.013973541260962,
+                "10.0": 4.016326689209052,
+                "100.0": 4.05151889681394,
+                "1000.0": 4.54903616897906,
+                "10000.0": 5.525543106262975,
+                "100000.0": 5.789690481799694,
+                "1000000.0": 5.820754342972569,
+                "10000000.0": 5.823916361203955,
+                "100000000.0": 5.824233130566483,
+                "1000000000.0": 5.824264813189608
+              },
+              "rmse_semitones": 2.9217678583207656
+            },
+            "-2": {
+              "floor_rmse_semitones": 3.6161975937941353,
+              "n_test_frames": 362,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.22132361446576868,
+              "pearson_pooled": 0.4580161971326453,
+              "probe_settings": {
+                "alpha": 1.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 3.894024845922122,
+                "10.0": 3.8966538647845375,
+                "100.0": 3.934643876872033,
+                "1000.0": 4.455481903236624,
+                "10000.0": 5.488259084556208,
+                "100000.0": 5.771761821066632,
+                "1000000.0": 5.805231073285806,
+                "10000000.0": 5.80863953079052,
+                "100000000.0": 5.808981004619616,
+                "1000000000.0": 5.809015158296371
+              },
+              "rmse_semitones": 2.921050370510863
+            },
+            "0": {
+              "floor_rmse_semitones": 3.637779793603321,
+              "n_test_frames": 370,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.29103797681273885,
+              "pearson_pooled": 0.49272127567071444,
+              "probe_settings": {
+                "alpha": 1.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 4.176131630457753,
+                "10.0": 4.177988593139388,
+                "100.0": 4.210234377393303,
+                "1000.0": 4.695335345171476,
+                "10000.0": 5.581219613390894,
+                "100000.0": 5.809649054472393,
+                "1000000.0": 5.836278615116437,
+                "10000000.0": 5.838986633681564,
+                "100000000.0": 5.839257894950342,
+                "1000000000.0": 5.839285025680328
+              },
+              "rmse_semitones": 2.8762527563592455
+            }
+          },
+          "floor_rmse_semitones": 3.637779793603321,
+          "lambda_events_per_s": 2447.0481103301263,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.29103797681273885,
+          "pearson_per_utterance_at_zero": 0.29103797681273885,
+          "pearson_pooled": 0.49272127567071444,
+          "ridge_alpha_chosen": 1.0,
+          "rmse_semitones": 2.8762527563592455,
+          "seconds": 0.30614471435546875,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.06817456156621701,
+          "shuffled_pearson_pooled": -0.1644347436053434,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 0,
+            "test_speakers": [
+              "S02",
+              "S04",
+              "S06"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S03",
+              "S05",
+              "S07",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.967391304347826,
+          "voicing_floor": 0.5027173913043478
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.995037262105633,
+              "n_test_frames": 473,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.11504064992873077,
+              "pearson_pooled": 0.40896702954058345,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.612341813532345,
+                "10.0": 2.595944884359214,
+                "100.0": 2.4624635968849815,
+                "1000.0": 2.223084223464375,
+                "10000.0": 2.7813000113408903,
+                "100000.0": 2.997625626157172,
+                "1000000.0": 3.0240519401579244,
+                "10000000.0": 3.0267526348736222,
+                "100000000.0": 3.027023297597223,
+                "1000000000.0": 3.0270503698150417
+              },
+              "rmse_semitones": 3.9719296125712438
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.975426143115867,
+              "n_test_frames": 469,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.08207444097074092,
+              "pearson_pooled": 0.4263640048171172,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.5737900509725122,
+                "10.0": 2.557117048892443,
+                "100.0": 2.4227588414012167,
+                "1000.0": 2.196222434810734,
+                "10000.0": 2.775465097416959,
+                "100000.0": 2.999637748434198,
+                "1000000.0": 3.02710426619651,
+                "10000000.0": 3.0299123807589954,
+                "100000000.0": 3.030193820576242,
+                "1000000000.0": 3.030221970855665
+              },
+              "rmse_semitones": 3.9223910590266975
+            },
+            "0": {
+              "floor_rmse_semitones": 5.014790783842066,
+              "n_test_frames": 477,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1412540664446631,
+              "pearson_pooled": 0.3896710705540813,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.6068258208224777,
+                "10.0": 2.5906810372636353,
+                "100.0": 2.460369312604987,
+                "1000.0": 2.2539875803115055,
+                "10000.0": 2.796880868817402,
+                "100000.0": 2.997182769584264,
+                "1000000.0": 3.021509832343018,
+                "10000000.0": 3.023994296193377,
+                "100000000.0": 3.0242432709571814,
+                "1000000000.0": 3.0242681737284047
+              },
+              "rmse_semitones": 4.058265211312648
+            }
+          },
+          "floor_rmse_semitones": 5.014790783842066,
+          "lambda_events_per_s": 2447.0481103301263,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.1412540664446631,
+          "pearson_per_utterance_at_zero": 0.1412540664446631,
+          "pearson_pooled": 0.3896710705540813,
+          "ridge_alpha_chosen": 1000.0,
+          "rmse_semitones": 4.058265211312648,
+          "seconds": 0.3446540832519531,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": 0.13576074689815576,
+          "shuffled_pearson_pooled": -0.09427012736355542,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 1,
+            "test_speakers": [
+              "S04",
+              "S07",
+              "S08"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S02",
+              "S03",
+              "S05",
+              "S06",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9727891156462585,
+          "voicing_floor": 0.6489795918367347
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.634129339149377,
+              "n_test_frames": 440,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1405590323124735,
+              "pearson_pooled": 0.5211836408299042,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.603584931680209,
+                "10.0": 2.5977901226076336,
+                "100.0": 2.5450949448274685,
+                "1000.0": 2.230073459931335,
+                "10000.0": 1.81948082817717,
+                "100000.0": 1.7581287975591315,
+                "1000000.0": 1.7534678409033693,
+                "10000000.0": 1.7530284602446684,
+                "100000000.0": 1.7529848065445284,
+                "1000000000.0": 1.7529804440360985
+              },
+              "rmse_semitones": 4.634125994962929
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.619897233347851,
+              "n_test_frames": 436,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1116692161150586,
+              "pearson_pooled": 0.5388008116678906,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.620265558881909,
+                "10.0": 2.613434768406052,
+                "100.0": 2.5544743702757464,
+                "1000.0": 2.2440329327344704,
+                "10000.0": 1.8198192797639667,
+                "100000.0": 1.7499024888323178,
+                "1000000.0": 1.7443571511027802,
+                "10000000.0": 1.7438304881340267,
+                "100000000.0": 1.7437781201190092,
+                "1000000000.0": 1.7437728863207413
+              },
+              "rmse_semitones": 4.6198936827637365
+            },
+            "0": {
+              "floor_rmse_semitones": 4.64853553130989,
+              "n_test_frames": 444,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.17384630288801375,
+              "pearson_pooled": 0.5132019279510731,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.506561596861186,
+                "10.0": 2.4999180019007983,
+                "100.0": 2.440206037037602,
+                "1000.0": 2.1254811801808455,
+                "10000.0": 1.7984350734242698,
+                "100000.0": 1.7642355453146858,
+                "1000000.0": 1.7626028844943749,
+                "10000000.0": 1.762468310268542,
+                "100000000.0": 1.7624551547611382,
+                "1000000000.0": 1.762453842245098
+              },
+              "rmse_semitones": 4.648532490997785
+            }
+          },
+          "floor_rmse_semitones": 4.64853553130989,
+          "lambda_events_per_s": 2447.0481103301263,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.17384630288801375,
+          "pearson_per_utterance_at_zero": 0.17384630288801375,
+          "pearson_pooled": 0.5132019279510731,
+          "ridge_alpha_chosen": 1000000000.0,
+          "rmse_semitones": 4.648532490997785,
+          "seconds": 0.36333370208740234,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.04741006254848706,
+          "shuffled_pearson_pooled": 0.104004825244504,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 2,
+            "test_speakers": [
+              "S00",
+              "S02",
+              "S07"
+            ],
+            "train_speakers": [
+              "S01",
+              "S03",
+              "S04",
+              "S05",
+              "S06",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9789621318373072,
+          "voicing_floor": 0.6227208976157083
+        }
+      ],
+      "shuffled_pearson_per_utterance": 0.006725374261150563,
+      "shuffled_pearson_pooled": -0.05156668190813161,
+      "voice_height_share": 0.26315197601015106,
+      "voicing_accuracy": 0.9730475172771307,
+      "voicing_floor": 0.5914726269189302
+    },
+    {
+      "condition": "E1",
+      "context": 0,
+      "floor_rmse_semitones": 4.426507969648696,
+      "lambda_events_per_s": 15343.441581791702,
+      "pearson_per_utterance": 0.32635548527450303,
+      "pearson_pooled": 0.71445699622035,
+      "pearson_std": 0.160075700398074,
+      "ridge_alpha_chosen": [
+        1.0,
+        100.0,
+        1000000000.0
+      ],
+      "rmse_semitones": 3.0387206397909345,
+      "runs": [
+        {
+          "best_offset": "-2",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 3.626898984907538,
+              "n_test_frames": 366,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.4625202173177932,
+              "pearson_pooled": 0.755469286599355,
+              "probe_settings": {
+                "alpha": 1.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.658067658189915,
+                "10.0": 2.6698562211045465,
+                "100.0": 2.7930957190391053,
+                "1000.0": 3.607757732243362,
+                "10000.0": 5.225469099426623,
+                "100000.0": 5.751059141536522,
+                "1000000.0": 5.8167708384675745,
+                "10000000.0": 5.82351675610225,
+                "100000000.0": 5.824193157456267,
+                "1000000000.0": 5.824260815752534
+              },
+              "rmse_semitones": 1.9824162277469857
+            },
+            "-2": {
+              "floor_rmse_semitones": 3.6161975937941353,
+              "n_test_frames": 362,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.5020326527525326,
+              "pearson_pooled": 0.7987671290465304,
+              "probe_settings": {
+                "alpha": 1.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.4916261024371344,
+                "10.0": 2.503747298975053,
+                "100.0": 2.6319581758038453,
+                "1000.0": 3.457194639126194,
+                "10000.0": 5.144954112257293,
+                "100000.0": 5.727022141733617,
+                "1000000.0": 5.8006133801074675,
+                "10000000.0": 5.808176266233387,
+                "100000000.0": 5.8089346631507395,
+                "1000000000.0": 5.809010523999292
+              },
+              "rmse_semitones": 1.8276797131306304
+            },
+            "0": {
+              "floor_rmse_semitones": 3.637779793603321,
+              "n_test_frames": 370,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.44942916805783484,
+              "pearson_pooled": 0.7180514605083863,
+              "probe_settings": {
+                "alpha": 1.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.8615398424628946,
+                "10.0": 2.8724308211250746,
+                "100.0": 2.9934986337428433,
+                "1000.0": 3.915703775976458,
+                "10000.0": 5.397445388120449,
+                "100000.0": 5.787406141884143,
+                "1000000.0": 5.83400086288428,
+                "10000000.0": 5.838758301903257,
+                "100000000.0": 5.839235056183941,
+                "1000000000.0": 5.839282741747779
+              },
+              "rmse_semitones": 2.140280401932635
+            }
+          },
+          "floor_rmse_semitones": 3.6161975937941353,
+          "lambda_events_per_s": 15343.441581791702,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.5020326527525326,
+          "pearson_per_utterance_at_zero": 0.44942916805783484,
+          "pearson_pooled": 0.7987671290465304,
+          "ridge_alpha_chosen": 1.0,
+          "rmse_semitones": 1.8276797131306304,
+          "seconds": 0.5433785915374756,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.11682950943304315,
+          "shuffled_pearson_pooled": -0.11489269894451318,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 0,
+            "test_speakers": [
+              "S02",
+              "S04",
+              "S06"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S03",
+              "S05",
+              "S07",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.979108635097493,
+          "voicing_floor": 0.5041782729805014
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.995037262105633,
+              "n_test_frames": 473,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.2230710670587191,
+              "pearson_pooled": 0.7578393654850296,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.4815974296137842,
+                "10.0": 1.4696788848375117,
+                "100.0": 1.3904580019699948,
+                "1000.0": 1.4461713720628788,
+                "10000.0": 2.558339078610438,
+                "100000.0": 2.9689362054631756,
+                "1000000.0": 3.021088632474137,
+                "10000000.0": 3.02645531221263,
+                "100000000.0": 3.0269935553611065,
+                "1000000000.0": 3.0270473954916786
+              },
+              "rmse_semitones": 2.4350522901772385
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.975426143115867,
+              "n_test_frames": 469,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.10516938432349135,
+              "pearson_pooled": 0.6986899640231666,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.4440942618608352,
+                "10.0": 1.4307548826961511,
+                "100.0": 1.3430250447582892,
+                "1000.0": 1.3421724603751772,
+                "10000.0": 2.506115060185745,
+                "100000.0": 2.9649557341743886,
+                "1000000.0": 3.023525543871499,
+                "10000000.0": 3.0295533523882163,
+                "100000000.0": 3.0301579061240234,
+                "1000000000.0": 3.0302183792942374
+              },
+              "rmse_semitones": 3.137338306428001
+            },
+            "0": {
+              "floor_rmse_semitones": 5.014790783842066,
+              "n_test_frames": 477,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.28829018230043507,
+              "pearson_pooled": 0.7163102946207995,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.5933003251043836,
+                "10.0": 1.5814401583774282,
+                "100.0": 1.507251822565059,
+                "1000.0": 1.6736738311952655,
+                "10000.0": 2.674472088560145,
+                "100000.0": 2.9823000497749574,
+                "1000000.0": 3.0199822373296143,
+                "10000000.0": 3.023841123370263,
+                "100000000.0": 3.0242279495204496,
+                "1000000000.0": 3.0242666415431656
+              },
+              "rmse_semitones": 2.6399514629313265
+            }
+          },
+          "floor_rmse_semitones": 5.014790783842066,
+          "lambda_events_per_s": 15343.441581791702,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.28829018230043507,
+          "pearson_per_utterance_at_zero": 0.28829018230043507,
+          "pearson_pooled": 0.7163102946207995,
+          "ridge_alpha_chosen": 100.0,
+          "rmse_semitones": 2.6399514629313265,
+          "seconds": 0.5608134269714355,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": 0.06859675872742065,
+          "shuffled_pearson_pooled": 0.08850152861184402,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 1,
+            "test_speakers": [
+              "S04",
+              "S07",
+              "S08"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S02",
+              "S03",
+              "S05",
+              "S06",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9823129251700681,
+          "voicing_floor": 0.6489795918367347
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.634129339149377,
+              "n_test_frames": 440,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1269480359808132,
+              "pearson_pooled": 0.670559939998799,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.1957379667231605,
+                "10.0": 2.244022921998262,
+                "100.0": 2.585785883664384,
+                "1000.0": 2.870579869469898,
+                "10000.0": 2.0349063330005985,
+                "100000.0": 1.7798613167265946,
+                "1000000.0": 1.7555844678903916,
+                "10000000.0": 1.753239437136846,
+                "100000000.0": 1.7530058972455629,
+                "1000000000.0": 1.7529825530361889
+              },
+              "rmse_semitones": 4.634122981378819
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.619897233347851,
+              "n_test_frames": 436,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.10919837068660375,
+              "pearson_pooled": 0.7107297805946012,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.0468670090711525,
+                "10.0": 2.1000068032578705,
+                "100.0": 2.489793955703209,
+                "1000.0": 2.9121758152590855,
+                "10000.0": 2.0485450105212397,
+                "100000.0": 1.772390600334147,
+                "1000000.0": 1.7465334806724988,
+                "10000000.0": 1.7440472592576604,
+                "100000000.0": 1.7437997884644116,
+                "1000000000.0": 1.743775053067462
+              },
+              "rmse_semitones": 4.619890186617793
+            },
+            "0": {
+              "floor_rmse_semitones": 4.64853553130989,
+              "n_test_frames": 444,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.18874362077054152,
+              "pearson_pooled": 0.6282935649937198,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.1994319391232913,
+                "10.0": 2.233371383858259,
+                "100.0": 2.457673153935648,
+                "1000.0": 2.5163071194841353,
+                "10000.0": 1.9184249478024284,
+                "100000.0": 1.776136536230921,
+                "1000000.0": 1.7637653543308107,
+                "10000000.0": 1.7625842310304118,
+                "100000000.0": 1.7624667435213752,
+                "1000000000.0": 1.762455001087908
+              },
+              "rmse_semitones": 4.648530743310847
+            }
+          },
+          "floor_rmse_semitones": 4.64853553130989,
+          "lambda_events_per_s": 15343.441581791702,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.18874362077054152,
+          "pearson_per_utterance_at_zero": 0.18874362077054152,
+          "pearson_pooled": 0.6282935649937198,
+          "ridge_alpha_chosen": 1000000000.0,
+          "rmse_semitones": 4.648530743310847,
+          "seconds": 0.559669017791748,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.08036106752592806,
+          "shuffled_pearson_pooled": -0.0394918671955524,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 2,
+            "test_speakers": [
+              "S00",
+              "S02",
+              "S07"
+            ],
+            "train_speakers": [
+              "S01",
+              "S03",
+              "S04",
+              "S05",
+              "S06",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9747545582047685,
+          "voicing_floor": 0.6227208976157083
+        }
+      ],
+      "shuffled_pearson_per_utterance": -0.04286460607718353,
+      "shuffled_pearson_pooled": -0.021961012509407185,
+      "voice_height_share": 0.38810151094584694,
+      "voicing_accuracy": 0.9787253728241098,
+      "voicing_floor": 0.5919595874776481
+    },
+    {
+      "condition": "R2",
+      "context": 0,
+      "floor_rmse_semitones": 4.426507969648696,
+      "lambda_events_per_s": 0.0,
+      "pearson_per_utterance": 0.3353189558935146,
+      "pearson_pooled": 0.5523504261874904,
+      "pearson_std": 0.2046616813437553,
+      "ridge_alpha_chosen": [
+        1.0,
+        10.0,
+        1000000000.0
+      ],
+      "rmse_semitones": 3.161250652535575,
+      "runs": [
+        {
+          "best_offset": "-2",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 3.626898984907538,
+              "n_test_frames": 366,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.3257275505343325,
+              "pearson_pooled": 0.6780389953009711,
+              "probe_settings": {
+                "alpha": 1.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.7478786103214206,
+                "10.0": 2.7759942788269467,
+                "100.0": 2.9188385719496797,
+                "1000.0": 3.7945152820279913,
+                "10000.0": 5.36843107507332,
+                "100000.0": 5.77006447605427,
+                "1000000.0": 5.818713614145161,
+                "10000000.0": 5.823711416686557,
+                "100000000.0": 5.824212627295796,
+                "1000000000.0": 5.824262762774247
+              },
+              "rmse_semitones": 2.059416918715744
+            },
+            "-2": {
+              "floor_rmse_semitones": 3.6161975937941353,
+              "n_test_frames": 362,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.5712798697452303,
+              "pearson_pooled": 0.78108112125008,
+              "probe_settings": {
+                "alpha": 1.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.604037504573419,
+                "10.0": 2.616914687099797,
+                "100.0": 2.7489174603233644,
+                "1000.0": 3.789359183782462,
+                "10000.0": 5.3710278407877174,
+                "100000.0": 5.7567032642443925,
+                "1000000.0": 5.803648803500955,
+                "10000000.0": 5.8084804358320445,
+                "100000000.0": 5.808965086325137,
+                "1000000000.0": 5.809013566378817
+              },
+              "rmse_semitones": 1.9133942558234815
+            },
+            "0": {
+              "floor_rmse_semitones": 3.637779793603321,
+              "n_test_frames": 370,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.44348178134183214,
+              "pearson_pooled": 0.7166851718737044,
+              "probe_settings": {
+                "alpha": 1.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.9248398830631803,
+                "10.0": 3.0130394719772307,
+                "100.0": 3.586299474143804,
+                "1000.0": 5.147030821090909,
+                "10000.0": 5.738151786756047,
+                "100000.0": 5.82824015933667,
+                "1000000.0": 5.838168902678483,
+                "10000000.0": 5.839175965594939,
+                "100000000.0": 5.839276831159752,
+                "1000000000.0": 5.839286919331435
+              },
+              "rmse_semitones": 2.1758345101857297
+            }
+          },
+          "floor_rmse_semitones": 3.6161975937941353,
+          "lambda_events_per_s": 0.0,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.5712798697452303,
+          "pearson_per_utterance_at_zero": 0.44348178134183214,
+          "pearson_pooled": 0.78108112125008,
+          "ridge_alpha_chosen": 1.0,
+          "rmse_semitones": 1.9133942558234815,
+          "seconds": 0.16942453384399414,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.10220212244410418,
+          "shuffled_pearson_pooled": -0.014114631495756718,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 0,
+            "test_speakers": [
+              "S02",
+              "S04",
+              "S06"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S03",
+              "S05",
+              "S07",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9568245125348189,
+          "voicing_floor": 0.5041782729805014
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.995037262105633,
+              "n_test_frames": 473,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.10305128381659197,
+              "pearson_pooled": 0.7393873424438627,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.0674196948520893,
+                "10.0": 1.9333131316096412,
+                "100.0": 1.444732649488705,
+                "1000.0": 1.7197322189983462,
+                "10000.0": 2.7247878664285965,
+                "100000.0": 2.9888770489515863,
+                "1000000.0": 3.0230839134593745,
+                "10000000.0": 3.0266547457161486,
+                "100000000.0": 3.027013497639571,
+                "1000000000.0": 3.0270493897086777
+              },
+              "rmse_semitones": 2.9448525825872487
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.975426143115867,
+              "n_test_frames": 469,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.18716242179256087,
+              "pearson_pooled": 0.7442432349768191,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.593031966693138,
+                "10.0": 1.546975731778122,
+                "100.0": 1.4159667849538609,
+                "1000.0": 1.7840803431344423,
+                "10000.0": 2.7352903233159873,
+                "100000.0": 2.9915017198609375,
+                "1000000.0": 3.0261547422947386,
+                "10000000.0": 3.0298158103652875,
+                "100000000.0": 3.030184147054522,
+                "1000000000.0": 3.0302210033383616
+              },
+              "rmse_semitones": 2.820854009236176
+            },
+            "0": {
+              "floor_rmse_semitones": 5.014790783842066,
+              "n_test_frames": 477,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.22866277206354507,
+              "pearson_pooled": 0.7432977932176965,
+              "probe_settings": {
+                "alpha": 10.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 10.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.8877468687622094,
+                "10.0": 1.6629093475204832,
+                "100.0": 1.739536697675271,
+                "1000.0": 2.6100630787113337,
+                "10000.0": 2.9606418848903067,
+                "100000.0": 3.01701216548549,
+                "1000000.0": 3.0235239249577597,
+                "10000000.0": 3.0241959737451722,
+                "100000000.0": 3.024263441334527,
+                "1000000000.0": 3.024270190792298
+              },
+              "rmse_semitones": 2.921822798983761
+            }
+          },
+          "floor_rmse_semitones": 5.014790783842066,
+          "lambda_events_per_s": 0.0,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.22866277206354507,
+          "pearson_per_utterance_at_zero": 0.22866277206354507,
+          "pearson_pooled": 0.7432977932176965,
+          "ridge_alpha_chosen": 10.0,
+          "rmse_semitones": 2.921822798983761,
+          "seconds": 0.16566133499145508,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.1297629500892672,
+          "shuffled_pearson_pooled": 0.00737017667066599,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 1,
+            "test_speakers": [
+              "S04",
+              "S07",
+              "S08"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S02",
+              "S03",
+              "S05",
+              "S06",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9414965986394558,
+          "voicing_floor": 0.6489795918367347
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.634129339149377,
+              "n_test_frames": 440,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1474910661748392,
+              "pearson_pooled": 0.5385748197784165,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.374662974647546,
+                "10.0": 2.4912314592247786,
+                "100.0": 3.153265734309536,
+                "1000.0": 3.110891049549281,
+                "10000.0": 2.0751524399613706,
+                "100000.0": 1.7892452004322186,
+                "1000000.0": 1.756605835860234,
+                "10000000.0": 1.753342380183588,
+                "100000000.0": 1.753016199565298,
+                "1000000000.0": 1.7529835833482625
+              },
+              "rmse_semitones": 4.634125066974022
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.619897233347851,
+              "n_test_frames": 436,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.12384810013431251,
+              "pearson_pooled": 0.47775226541908006,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.281552515550741,
+                "10.0": 2.395302920495105,
+                "100.0": 2.9704993708374188,
+                "1000.0": 2.991735558048317,
+                "10000.0": 2.043554600055582,
+                "100000.0": 1.7758662278991173,
+                "1000000.0": 1.7469068640104675,
+                "10000000.0": 1.7440846664257355,
+                "100000000.0": 1.7438035296169205,
+                "1000000000.0": 1.7437754271868096
+              },
+              "rmse_semitones": 4.619892990337432
+            },
+            "0": {
+              "floor_rmse_semitones": 4.64853553130989,
+              "n_test_frames": 444,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.20601422587176862,
+              "pearson_pooled": 0.13267236409469452,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.5739643937974295,
+                "10.0": 2.836060058144561,
+                "100.0": 3.1701767518752235,
+                "1000.0": 2.4014793967195134,
+                "10000.0": 1.864126632570931,
+                "100000.0": 1.7709555335611487,
+                "1000000.0": 1.763221049587117,
+                "10000000.0": 1.762529361475722,
+                "100000000.0": 1.7624612519386744,
+                "1000000000.0": 1.7624544518831218
+              },
+              "rmse_semitones": 4.648534902799482
+            }
+          },
+          "floor_rmse_semitones": 4.64853553130989,
+          "lambda_events_per_s": 0.0,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.20601422587176862,
+          "pearson_per_utterance_at_zero": 0.20601422587176862,
+          "pearson_pooled": 0.13267236409469452,
+          "ridge_alpha_chosen": 1000000000.0,
+          "rmse_semitones": 4.648534902799482,
+          "seconds": 0.17425322532653809,
+          "settings": {
+            "context": 0,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.17154148294420363,
+          "shuffled_pearson_pooled": 0.03757363931463659,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 2,
+            "test_speakers": [
+              "S00",
+              "S02",
+              "S07"
+            ],
+            "train_speakers": [
+              "S01",
+              "S03",
+              "S04",
+              "S05",
+              "S06",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9481065918653576,
+          "voicing_floor": 0.6227208976157083
+        }
+      ],
+      "shuffled_pearson_per_utterance": -0.13450218515919166,
+      "shuffled_pearson_pooled": 0.01027639482984862,
+      "voice_height_share": 0.2170314702939758,
+      "voicing_accuracy": 0.9488092343465442,
+      "voicing_floor": 0.5919595874776481
+    },
+    {
+      "condition": "E1",
+      "context": 5,
+      "floor_rmse_semitones": 4.433702036251759,
+      "lambda_events_per_s": 160.1038936848886,
+      "pearson_per_utterance": 0.24540119509186412,
+      "pearson_pooled": 0.05402836545545751,
+      "pearson_std": 0.13787436898718838,
+      "ridge_alpha_chosen": [
+        100000000.0,
+        1000000000.0,
+        100000000.0
+      ],
+      "rmse_semitones": 4.4330983845197185,
+      "runs": [
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 3.626898984907538,
+              "n_test_frames": 366,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.386182028339961,
+              "pearson_pooled": 0.06651815611115582,
+              "probe_settings": {
+                "alpha": 100000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 5298.039793319628,
+                "10.0": 4043.922406431017,
+                "100.0": 2080.850073518312,
+                "1000.0": 737.5565957922283,
+                "10000.0": 344.83518803477784,
+                "100000.0": 67.29507818590162,
+                "1000000.0": 9.360981764665205,
+                "10000000.0": 5.8637998358793455,
+                "100000000.0": 5.823925268280267,
+                "1000000000.0": 5.824190833914261
+              },
+              "rmse_semitones": 3.6269280604192278
+            },
+            "-2": {
+              "floor_rmse_semitones": 3.6161975937941353,
+              "n_test_frames": 362,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.37160857628245336,
+              "pearson_pooled": 0.06682400565805477,
+              "probe_settings": {
+                "alpha": 100000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 3045.854651127068,
+                "10.0": 2313.4532519025574,
+                "100.0": 1661.4881193436347,
+                "1000.0": 676.550866910191,
+                "10000.0": 335.76337577110405,
+                "100000.0": 66.20461934942048,
+                "1000000.0": 9.256979773362827,
+                "10000000.0": 5.847016029683991,
+                "100000000.0": 5.808648172814355,
+                "1000000000.0": 5.808939952349391
+              },
+              "rmse_semitones": 3.6162304740662408
+            },
+            "0": {
+              "floor_rmse_semitones": 3.637779793603321,
+              "n_test_frames": 370,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.4009579717532106,
+              "pearson_pooled": 0.06607627063272524,
+              "probe_settings": {
+                "alpha": 100000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 8304.334879090084,
+                "10.0": 4812.8436964663215,
+                "100.0": 2082.4073124734377,
+                "1000.0": 721.5387123757704,
+                "10000.0": 346.23177432226447,
+                "100000.0": 68.26482191935993,
+                "1000000.0": 9.463403071405102,
+                "10000000.0": 5.880101152096828,
+                "100000000.0": 5.83894402645936,
+                "1000000000.0": 5.839209141446148
+              },
+              "rmse_semitones": 3.637806711963699
+            }
+          },
+          "floor_rmse_semitones": 3.637779793603321,
+          "lambda_events_per_s": 160.1038936848886,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.4009579717532106,
+          "pearson_per_utterance_at_zero": 0.4009579717532106,
+          "pearson_pooled": 0.06607627063272524,
+          "ridge_alpha_chosen": 100000000.0,
+          "rmse_semitones": 3.637806711963699,
+          "seconds": 6.3307411670684814,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": 0.032352798408668504,
+          "shuffled_pearson_pooled": 0.04775156237577751,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 0,
+            "test_speakers": [
+              "S02",
+              "S04",
+              "S06"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S03",
+              "S05",
+              "S07",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9660326086956522,
+          "voicing_floor": 0.5027173913043478
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.995037262105633,
+              "n_test_frames": 473,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.10764500396460414,
+              "pearson_pooled": 0.005962297854265399,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 20847.210212295515,
+                "10.0": 10886.48763323207,
+                "100.0": 7407.42539624099,
+                "1000.0": 6888.103993932201,
+                "10000.0": 2742.6072972018055,
+                "100000.0": 395.3624931641386,
+                "1000000.0": 41.659240534584825,
+                "10000000.0": 5.319074036066444,
+                "100000000.0": 3.086373431632995,
+                "1000000000.0": 3.030478293499512
+              },
+              "rmse_semitones": 16.057951819468652
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.975426143115867,
+              "n_test_frames": 469,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.08265683477754485,
+              "pearson_pooled": 0.005620971732841948,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 32289.86938428712,
+                "10.0": 24434.177000411302,
+                "100.0": 14167.596030045741,
+                "1000.0": 7769.423829096765,
+                "10000.0": 2787.4352163558397,
+                "100000.0": 399.3337155998245,
+                "1000000.0": 42.16152054100613,
+                "10000000.0": 5.363086713928509,
+                "100000000.0": 3.0904696745303784,
+                "1000000000.0": 3.0336822751189834
+              },
+              "rmse_semitones": 15.837606859939926
+            },
+            "0": {
+              "floor_rmse_semitones": 5.014790783842066,
+              "n_test_frames": 477,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1969640499125021,
+              "pearson_pooled": 0.0804177176788499,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 16508.78501045515,
+                "10.0": 7759.377444568982,
+                "100.0": 9750.752481904012,
+                "1000.0": 8727.03349065661,
+                "10000.0": 2946.0336115342766,
+                "100000.0": 396.12227437384024,
+                "1000000.0": 41.18385837285718,
+                "10000000.0": 5.273554419425409,
+                "100000000.0": 3.0826073311707605,
+                "1000000000.0": 3.027660584984851
+              },
+              "rmse_semitones": 5.014735029229936
+            }
+          },
+          "floor_rmse_semitones": 5.014790783842066,
+          "lambda_events_per_s": 160.1038936848886,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.1969640499125021,
+          "pearson_per_utterance_at_zero": 0.1969640499125021,
+          "pearson_pooled": 0.0804177176788499,
+          "ridge_alpha_chosen": 1000000000.0,
+          "rmse_semitones": 5.014735029229936,
+          "seconds": 6.596695184707642,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.023474093926754702,
+          "shuffled_pearson_pooled": -0.05638818389694465,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 1,
+            "test_speakers": [
+              "S04",
+              "S07",
+              "S08"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S02",
+              "S03",
+              "S05",
+              "S06",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9714285714285714,
+          "voicing_floor": 0.6489795918367347
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.634129339149377,
+              "n_test_frames": 440,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1339605465032673,
+              "pearson_pooled": 0.015346452528799955,
+              "probe_settings": {
+                "alpha": 100000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 4763.235562338199,
+                "10.0": 4019.879104817454,
+                "100.0": 2344.8554669945415,
+                "1000.0": 561.5000571864229,
+                "10000.0": 49.08891413799261,
+                "100000.0": 6.761955669431087,
+                "1000000.0": 1.8944160554903313,
+                "10000000.0": 1.753791316646981,
+                "100000000.0": 1.7529177260312936,
+                "1000000000.0": 1.7529722977296134
+              },
+              "rmse_semitones": 4.632049066358466
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.619897233347851,
+              "n_test_frames": 436,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1219107633273584,
+              "pearson_pooled": 0.015202985692182513,
+              "probe_settings": {
+                "alpha": 100000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2876.5040477887696,
+                "10.0": 2496.436212778239,
+                "100.0": 1590.259990643426,
+                "1000.0": 432.2147759602654,
+                "10000.0": 39.832255401590615,
+                "100000.0": 6.061582207956133,
+                "1000000.0": 1.8616336412318486,
+                "10000000.0": 1.7444794256064216,
+                "100000000.0": 1.7437241328169752,
+                "1000000000.0": 1.7437662944309267
+              },
+              "rmse_semitones": 4.617528478546065
+            },
+            "0": {
+              "floor_rmse_semitones": 4.64853553130989,
+              "n_test_frames": 444,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.1382815636098798,
+              "pearson_pooled": 0.01559110805479739,
+              "probe_settings": {
+                "alpha": 100000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 9142.961471152106,
+                "10.0": 6472.689262166047,
+                "100.0": 2709.2553807638037,
+                "1000.0": 460.2245094549434,
+                "10000.0": 47.5495631956562,
+                "100000.0": 7.344892272423376,
+                "1000000.0": 1.9297678314749511,
+                "10000000.0": 1.7634020727692212,
+                "100000000.0": 1.7623775356705873,
+                "1000000000.0": 1.762444364854357
+              },
+              "rmse_semitones": 4.646753412365522
+            }
+          },
+          "floor_rmse_semitones": 4.64853553130989,
+          "lambda_events_per_s": 160.1038936848886,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.1382815636098798,
+          "pearson_per_utterance_at_zero": 0.1382815636098798,
+          "pearson_pooled": 0.01559110805479739,
+          "ridge_alpha_chosen": 100000000.0,
+          "rmse_semitones": 4.646753412365522,
+          "seconds": 7.5265185832977295,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": 0.003814106660212287,
+          "shuffled_pearson_pooled": -0.012764793458802324,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 2,
+            "test_speakers": [
+              "S00",
+              "S02",
+              "S07"
+            ],
+            "train_speakers": [
+              "S01",
+              "S03",
+              "S04",
+              "S05",
+              "S06",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9761570827489481,
+          "voicing_floor": 0.6227208976157083
+        }
+      ],
+      "shuffled_pearson_per_utterance": 0.004230937047375363,
+      "shuffled_pearson_pooled": -0.007133804993323156,
+      "voice_height_share": -0.19137282963640662,
+      "voicing_accuracy": 0.9712060876243905,
+      "voicing_floor": 0.5914726269189302
+    },
+    {
+      "condition": "E1",
+      "context": 5,
+      "floor_rmse_semitones": 4.433702036251759,
+      "lambda_events_per_s": 396.6586383615014,
+      "pearson_per_utterance": 0.31896093897360617,
+      "pearson_pooled": 0.561688291636775,
+      "pearson_std": 0.09708606177822438,
+      "ridge_alpha_chosen": [
+        100.0,
+        10000.0,
+        1000000.0
+      ],
+      "rmse_semitones": 3.6837852530402277,
+      "runs": [
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 3.626898984907538,
+              "n_test_frames": 366,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.4108409952183341,
+              "pearson_pooled": 0.6319282665804619,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 4.908598560375761,
+                "10.0": 3.309470193267392,
+                "100.0": 2.8075366574646483,
+                "1000.0": 2.9852064482066303,
+                "10000.0": 4.827607849722087,
+                "100000.0": 5.690194232008127,
+                "1000000.0": 5.8103448486789215,
+                "10000000.0": 5.822870511846801,
+                "100000000.0": 5.824128496293774,
+                "1000000000.0": 5.824254349268625
+              },
+              "rmse_semitones": 2.2923928420024295
+            },
+            "-2": {
+              "floor_rmse_semitones": 3.6161975937941353,
+              "n_test_frames": 362,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.3782348969760387,
+              "pearson_pooled": 0.4749919290264516,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 5.58662619177969,
+                "10.0": 3.4214197344417006,
+                "100.0": 2.742205545648794,
+                "1000.0": 2.942701208428593,
+                "10000.0": 4.809387295110008,
+                "100000.0": 5.674827328409145,
+                "1000000.0": 5.795089350516148,
+                "10000000.0": 5.80762059621384,
+                "100000000.0": 5.808879063231927,
+                "1000000000.0": 5.809004963677993
+              },
+              "rmse_semitones": 3.0793915629000557
+            },
+            "0": {
+              "floor_rmse_semitones": 3.637779793603321,
+              "n_test_frames": 370,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.4275158412679666,
+              "pearson_pooled": 0.6210533554130699,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 4.483651060751909,
+                "10.0": 3.4670209474867253,
+                "100.0": 2.9192623585116104,
+                "1000.0": 3.0328761717568917,
+                "10000.0": 4.851065586733346,
+                "100000.0": 5.706349548105893,
+                "1000000.0": 5.825484135825427,
+                "10000000.0": 5.8379022345554485,
+                "100000000.0": 5.8391494051754504,
+                "1000000000.0": 5.839274176203859
+              },
+              "rmse_semitones": 2.3637232578880867
+            }
+          },
+          "floor_rmse_semitones": 3.637779793603321,
+          "lambda_events_per_s": 396.6586383615014,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.4275158412679666,
+          "pearson_per_utterance_at_zero": 0.4275158412679666,
+          "pearson_pooled": 0.6210533554130699,
+          "ridge_alpha_chosen": 100.0,
+          "rmse_semitones": 2.3637232578880867,
+          "seconds": 6.0478644371032715,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": 0.15669113586936143,
+          "shuffled_pearson_pooled": -0.07326964472605306,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 0,
+            "test_speakers": [
+              "S02",
+              "S04",
+              "S06"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S03",
+              "S05",
+              "S07",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9823369565217391,
+          "voicing_floor": 0.5027173913043478
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.995037262105633,
+              "n_test_frames": 473,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.2378605973725305,
+              "pearson_pooled": 0.5474998436177655,
+              "probe_settings": {
+                "alpha": 10000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 10000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 18.753007437183317,
+                "10.0": 13.277697414868177,
+                "100.0": 6.053249766433971,
+                "1000.0": 2.9379416086860757,
+                "10000.0": 2.1346225928539666,
+                "100000.0": 2.8628399416765196,
+                "1000000.0": 3.0092419623517133,
+                "10000000.0": 3.02525669983914,
+                "100000000.0": 3.0268735527846067,
+                "1000000000.0": 3.027035393818713
+              },
+              "rmse_semitones": 4.031724844919909
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.975426143115867,
+              "n_test_frames": 469,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.19160415170183903,
+              "pearson_pooled": 0.558454909228216,
+              "probe_settings": {
+                "alpha": 10000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 10000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 25.127360596378786,
+                "10.0": 12.325342207055337,
+                "100.0": 5.089884495005561,
+                "1000.0": 2.618742094316901,
+                "10000.0": 2.134953412387855,
+                "100000.0": 2.868928041841298,
+                "1000000.0": 3.012750257722007,
+                "10000000.0": 3.0284626676166435,
+                "100000000.0": 3.0300487044164246,
+                "1000000000.0": 3.030207457789476
+              },
+              "rmse_semitones": 4.0151940890968625
+            },
+            "0": {
+              "floor_rmse_semitones": 5.014790783842066,
+              "n_test_frames": 477,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.28892350190442534,
+              "pearson_pooled": 0.5307943737753151,
+              "probe_settings": {
+                "alpha": 10000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 10000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 21.003427657386624,
+                "10.0": 14.837885763409611,
+                "100.0": 6.666955656739745,
+                "1000.0": 2.849200149127381,
+                "10000.0": 2.1360978474845886,
+                "100000.0": 2.8589230536784522,
+                "1000000.0": 3.006273176609767,
+                "10000000.0": 3.0224546369740777,
+                "100000000.0": 3.024089142797691,
+                "1000000000.0": 3.0242527592877266
+              },
+              "rmse_semitones": 4.055727326334811
+            }
+          },
+          "floor_rmse_semitones": 5.014790783842066,
+          "lambda_events_per_s": 396.6586383615014,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.28892350190442534,
+          "pearson_per_utterance_at_zero": 0.28892350190442534,
+          "pearson_pooled": 0.5307943737753151,
+          "ridge_alpha_chosen": 10000.0,
+          "rmse_semitones": 4.055727326334811,
+          "seconds": 6.807245492935181,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": 0.06925488668161918,
+          "shuffled_pearson_pooled": -0.0465945121657389,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 1,
+            "test_speakers": [
+              "S04",
+              "S07",
+              "S08"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S02",
+              "S03",
+              "S05",
+              "S06",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9836734693877551,
+          "voicing_floor": 0.6489795918367347
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.634129339149377,
+              "n_test_frames": 440,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.20834660524254583,
+              "pearson_pooled": 0.5398207969166744,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 5.451304331217478,
+                "10.0": 3.3921985277719666,
+                "100.0": 2.244362497288175,
+                "1000.0": 2.1491550578449243,
+                "10000.0": 1.903172187909126,
+                "100000.0": 1.7615041819394606,
+                "1000000.0": 1.7535343037683604,
+                "10000000.0": 1.7530317685825663,
+                "100000000.0": 1.7529851032560335,
+                "1000000000.0": 1.7529804733652694
+              },
+              "rmse_semitones": 4.634112491422102
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.619897233347851,
+              "n_test_frames": 436,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.17184501398445023,
+              "pearson_pooled": 0.5404306795339887,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 6.969640801011134,
+                "10.0": 3.6787530733997875,
+                "100.0": 2.2733179443280767,
+                "1000.0": 2.1871232284405595,
+                "10000.0": 1.9242199953704684,
+                "100000.0": 1.7573289472117233,
+                "1000000.0": 1.7448675212531737,
+                "10000000.0": 1.7438786459441624,
+                "100000000.0": 1.7437829064631938,
+                "1000000000.0": 1.7437733646601365
+              },
+              "rmse_semitones": 4.619880543361075
+            },
+            "0": {
+              "floor_rmse_semitones": 4.64853553130989,
+              "n_test_frames": 444,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.24044347374842673,
+              "pearson_pooled": 0.5332171457219401,
+              "probe_settings": {
+                "alpha": 1000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 5.189317893989107,
+                "10.0": 3.549471819312696,
+                "100.0": 2.2612338651994235,
+                "1000.0": 2.1044061753841152,
+                "10000.0": 1.88243178342973,
+                "100000.0": 1.7656238979216712,
+                "1000000.0": 1.7624127646802932,
+                "10000000.0": 1.762445221269965,
+                "100000000.0": 1.762452804128991,
+                "1000000000.0": 1.7624536067635763
+              },
+              "rmse_semitones": 4.631905174897787
+            }
+          },
+          "floor_rmse_semitones": 4.64853553130989,
+          "lambda_events_per_s": 396.6586383615014,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.24044347374842673,
+          "pearson_per_utterance_at_zero": 0.24044347374842673,
+          "pearson_pooled": 0.5332171457219401,
+          "ridge_alpha_chosen": 1000000.0,
+          "rmse_semitones": 4.631905174897787,
+          "seconds": 7.209922552108765,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.13359534989505423,
+          "shuffled_pearson_pooled": 0.04727723676001052,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 2,
+            "test_speakers": [
+              "S00",
+              "S02",
+              "S07"
+            ],
+            "train_speakers": [
+              "S01",
+              "S03",
+              "S04",
+              "S05",
+              "S06",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9817671809256662,
+          "voicing_floor": 0.6227208976157083
+        }
+      ],
+      "shuffled_pearson_per_utterance": 0.030783557551975465,
+      "shuffled_pearson_pooled": -0.024195640043927148,
+      "voice_height_share": 0.24272735266316886,
+      "voicing_accuracy": 0.9825925356117201,
+      "voicing_floor": 0.5914726269189302
+    },
+    {
+      "condition": "E1",
+      "context": 5,
+      "floor_rmse_semitones": 4.433702036251759,
+      "lambda_events_per_s": 2447.0481103301263,
+      "pearson_per_utterance": 0.3906946371978471,
+      "pearson_pooled": 0.6751386766423556,
+      "pearson_std": 0.06749994018726455,
+      "ridge_alpha_chosen": [
+        100.0,
+        1000.0,
+        1000000.0
+      ],
+      "rmse_semitones": 2.9858870044055883,
+      "runs": [
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 3.626898984907538,
+              "n_test_frames": 366,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.4303114500762382,
+              "pearson_pooled": 0.5674810249080504,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.2852997840567117,
+                "10.0": 2.2621712713566526,
+                "100.0": 2.1773778055270947,
+                "1000.0": 2.456440720663385,
+                "10000.0": 4.2380870524382015,
+                "100000.0": 5.561565711898348,
+                "1000000.0": 5.795860297989824,
+                "10000000.0": 5.821403419313025,
+                "100000000.0": 5.82398159780926,
+                "1000000000.0": 5.824239657524954
+              },
+              "rmse_semitones": 1.9847249610509374
+            },
+            "-2": {
+              "floor_rmse_semitones": 3.6161975937941353,
+              "n_test_frames": 362,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.4168566302929077,
+              "pearson_pooled": 0.556879206223256,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.3003189788210703,
+                "10.0": 2.2674365628073048,
+                "100.0": 2.149577940297159,
+                "1000.0": 2.4194816470103264,
+                "10000.0": 4.2044753088706015,
+                "100000.0": 5.541164416791895,
+                "1000000.0": 5.78001429467097,
+                "10000000.0": 5.806093525593414,
+                "100000000.0": 5.808726157643103,
+                "1000000000.0": 5.808989671130919
+              },
+              "rmse_semitones": 1.996074174733173
+            },
+            "0": {
+              "floor_rmse_semitones": 3.637779793603321,
+              "n_test_frames": 370,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.43296634689376634,
+              "pearson_pooled": 0.5751785643174181,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.300879064124942,
+                "10.0": 2.282150475649856,
+                "100.0": 2.2135537007862993,
+                "1000.0": 2.507177896252108,
+                "10000.0": 4.290519899789447,
+                "100000.0": 5.585731630906846,
+                "1000000.0": 5.811919205835695,
+                "10000000.0": 5.836528340030201,
+                "100000000.0": 5.839011838826068,
+                "1000000000.0": 5.839260417797006
+              },
+              "rmse_semitones": 2.0026814518699076
+            }
+          },
+          "floor_rmse_semitones": 3.637779793603321,
+          "lambda_events_per_s": 2447.0481103301263,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.43296634689376634,
+          "pearson_per_utterance_at_zero": 0.43296634689376634,
+          "pearson_pooled": 0.5751785643174181,
+          "ridge_alpha_chosen": 100.0,
+          "rmse_semitones": 2.0026814518699076,
+          "seconds": 6.982643127441406,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": 0.01512050534101724,
+          "shuffled_pearson_pooled": -0.20651197209672423,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 0,
+            "test_speakers": [
+              "S02",
+              "S04",
+              "S06"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S03",
+              "S05",
+              "S07",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9850543478260869,
+          "voicing_floor": 0.5027173913043478
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.995037262105633,
+              "n_test_frames": 473,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.2713399838458499,
+              "pearson_pooled": 0.7764994242552696,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.097975521160628,
+                "10.0": 2.040205372576794,
+                "100.0": 1.7872976585895677,
+                "1000.0": 1.393914142790422,
+                "10000.0": 1.7554185582064676,
+                "100000.0": 2.7859243360435864,
+                "1000000.0": 3.0004876124019937,
+                "10000000.0": 3.024368949339507,
+                "100000000.0": 3.0267846526364757,
+                "1000000000.0": 3.0270265025509455
+              },
+              "rmse_semitones": 2.290569564482953
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.975426143115867,
+              "n_test_frames": 469,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.23342689512974069,
+              "pearson_pooled": 0.7814294271476953,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.046551488302114,
+                "10.0": 1.9932424205666468,
+                "100.0": 1.7547125030489101,
+                "1000.0": 1.3620851254656388,
+                "10000.0": 1.7335629774077175,
+                "100000.0": 2.7845561364922466,
+                "1000000.0": 3.0031555626992223,
+                "10000000.0": 3.027489761294358,
+                "100000000.0": 3.0299512772498765,
+                "1000000000.0": 3.0301977137052765
+              },
+              "rmse_semitones": 2.260749168125217
+            },
+            "0": {
+              "floor_rmse_semitones": 5.014790783842066,
+              "n_test_frames": 477,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.31284838784568536,
+              "pearson_pooled": 0.769260711340591,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.1021150901516896,
+                "10.0": 2.0525627503195594,
+                "100.0": 1.820880644909029,
+                "1000.0": 1.4364651877723118,
+                "10000.0": 1.7983016134760592,
+                "100000.0": 2.7903443208784644,
+                "1000000.0": 2.998378812614253,
+                "10000000.0": 3.02165278169202,
+                "100000000.0": 3.024008830557576,
+                "1000000000.0": 3.024244726794013
+              },
+              "rmse_semitones": 2.335570393096765
+            }
+          },
+          "floor_rmse_semitones": 5.014790783842066,
+          "lambda_events_per_s": 2447.0481103301263,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.31284838784568536,
+          "pearson_per_utterance_at_zero": 0.31284838784568536,
+          "pearson_pooled": 0.769260711340591,
+          "ridge_alpha_chosen": 1000.0,
+          "rmse_semitones": 2.335570393096765,
+          "seconds": 7.6174750328063965,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": 0.005200188080200101,
+          "shuffled_pearson_pooled": -0.07035696590357629,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 1,
+            "test_speakers": [
+              "S04",
+              "S07",
+              "S08"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S02",
+              "S03",
+              "S05",
+              "S06",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9836734693877551,
+          "voicing_floor": 0.6489795918367347
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.634129339149377,
+              "n_test_frames": 440,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.39944362886847173,
+              "pearson_pooled": 0.7044665840671624,
+              "probe_settings": {
+                "alpha": 1000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.4381996126866143,
+                "10.0": 2.369037249596707,
+                "100.0": 2.0005136304385998,
+                "1000.0": 1.8264442742264224,
+                "10000.0": 1.9307611470616788,
+                "100000.0": 1.7605748957717704,
+                "1000000.0": 1.7525398238891998,
+                "10000000.0": 1.7529192436084924,
+                "100000000.0": 1.7529737147462563,
+                "1000000000.0": 1.752979333148778
+              },
+              "rmse_semitones": 4.604236414208997
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.619897233347851,
+              "n_test_frames": 436,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.34819308180070213,
+              "pearson_pooled": 0.7161867108629296,
+              "probe_settings": {
+                "alpha": 1000000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.437707378879477,
+                "10.0": 2.3705743049302805,
+                "100.0": 2.0111913117204745,
+                "1000.0": 1.837568058707325,
+                "10000.0": 1.943050934399603,
+                "100000.0": 1.7573895371928436,
+                "1000000.0": 1.7440128768931775,
+                "10000000.0": 1.7437805622732463,
+                "100000000.0": 1.7437729667681563,
+                "1000000000.0": 1.7437723693720808
+              },
+              "rmse_semitones": 4.619866378836258
+            },
+            "0": {
+              "floor_rmse_semitones": 4.64853553130989,
+              "n_test_frames": 444,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.42626917685408955,
+              "pearson_pooled": 0.6809767542690577,
+              "probe_settings": {
+                "alpha": 1000000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 2.4190532437155325,
+                "10.0": 2.3540916579594993,
+                "100.0": 2.005711588987952,
+                "1000.0": 1.8422919455423434,
+                "10000.0": 1.9202708638544306,
+                "100000.0": 1.762021476691965,
+                "1000000.0": 1.7609855888926373,
+                "10000000.0": 1.762287059147963,
+                "100000000.0": 1.7624368271213662,
+                "1000000000.0": 1.762452007448302
+              },
+              "rmse_semitones": 4.619409168250091
+            }
+          },
+          "floor_rmse_semitones": 4.64853553130989,
+          "lambda_events_per_s": 2447.0481103301263,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.42626917685408955,
+          "pearson_per_utterance_at_zero": 0.42626917685408955,
+          "pearson_pooled": 0.6809767542690577,
+          "ridge_alpha_chosen": 1000000.0,
+          "rmse_semitones": 4.619409168250091,
+          "seconds": 8.008795499801636,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.3070600161596266,
+          "shuffled_pearson_pooled": -0.12179213507003063,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 2,
+            "test_speakers": [
+              "S00",
+              "S02",
+              "S07"
+            ],
+            "train_speakers": [
+              "S01",
+              "S03",
+              "S04",
+              "S05",
+              "S06",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9873772791023843,
+          "voicing_floor": 0.6227208976157083
+        }
+      ],
+      "shuffled_pearson_per_utterance": -0.09557977424613641,
+      "shuffled_pearson_pooled": -0.13288702435677704,
+      "voice_height_share": 0.2844440394445085,
+      "voicing_accuracy": 0.9853683654387421,
+      "voicing_floor": 0.5914726269189302
+    },
+    {
+      "condition": "E1",
+      "context": 5,
+      "floor_rmse_semitones": 4.415121398349715,
+      "lambda_events_per_s": 15343.441581791702,
+      "pearson_per_utterance": 0.5754609138868734,
+      "pearson_pooled": 0.9142483882106891,
+      "pearson_std": 0.13174838143718468,
+      "ridge_alpha_chosen": [
+        100.0,
+        1000.0,
+        100.0
+      ],
+      "rmse_semitones": 1.4304860930353158,
+      "runs": [
+        {
+          "best_offset": "-2",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 3.626898984907538,
+              "n_test_frames": 366,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.6880050337795319,
+              "pearson_pooled": 0.8869138171027352,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.7703784918587682,
+                "10.0": 1.710510575951707,
+                "100.0": 1.6253196970938713,
+                "1000.0": 1.983536655121858,
+                "10000.0": 3.702415568059565,
+                "100000.0": 5.406655171805938,
+                "1000000.0": 5.7770586637248185,
+                "10000000.0": 5.819481244225729,
+                "100000000.0": 5.82378894841825,
+                "1000000000.0": 5.824220388254877
+              },
+              "rmse_semitones": 1.2118643401565166
+            },
+            "-2": {
+              "floor_rmse_semitones": 3.6161975937941353,
+              "n_test_frames": 362,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.7246998393161932,
+              "pearson_pooled": 0.9012732895078985,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.7091249652399745,
+                "10.0": 1.6654255021256945,
+                "100.0": 1.5979296159225524,
+                "1000.0": 1.9417216192016213,
+                "10000.0": 3.621239988864636,
+                "100000.0": 5.367455713671952,
+                "1000000.0": 5.758849112712223,
+                "10000000.0": 5.803928748791065,
+                "100000000.0": 5.808509183728057,
+                "1000000000.0": 5.8089679687629685
+              },
+              "rmse_semitones": 1.1413517617821785
+            },
+            "0": {
+              "floor_rmse_semitones": 3.637779793603321,
+              "n_test_frames": 370,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.6260494602477967,
+              "pearson_pooled": 0.85884940183567,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.8852628592466998,
+                "10.0": 1.800009618073111,
+                "100.0": 1.6788904585160274,
+                "1000.0": 2.046246098610874,
+                "10000.0": 3.808842825035151,
+                "100000.0": 5.451257213560347,
+                "1000000.0": 5.795628857204953,
+                "10000000.0": 5.83486307765805,
+                "100000000.0": 5.8388449399250195,
+                "1000000000.0": 5.839243724169515
+              },
+              "rmse_semitones": 1.3485413395945063
+            }
+          },
+          "floor_rmse_semitones": 3.6161975937941353,
+          "lambda_events_per_s": 15343.441581791702,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.7246998393161932,
+          "pearson_per_utterance_at_zero": 0.6260494602477967,
+          "pearson_pooled": 0.9012732895078985,
+          "ridge_alpha_chosen": 100.0,
+          "rmse_semitones": 1.1413517617821785,
+          "seconds": 7.71957802772522,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.08797054962625737,
+          "shuffled_pearson_pooled": -0.18540081446367024,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 0,
+            "test_speakers": [
+              "S02",
+              "S04",
+              "S06"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S03",
+              "S05",
+              "S07",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9972144846796658,
+          "voicing_floor": 0.5041782729805014
+        },
+        {
+          "best_offset": "-1",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.995037262105633,
+              "n_test_frames": 473,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.4752789128818885,
+              "pearson_pooled": 0.8980044385369055,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.3817778840225916,
+                "10.0": 1.2399763516513918,
+                "100.0": 0.99088782425493,
+                "1000.0": 0.8666929692337377,
+                "10000.0": 1.4098396906204096,
+                "100000.0": 2.675777901017768,
+                "1000000.0": 2.9866633132636493,
+                "10000000.0": 3.022949665225616,
+                "100000000.0": 3.0266423438183123,
+                "1000000000.0": 3.0270122678527693
+              },
+              "rmse_semitones": 1.7652531728211414
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.975426143115867,
+              "n_test_frames": 469,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.46166350669913986,
+              "pearson_pooled": 0.9047102545251124,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.3156983818284678,
+                "10.0": 1.1921779144852125,
+                "100.0": 0.9779294821600953,
+                "1000.0": 0.8644855640470257,
+                "10000.0": 1.358431946075968,
+                "100000.0": 2.660664246973116,
+                "1000000.0": 2.987509947658219,
+                "10000000.0": 3.0258816964988573,
+                "100000000.0": 3.0297900204225514,
+                "1000000000.0": 3.0301815835031247
+              },
+              "rmse_semitones": 1.7198346861721376
+            },
+            "0": {
+              "floor_rmse_semitones": 5.014790783842066,
+              "n_test_frames": 477,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.4744659392820601,
+              "pearson_pooled": 0.8859541300711289,
+              "probe_settings": {
+                "alpha": 1000.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 1000.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.461712780999442,
+                "10.0": 1.3092266756998099,
+                "100.0": 1.026030547538901,
+                "1000.0": 0.8950376818132844,
+                "10000.0": 1.4882861260093563,
+                "100000.0": 2.6955180556805454,
+                "1000000.0": 2.986455746444911,
+                "10000000.0": 3.0204282832043825,
+                "100000000.0": 3.02388604824709,
+                "1000000000.0": 3.024232445227426
+              },
+              "rmse_semitones": 1.8433140348374888
+            }
+          },
+          "floor_rmse_semitones": 4.995037262105633,
+          "lambda_events_per_s": 15343.441581791702,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.4752789128818885,
+          "pearson_per_utterance_at_zero": 0.4744659392820601,
+          "pearson_pooled": 0.8980044385369055,
+          "ridge_alpha_chosen": 1000.0,
+          "rmse_semitones": 1.7652531728211414,
+          "seconds": 7.7024126052856445,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.0009920708477541562,
+          "shuffled_pearson_pooled": -0.005645139081232878,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 1,
+            "test_speakers": [
+              "S04",
+              "S07",
+              "S08"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S02",
+              "S03",
+              "S05",
+              "S06",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.987603305785124,
+          "voicing_floor": 0.6515151515151515
+        },
+        {
+          "best_offset": "-1",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.634129339149377,
+              "n_test_frames": 440,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.5264039894625382,
+              "pearson_pooled": 0.9434674365872634,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.6973947632990645,
+                "10.0": 1.5572761910368185,
+                "100.0": 1.333827604597276,
+                "1000.0": 1.938084505316144,
+                "10000.0": 2.3765575975774524,
+                "100000.0": 1.8448290551359456,
+                "1000000.0": 1.7590110641981302,
+                "10000000.0": 1.7535266578797346,
+                "100000000.0": 1.7530340291789346,
+                "1000000000.0": 1.7529853602908674
+              },
+              "rmse_semitones": 1.3848533445026276
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.619897233347851,
+              "n_test_frames": 436,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.5215797858211029,
+              "pearson_pooled": 0.9468583480604864,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.5764689742913265,
+                "10.0": 1.4536315646335898,
+                "100.0": 1.276692959990438,
+                "1000.0": 1.9498621414466302,
+                "10000.0": 2.436237886790348,
+                "100000.0": 1.8587653309703638,
+                "1000000.0": 1.7524759975268784,
+                "10000000.0": 1.7445882231570173,
+                "100000000.0": 1.7438533125125069,
+                "1000000000.0": 1.7437803997075414
+              },
+              "rmse_semitones": 1.3362699913366558
+            },
+            "0": {
+              "floor_rmse_semitones": 4.64853553130989,
+              "n_test_frames": 444,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.5262224055055705,
+              "pearson_pooled": 0.9376844518087046,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.938694632164283,
+                "10.0": 1.7571628265144041,
+                "100.0": 1.4468325678843181,
+                "1000.0": 1.942558363086429,
+                "10000.0": 2.307605481142954,
+                "100000.0": 1.8266042841994143,
+                "1000000.0": 1.765015326343056,
+                "10000000.0": 1.762645142950714,
+                "100000000.0": 1.7624721567685637,
+                "1000000000.0": 1.7624555355946083
+              },
+              "rmse_semitones": 1.458205115722102
+            }
+          },
+          "floor_rmse_semitones": 4.634129339149377,
+          "lambda_events_per_s": 15343.441581791702,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.5264039894625382,
+          "pearson_per_utterance_at_zero": 0.5262224055055705,
+          "pearson_pooled": 0.9434674365872634,
+          "ridge_alpha_chosen": 100.0,
+          "rmse_semitones": 1.3848533445026276,
+          "seconds": 8.075132369995117,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": 0.23219391982593496,
+          "shuffled_pearson_pooled": 0.1693206457061909,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 2,
+            "test_speakers": [
+              "S00",
+              "S02",
+              "S07"
+            ],
+            "train_speakers": [
+              "S01",
+              "S03",
+              "S04",
+              "S05",
+              "S06",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9914772727272727,
+          "voicing_floor": 0.625
+        }
+      ],
+      "shuffled_pearson_per_utterance": 0.047743766450641136,
+      "shuffled_pearson_pooled": -0.007241769279570737,
+      "voice_height_share": 0.33878747432381573,
+      "voicing_accuracy": 0.9920983543973542,
+      "voicing_floor": 0.5935644748318843
+    },
+    {
+      "condition": "R2",
+      "context": 5,
+      "floor_rmse_semitones": 4.413386422739964,
+      "lambda_events_per_s": 0.0,
+      "pearson_per_utterance": 0.4990727395621966,
+      "pearson_pooled": 0.8737730964932799,
+      "pearson_std": 0.2041732605346882,
+      "ridge_alpha_chosen": [
+        10.0,
+        100.0,
+        10.0
+      ],
+      "rmse_semitones": 1.676190453983745,
+      "runs": [
+        {
+          "best_offset": "-2",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 3.626898984907538,
+              "n_test_frames": 366,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.6430364172903061,
+              "pearson_pooled": 0.8258258044135757,
+              "probe_settings": {
+                "alpha": 10.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 10.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.7795679756319205,
+                "10.0": 1.6366700868117845,
+                "100.0": 1.8836697326087177,
+                "1000.0": 2.7510730911173273,
+                "10000.0": 4.745788794399488,
+                "100000.0": 5.656242397169,
+                "1000000.0": 5.80546439505854,
+                "10000000.0": 5.822360473809414,
+                "100000000.0": 5.824077261754707,
+                "1000000000.0": 5.8242492234959835
+              },
+              "rmse_semitones": 1.1598167616198036
+            },
+            "-2": {
+              "floor_rmse_semitones": 3.6161975937941353,
+              "n_test_frames": 362,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.6736134175004965,
+              "pearson_pooled": 0.8350479976228313,
+              "probe_settings": {
+                "alpha": 10.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 10.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.8418609658652525,
+                "10.0": 1.6842990625190264,
+                "100.0": 1.8860312121447964,
+                "1000.0": 2.6889758662441627,
+                "10000.0": 4.679763046352264,
+                "100000.0": 5.629517098466247,
+                "1000000.0": 5.7887213874786125,
+                "10000000.0": 5.806956274034671,
+                "100000000.0": 5.808812341524109,
+                "1000000000.0": 5.80899828859724
+              },
+              "rmse_semitones": 1.1225806042244761
+            },
+            "0": {
+              "floor_rmse_semitones": 3.637779793603321,
+              "n_test_frames": 370,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.5991675237294882,
+              "pearson_pooled": 0.807696055482285,
+              "probe_settings": {
+                "alpha": 10.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 10.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.7331361654391964,
+                "10.0": 1.62014527398112,
+                "100.0": 1.925822451040404,
+                "1000.0": 2.88709269060007,
+                "10000.0": 4.869909848736099,
+                "100000.0": 5.692398630005771,
+                "1000000.0": 5.823024348998786,
+                "10000000.0": 5.83764037132451,
+                "100000000.0": 5.839123051940466,
+                "1000000000.0": 5.83927153920271
+              },
+              "rmse_semitones": 1.2219409396153667
+            }
+          },
+          "floor_rmse_semitones": 3.6161975937941353,
+          "lambda_events_per_s": 0.0,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.6736134175004965,
+          "pearson_per_utterance_at_zero": 0.5991675237294882,
+          "pearson_pooled": 0.8350479976228313,
+          "ridge_alpha_chosen": 10.0,
+          "rmse_semitones": 1.1225806042244761,
+          "seconds": 11.128695964813232,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": 0.04489741139306419,
+          "shuffled_pearson_pooled": -0.13881269943673102,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 0,
+            "test_speakers": [
+              "S02",
+              "S04",
+              "S06"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S03",
+              "S05",
+              "S07",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9958217270194986,
+          "voicing_floor": 0.5041782729805014
+        },
+        {
+          "best_offset": "-2",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.995037262105633,
+              "n_test_frames": 473,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.2683948250722113,
+              "pearson_pooled": 0.8669221865991619,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.3972979485945056,
+                "10.0": 1.2165372516266628,
+                "100.0": 1.2106999842651092,
+                "1000.0": 1.302659140306363,
+                "10000.0": 2.280391107062569,
+                "100000.0": 2.894727045394438,
+                "1000000.0": 3.011391821225541,
+                "10000000.0": 3.0254504039180437,
+                "100000000.0": 3.0268926914378316,
+                "1000000000.0": 3.027037305346133
+              },
+              "rmse_semitones": 2.1794561495048828
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.975426143115867,
+              "n_test_frames": 469,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.2745494074526613,
+              "pearson_pooled": 0.8684699584406189,
+              "probe_settings": {
+                "alpha": 100.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 100.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.4454505036194008,
+                "10.0": 1.2155348337234884,
+                "100.0": 1.1947779587981158,
+                "1000.0": 1.2827552659417494,
+                "10000.0": 2.2623226795996283,
+                "100000.0": 2.8897559087589677,
+                "1000000.0": 3.0130019306801192,
+                "10000000.0": 3.028449617044073,
+                "100000000.0": 3.030046978968156,
+                "1000000000.0": 3.030207280998938
+              },
+              "rmse_semitones": 2.159614851584654
+            },
+            "0": {
+              "floor_rmse_semitones": 5.014790783842066,
+              "n_test_frames": 477,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.23293089483647636,
+              "pearson_pooled": 0.8836010424352168,
+              "probe_settings": {
+                "alpha": 10.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 10.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.3688331171570884,
+                "10.0": 1.235614867983137,
+                "100.0": 1.2409535375657024,
+                "1000.0": 1.3605491223692787,
+                "10000.0": 2.3364311106329474,
+                "100000.0": 2.9058668996723855,
+                "1000000.0": 3.0105572358985406,
+                "10000000.0": 3.0228729243976327,
+                "100000000.0": 3.0241308605729817,
+                "1000000000.0": 3.0242569299452016
+              },
+              "rmse_semitones": 1.936748108516157
+            }
+          },
+          "floor_rmse_semitones": 4.975426143115867,
+          "lambda_events_per_s": 0.0,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.2745494074526613,
+          "pearson_per_utterance_at_zero": 0.23293089483647636,
+          "pearson_pooled": 0.8684699584406189,
+          "ridge_alpha_chosen": 100.0,
+          "rmse_semitones": 2.159614851584654,
+          "seconds": 9.290147542953491,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.1721271078585071,
+          "shuffled_pearson_pooled": -0.09058728158144366,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 1,
+            "test_speakers": [
+              "S04",
+              "S07",
+              "S08"
+            ],
+            "train_speakers": [
+              "S00",
+              "S01",
+              "S02",
+              "S03",
+              "S05",
+              "S06",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9916317991631799,
+          "voicing_floor": 0.6541143654114365
+        },
+        {
+          "best_offset": "0",
+          "by_offset": {
+            "-1": {
+              "floor_rmse_semitones": 4.634129339149377,
+              "n_test_frames": 440,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.5430310980075497,
+              "pearson_pooled": 0.9194736516808698,
+              "probe_settings": {
+                "alpha": 10.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 10.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.3025309307890733,
+                "10.0": 1.2279468390636457,
+                "100.0": 2.1681501100265974,
+                "1000.0": 3.3450157456027343,
+                "10000.0": 2.5997140830010195,
+                "100000.0": 1.8822832401978997,
+                "1000000.0": 1.765869839920264,
+                "10000000.0": 1.7542583916410732,
+                "100000000.0": 1.7531076769249938,
+                "1000000000.0": 1.7529927298246328
+              },
+              "rmse_semitones": 1.71364977767886
+            },
+            "-2": {
+              "floor_rmse_semitones": 4.619897233347851,
+              "n_test_frames": 436,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.5333533180720345,
+              "pearson_pooled": 0.9189380325227877,
+              "probe_settings": {
+                "alpha": 10.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 10.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.4078211333295831,
+                "10.0": 1.2537983707878495,
+                "100.0": 2.1664055525726416,
+                "1000.0": 3.3441233412058016,
+                "10000.0": 2.622414012288194,
+                "100000.0": 1.8803285226715185,
+                "1000000.0": 1.7570359239933864,
+                "10000000.0": 1.7450763369562332,
+                "100000000.0": 1.743902444922832,
+                "1000000000.0": 1.7437853161561152
+              },
+              "rmse_semitones": 1.7108497482199096
+            },
+            "0": {
+              "floor_rmse_semitones": 4.64853553130989,
+              "n_test_frames": 444,
+              "n_utterances_excluded": 0,
+              "n_utterances_scored": 9,
+              "pearson_per_utterance": 0.5490553937334319,
+              "pearson_pooled": 0.9178013334163896,
+              "probe_settings": {
+                "alpha": 10.0,
+                "probe": "ridge",
+                "solver": "normal_equations",
+                "standardise": true,
+                "target_space": "semitones"
+              },
+              "ridge_alpha_chosen": 10.0,
+              "ridge_alpha_validation_rmse": {
+                "1.0": 1.2656682129484567,
+                "10.0": 1.1968228979687214,
+                "100.0": 2.185881167894517,
+                "1000.0": 3.339625795619972,
+                "10000.0": 2.5525888319633063,
+                "100000.0": 1.879317419602494,
+                "1000000.0": 1.7741670368933689,
+                "10000000.0": 1.7636186261039128,
+                "100000000.0": 1.7625701127486557,
+                "1000000000.0": 1.762465337294236
+              },
+              "rmse_semitones": 1.7463759061421056
+            }
+          },
+          "floor_rmse_semitones": 4.64853553130989,
+          "lambda_events_per_s": 0.0,
+          "n_utterances_excluded": 0,
+          "n_utterances_scored": 9,
+          "pearson_per_utterance": 0.5490553937334319,
+          "pearson_per_utterance_at_zero": 0.5490553937334319,
+          "pearson_pooled": 0.9178013334163896,
+          "ridge_alpha_chosen": 10.0,
+          "rmse_semitones": 1.7463759061421056,
+          "seconds": 8.874359130859375,
+          "settings": {
+            "context": 5,
+            "headline": "pearson_per_utterance",
+            "hop": 0.01,
+            "min_frames_per_utterance": 5,
+            "ridge_alpha": 1.0,
+            "ridge_alpha_selected_on": "held-out speakers within train",
+            "ridge_alphas": [
+              1.0,
+              10.0,
+              100.0,
+              1000.0,
+              10000.0,
+              100000.0,
+              1000000.0,
+              10000000.0,
+              100000000.0,
+              1000000000.0
+            ],
+            "semitone_ref_hz": 100.0,
+            "tau": 0.005
+          },
+          "shuffled_pearson_per_utterance": -0.24044168522570183,
+          "shuffled_pearson_pooled": 0.12403369657120195,
+          "split": {
+            "n_test": 9,
+            "n_train": 21,
+            "seed": 2,
+            "test_speakers": [
+              "S00",
+              "S02",
+              "S07"
+            ],
+            "train_speakers": [
+              "S01",
+              "S03",
+              "S04",
+              "S05",
+              "S06",
+              "S08",
+              "S09"
+            ]
+          },
+          "task": "T2",
+          "voicing_accuracy": 0.9943899018232819,
+          "voicing_floor": 0.6227208976157083
+        }
+      ],
+      "shuffled_pearson_per_utterance": -0.12255712723038159,
+      "shuffled_pearson_pooled": -0.03512209481565758,
+      "voice_height_share": 0.37470035693108333,
+      "voicing_accuracy": 0.9939478093353201,
+      "voicing_floor": 0.5936711786692154
+    }
+  ],
+  "contexts": [
+    0,
+    5
+  ],
+  "corpus": {
+    "kind": "synthetic",
+    "n_speakers": 10,
+    "n_utterances": 30,
+    "name": "synthetic(seed=0)",
+    "noise_level": 0.005,
+    "phones_per_utterance": 8,
+    "sample_rate": 16000,
+    "seed": 0,
+    "utterances_per_speaker": 3,
+    "voiced_fraction": 0.6609000396144167
+  },
+  "encoder": "E1",
+  "featurisation": {
+    "alignment": "causal",
+    "frame": 0.025,
+    "hop": 0.01,
+    "n_mels": 40,
+    "tau": 0.005
+  },
+  "front_end": {
+    "compensate_group_delay": false,
+    "compression": "power",
+    "envelope": "hilbert",
+    "exponent": 0.3,
+    "f_max": 8000.0,
+    "f_min": 50.0,
+    "spacing": "erb"
+  },
+  "headline": "pearson_per_utterance",
+  "n_channels": 32,
+  "probe": {
+    "alpha": 0.0001
+  },
+  "rate_params_from": "probe_e1_t1_synthetic",
+  "split": {
+    "test_fraction": 0.3
+  },
+  "split_seeds": [
+    0,
+    1,
+    2
+  ],
+  "t2": {
+    "min_frames_per_utterance": 5,
+    "ridge_alpha": 1.0,
+    "ridge_alphas": [
+      1.0,
+      10.0,
+      100.0,
+      1000.0,
+      10000.0,
+      100000.0,
+      1000000.0,
+      10000000.0,
+      100000000.0,
+      1000000000.0
+    ],
+    "semitone_ref_hz": 100.0
+  },
+  "task": "T2"
+}
