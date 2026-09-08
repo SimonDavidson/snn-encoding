@@ -2067,3 +2067,64 @@ blindness as a side effect — no implementation-session test has ever run in th
 clean environment because the Layer 1 step failed ahead of it. Verify that on
 the next push. Then the compression axis is genuinely available for the first
 time, so the T1 sweep could be re-run under log as well as power.
+
+## 2026-09-08 | session: implementation (session close)
+**Did:** Closing a long session. Everything is committed and pushed;
+`origin/main` and `HEAD` are both at the same commit and the tree is clean.
+**186 passed, 0 failed, 1 skipped, and CI green — including the "Everything
+else" step, which ran for the first time and reported 102 passed.**
+
+**Where the project stands.** All six encoders implemented; the probe harness
+and all three tasks running end to end with R2 alongside; P1 and P2 rehearsed;
+the encoder survey at v2 and a one-page decisions brief both sent to Oliver.
+Day 20, week 3 of 12. Weeks 1–2 and 5–7 of §9 are done in substance, on a
+synthetic stand-in.
+
+**Oliver will prioritise the TIMIT licence tomorrow** (Simon, after today's
+meeting). That changes the shape of the next session: O2 has been the largest
+blocker since 2026-08-20 and may clear.
+
+**Start the next session here, and in this order.**
+
+1. **The harness violates D71 and this is the first thing to fix.** §13 of the
+   validation protocol, added today, requires every free parameter to be
+   selected per condition on data held out *within the training split, never on
+   test*. `run_t2` (harness.py:918), `run_t3` (:697) and `run_p1` (:556) all
+   pick the best offset — and `run_p1` the best tau_phi — by maximising over
+   **test-set** scores. Only `_select_ridge_alpha` does it correctly, because
+   D59 named that one parameter specifically. So every "at best offset" figure
+   in T2, T3 and P1 is selected against the number it reports. Unlike T1's
+   offset-zero figures, which D72 covers as *lower* bounds, this bias points
+   upward. Generalise `_select_ridge_alpha` into one shared mechanism; record
+   the grid and chosen value per condition; and record the **analytically
+   predicted offset** beside the selected one — declared front-end lag plus the
+   kernel's first moment — which is what the APPLY sheet asked for and what
+   turns the sweep into a check on the two lags rather than a fit.
+2. Restate C5 per D70: sweep at least ±2 frames and confirm an **interior
+   maximum**, rather than confirming a drop at ±1.
+3. Re-run and supersede T2, T3, P1 and P2 under the corrected selection. The
+   difference between the two is the measurement of how large the bias was.
+   T1 stands as recorded, per D72.
+4. **The TIMIT loader, which has tomorrow's deadline.** `TimitCorpus`
+   implementing the three attributes of the corpus interface. Two things to
+   settle early: the box has no `soundfile` and no `sph2pipe`, and NIST SPHERE
+   comes both as plain PCM behind a 1024-byte ASCII header — readable in numpy
+   — and shorten-compressed, which is not. If LDC93S1 arrives compressed we
+   need `sph2pipe` built or `sox` installed, and that is better found out
+   before the data lands than after.
+
+**Not yet: the compression axis.** D67 makes the logarithmic branch usable
+across all six encoders for the first time, and §6.6 declares compression a
+swept parameter, so a T1 sweep under log as well as power is now a real
+experiment. But the design session flagged the matching coverage gap in the
+same breath — no generic gate exercises the compression axis, because
+`conftest`'s drive is positive — and put it in patch 2. Sweeping an axis
+nothing tests would be the wrong order.
+
+**Open:** fifteen questions. Q28 and Q31 need Oliver. Patch 2 is expected to
+carry Q17, Q18, Q21, Q22, Q25, Q26, Q27, Q29, Q30 and the compression gate gap.
+**One thing to relay:** the design session's decision numbers moved. D60→D67,
+D61→D68, D62→D69, D63→D70, D64→D71, D65→D72, D66→D73. It will otherwise cite
+D60 for the log branch, which is now the P2 rehearsal entry.
+**Results written:** none this block.
+**Tests:** 186 passed, 0 failed, 1 skipped.
