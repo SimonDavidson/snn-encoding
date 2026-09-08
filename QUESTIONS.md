@@ -1507,7 +1507,26 @@ requires. Every channel is below `f_lock` at the registry point
 **Blocking?** for `test_G3[E5]` only. The encoder is otherwise fully specified
 by D40 and D41 and can be written now; the rest of the T5 block and E5's other
 generic tests do not depend on this.
-**Answer:** (open)
+**Answer:** The registry operating point moves to `cycle_divisor = 16`, giving
+10.5x. D27 is not relaxed. D68.
+
+This came back as a finding, which is what the APPLY sheet asked for, and the
+diagnosis is right: it is Q14's shape and not Q11's. The parameter is exactly
+`survivors / k` from `k = 8` upward, so nothing is wrong with it — the sweep was
+centred where `refractory` still dominates. Two of the five points were doing
+the work and three were measuring the refractory cap.
+
+The correction you appended before any answer arrived is the more important
+half. Comparing absolute event times rather than integer sample differences is
+not shift-invariant, and a refractory implemented that way would have failed
+`test_G4` later, in a form much harder to diagnose than a span that misses by 13
+per cent. Re-recording rather than editing the manifest entry was right.
+
+**The SPEC default moves too, to 1, and for a different reason** — see the Q20
+answer. Two numbers were being asked of one: the encoder's natural operating
+point, and the mid-range point the generic gates sweep around. They are not the
+same thing and now live in different files, with the `conftest` entry carrying
+a comment saying why they differ.
 
 **Correction, 2026-09-06 (implementation session), before any answer.** The
 figures above were measured with the refractory comparing absolute event times,
@@ -1582,7 +1601,25 @@ independent of whatever Q19 decides.
 
 **Blocking?** for `test_T5_3` only. E5 is otherwise fully specified and I can
 implement it now; ten of its twelve tests pass on the prototype.
-**Answer:** (open)
+**Answer:** The SPEC 4.6 default becomes `cycle_divisor = 1`. No test changes.
+D68.
+
+The arithmetic is right and the fault is mine: D40 introduced a parameter that
+multiplies every inter-spike interval by `k`, and left the default at a value
+that breaks the one test asserting what those intervals should be. That the
+default was chosen to make `test_G3`'s grid land on integers makes it worse
+rather than better — a default picked for the convenience of a generic gate,
+which then broke the encoder's defining measurement.
+
+One is the right default on its own merits, independently of this test. It is
+what the encoder's name describes, it is what a caller who has not thought
+about event budget should get, and the study sweeps `k` in any case. The
+registry point carries 16 for the gates, which is where a mid-range operating
+point belongs.
+
+Your framing — that no implementation reading avoids it, so the test and the
+default are simply inconsistent — is what made this quick to answer. It removed
+the possibility that I was being asked to adjudicate an ambiguity.
 
 ### Q21 — the "five decades of input scale" quoted for E6's scale invariance is four, or eight, depending on what is being counted
 **Raised:** 2026-09-07 by implementation session
@@ -1761,7 +1798,37 @@ equation, which is not mine to do.
 compression and the recorded sweep says so. It blocks any run that sweeps
 compression, and it should be settled before the week 8 screen, which 9 lists
 as sweeping a coarse parameter grid.
-**Answer:** (open)
+**Answer:** Option 1. Equation (10)'s logarithmic branch becomes
+`log(1 + e/epsilon)`. D67. SPEC section 3 and proposal section 5 are both
+amended; this is a change to an equation and was correctly not yours to make.
+
+The argument is complete as you put it and I have nothing to add to it, only to
+confirm the part that makes it safe: the two forms differ by the constant
+`log(epsilon)`, so this is the same compression curve and not a different one.
+Encoders that differentiate the drive cancel the offset exactly, which is why
+E2 and E3 are unaffected either way, and encoders that compare against an
+absolute zero get a usable range where they previously had none. Nothing is
+traded.
+
+Option 3 you rejected on sight and correctly. Option 2 would have left a hole
+in a declared axis, which is worse here than for E5's poisson mode: that
+exclusion removes one encoder from one mode, this would remove half the encoder
+set from half of a swept parameter, and the screen in section 9 sweeps exactly
+that grid.
+
+**Two things beyond the fix.** The E6 inversion is the part I would put in the
+paper. A correlation of +0.394 between the encoder's own frame energy and true
+audio RMS under power compression, against -0.280 under log, is not a
+degradation but a sign flip — the encoder selecting the quietest frames while
+reporting them as the loudest — and it is the sort of thing that would have
+been very hard to find from a Pareto front alone.
+
+And `test_G3` could not have caught it, because `conftest`'s drive is positive
+and no generic gate exercises the compression axis at all. That is a coverage
+gap of the same shape as the one that let Q23 exist, and it belongs in the
+second patch rather than being improvised here: the generic gates should run
+against at least one drive that has been through the real front end under each
+compression method.
 
 ### Q24 — C5 does not hold as written: accuracy *rises* at offset -1, and the optimum moves with tau_phi
 **Raised:** 2026-09-07 by implementation session
@@ -1883,7 +1950,48 @@ spiking encoder had beaten a mel filterbank.
 Every T1 number the harness produces is currently at offset zero and is
 therefore a lower bound on what that condition can do, by an amount that varies
 systematically with tau_phi and with whether group delay is compensated.
-**Answer:** (open)
+**Answer:** Option 2, with option 3 recorded alongside as a check rather than
+used instead. D69, and it amends proposal section 6.1. C5's criterion is
+restated as you propose. D70.
+
+You are right that this is the most consequential thing raised, and right about
+why. The argument that decided it is the one in your second paragraph: holding
+alignment at zero while sweeping `tau_phi` imposes a penalty that grows along
+the axis and then selects the `tau_phi` that suffers least from it. That is the
+exact confound section 6.1's own caveat was written to remove, reintroduced
+through a quantity nobody had declared. Once put that way there is no case for
+option 1.
+
+The R2 rows are what make the diagnosis stick rather than merely fit. A centred
+25 ms window sits about 1.25 frames from a causal one; its optimum moves by one
+frame in the direction predicted, and the two best values agree to 1.7 points.
+That is a cross-check with an independent prediction, not a restatement of the
+same measurement.
+
+**One condition, and it is not optional.** Reporting each condition at its best
+offset makes the offset a free parameter selected against the reported number.
+It must be chosen on held-out training data and never on test, exactly as D59
+requires for the ridge penalty and D56 for T3's detection threshold. Selecting
+it on test would put the study's headline metric in precisely the position
+those two decisions exist to prevent, and it would be easy to do by accident,
+because a sweep over offsets looks like a sweep over `tau_phi` and `tau_phi` is
+selected the same way. This is now stated once, for all such parameters, in
+section 13 of the validation protocol. D71.
+
+**Option 3 as a check rather than a substitute.** Record the analytic
+prediction — declared front-end lag plus the kernel's first moment — beside the
+selected offset at every condition. If they agree, that is strong mutual
+confirmation from two independent routes. If they disagree, that is a finding
+about one of the two lags rather than a broken sweep. You are right that the
+additivity and the first-moment summary are unverified; recording both is how
+they get verified, at no cost, instead of one being assumed.
+
+Your rejection of option 4 is accepted and the reasoning is exactly D41's.
+
+**On the numbers already recorded.** They are not wrong and should not be
+regenerated on that account, but every T1 figure in `results/` predates this
+and is a lower bound. They should carry that note where they are cited until
+they are re-run under the swept offset.
 
 ### Q25 — a long-lived Layer 1 failure blinds CI to every other test file
 **Raised:** 2026-09-07 by implementation session
@@ -2379,7 +2487,34 @@ design session's to make.
 
 **Blocking?** no. Every T2 condition records its grid, its chosen value and its
 validation curve.
-**Answer:** (open)
+**Answer:** Option 1, and C4 reads as identical *procedure*. D71. The general
+rule now lives in section 13 of the validation protocol rather than being
+decided a fourth time.
+
+Option 2 is not viable and the 468-octave prediction is the demonstration. A
+single penalty applied to 64 dense features at high budget and 704 sparse ones
+at low is not the same treatment of both in any sense C4 could have meant; it
+is the same number, which is a different thing. Reading C4 as identical
+procedure — every condition offered the same grid, selected the same way, on
+data the reported number never touches — is what makes the constraint mean what
+it was for.
+
+**The diagnostic reasoning is the part worth keeping.** Fixing the zero-variance
+columns first, finding it changed nothing because ridge takes `w = 0` for an
+all-zero column either way, and re-running to confirm the figure reproduced byte
+for byte before looking further — that is what separated a real cause from a
+plausible one. D58 was worth doing on its own and is not the answer here, and
+saying so explicitly is better than letting a fixed bug take credit for a fix.
+
+That the correlation survived a 468-octave RMSE, at an unremarkable 0.179,
+because correlation is scale-free, is the strongest argument in the record for
+reporting both metrics at every condition. It should go in the methods.
+
+Catching the truncated grid — the failing condition selecting the maximum on
+all three seeds while validation RMSE was still falling steeply — is the same
+habit that found the original problem. Sitting exactly at the constant-predictor
+floor is the honest outcome for the sparsest condition and should be reported as
+such rather than smoothed.
 
 ### Q35 — SPEC and the proposal define P2's fourth operator differently, and it changes the result tenfold
 **Raised:** 2026-09-08 by implementation session

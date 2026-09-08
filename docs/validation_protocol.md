@@ -145,7 +145,9 @@ Layer 1 validates encoders in isolation. These controls validate the surrounding
 - **C2 Chance and majority floors.** Report the majority-class rate for every classification task. Any probe failing to beat it substantially is not working.
 - **C3 Shuffled-label control.** Shuffle training labels, retrain, and confirm test performance returns to chance. Run once per task and after any change to splitting, featurisation or batching. This is the primary detector of leakage, which is the error most likely to produce an exciting and false result.
 - **C4 Split disjointness assertions.** Programmatic set-intersection checks asserted at every run: speaker sets disjoint between train and test for T1, T3 and T4; utterance sets disjoint for T2. Cheap, and non-negotiable.
-- **C5 Deliberate misalignment.** Offset labels by plus and minus one frame and confirm accuracy drops measurably. If it does not, the alignment between features and labels is not doing what it should, and the headline numbers are meaningless. This is the single most valuable control in the list, because frame misalignment is the most likely silent bug in the whole pipeline and it is otherwise invisible.
+- **C5 Deliberate misalignment.** Sweep the label offset over at least plus and minus two frames and confirm that accuracy has an interior maximum, and that the maximising offset is the one selected for that condition. If accuracy is flat in the offset, the features carry no timing information and the headline numbers are meaningless. This is the single most valuable control in the list, because frame misalignment is the most likely silent bug in the whole pipeline and it is otherwise invisible.
+
+  Restated 2026-09-08 under D70. It previously read "offset labels by plus and minus one frame and confirm accuracy drops measurably", which presumed its own conclusion — that zero is the right alignment — and therefore could not detect the case where it is not. Q24 measured exactly that case: accuracy at minus one frame exceeded accuracy at zero at every one of six budget points, by 4.5 to 6.8 points, because two lags separate an acoustic event from the frame representing it and neither is removed by default. The control as written would have been recorded as failed when what had actually failed was the assumption underneath it.
 - **C6 Budget cross-check.** Event rate Λ computed by counting rows in the written event file must equal Λ reported by the encoder internally. Two independent counts of the same quantity.
 - **C7 Round-trip integrity.** Write events to the release format, read them back, and assert an identical event set. This tests the format that will actually be published, not an in-memory representation.
 - **C8 Seed spread.** Three seeds minimum per condition. Where the spread across seeds exceeds the binomial credible interval, differences within that spread are not reported as differences. Following Bittar and Garner, intervals on TIMIT phone error rates are roughly ± 0.85 per cent.
@@ -251,25 +253,11 @@ This is stronger than saying nothing. It is accurate, it describes verification 
 ---
 
 
-## Appendix: pre-run checklist
+## 12. Reported figures carry their definition
 
-To be satisfied before any result is reported.
-
-- All G1 to G8 generic tests pass for the encoder in question.
-- All F1 to F5 front-end tests pass.
-- The encoder-specific tests of Sections 3.3 to 3.9 pass.
-- C1 upper-bound anchor lands in the published band.
-- C3 shuffled-label control returns chance.
-- C4 split disjointness asserted in the run log.
-- C5 deliberate misalignment produces the expected accuracy drop.
-- C6 budget cross-check agrees.
-- Three seeds run; spread recorded.
-- Commit hash, config and seed recorded in the results manifest.
-- Prediction for this result recorded and dated beforehand; any contradiction investigated in writing.
-
----
-
-## 8. Reported figures carry their definition
+*Numbered 8 when added on 2026-09-06, which collided with §8 above and
+placed it after the appendix. Renumbered to 12 and moved here under D73.
+D45 and the Q15 answer cite it as section 8; both refer to this.*
 
 Every number reported in `QUESTIONS.md`, `NOTEBOOK.md`, `results/` or the paper
 carries, beside it, the definition of what was measured — not only the value
@@ -289,3 +277,56 @@ have been impossible had the definition been written beside the number.
 
 This is the reporting counterpart of §6. §6 makes a number reproducible from
 the repository; this makes it interpretable once reproduced.
+
+---
+
+## 13. Free parameters are selected on held-out training data
+
+Any parameter that is chosen rather than declared — the featurisation time
+constant, the label alignment offset, the probe's regularisation, the context
+window, T3's detection threshold, T3's training tolerance, and anything of the
+same kind added later — is selected per condition on data held out from
+*within* the training split, never on test, and never by looking at the number
+being reported. The grid searched and the value chosen are recorded with the
+result.
+
+Every encoder is offered the same grid, searched the same way. That is what
+C4's "same regularisation" and C9's matched treatment require: an identical
+*procedure*, not an identical value. A single fixed value applied across
+conditions that differ by an order of magnitude in feature count and sparsity
+is not equal treatment, it is the same number — Q34 recorded a fixed ridge
+penalty producing a prediction 468 octaves wide at the sparsest condition and
+an unremarkable one at the densest.
+
+Added 2026-09-08 under D71, after the same rule had been reached separately
+four times: D56 for T3's detection threshold, D59 for T2's ridge penalty, D69
+for the alignment offset, and §6.1 of the proposal for the featurisation time
+constant. Four instances of one principle is a rule that had not been written
+down, and the next free parameter would have arrived as a fifth question.
+
+Two consequences worth stating because they are easy to get wrong in opposite
+directions. Selecting on held-out training data is not the same as selecting on
+a validation set carved from test, which leaks; and it is not the same as
+fixing a value in advance, which is what §13 exists to avoid. Where a condition
+selects a value at the edge of its grid, the grid was too small and the result
+is not reportable until it is extended — Q34's failing condition selected the
+grid maximum on all three seeds while its validation error was still falling
+steeply.
+
+---
+
+## Appendix: pre-run checklist
+
+To be satisfied before any result is reported.
+
+- All G1 to G8 generic tests pass for the encoder in question.
+- All F1 to F5 front-end tests pass.
+- The encoder-specific tests of Sections 3.3 to 3.9 pass.
+- C1 upper-bound anchor lands in the published band.
+- C3 shuffled-label control returns chance.
+- C4 split disjointness asserted in the run log.
+- C5 deliberate misalignment produces the expected accuracy drop.
+- C6 budget cross-check agrees.
+- Three seeds run; spread recorded.
+- Commit hash, config and seed recorded in the results manifest.
+- Prediction for this result recorded and dated beforehand; any contradiction investigated in writing.

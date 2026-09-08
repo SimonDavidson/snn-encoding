@@ -236,9 +236,9 @@ or, more cheaply and more plausibly as a model of hair cell transduction, by hal
 A compressive nonlinearity is then applied, reflecting the roughly logarithmic relation between physical intensity and perceived loudness and the very wide dynamic range of speech:
 
 
-> u~c~(t) = log(e~c~(t) + ε)     or     u~c~(t) = e~c~(t)^0.3^   (10)
+> u~c~(t) = log(1 + e~c~(t)/ε)     or     u~c~(t) = e~c~(t)^0.3^   (10)
 
-with ε a small constant preventing a singularity in silence. The choice between logarithmic and power-law compression is a swept parameter. Note that E5 alone operates on the subband waveform x~c~(t) rather than on the envelope, since its entire purpose is to represent the carrier that the envelope discards.
+with ε a small constant preventing a singularity in silence. The logarithmic branch is written in shifted form, differing from log(e~c~ + ε) by the constant log ε and so describing the same compression curve. The shift matters because the unshifted form is negative wherever the envelope is below unity, which for a peak-normalised utterance through a gammatone bank is everywhere: encoders that compare the drive against an absolute zero then have no usable operating range at all, and an encoder taking the square of the drive gates in the quietest frames rather than the loudest. Encoders that respond to changes in the drive are indifferent to the shift, since an additive offset cancels. In shifted form the drive is non-negative and silence maps to zero exactly. The choice between logarithmic and power-law compression is a swept parameter. Note that E5 alone operates on the subband waveform x~c~(t) rather than on the envelope, since its entire purpose is to represent the carrier that the envelope discards.
 
 
 ### 5.1 E1 - Leaky integrate-and-fire (the rate-like anchor)
@@ -451,6 +451,8 @@ Probes cannot consume raw event sets directly, so events must be converted to a 
 For encoders producing polarity, ON and OFF events are accumulated into separate feature channels rather than summed, since cancelling them would discard the distinction the encoder went to the trouble of making.
 
 One caveat requires handling rather than noting. A single fixed τ~φ~ favours encoders whose natural timescale happens to match it. The mitigation is to treat τ~φ~ as a shared swept axis, evaluating every encoder at every value in a set such as {2, 5, 20} milliseconds and reporting each encoder at its own best value. This is fair because the axis is available to all encoders equally, and it is honest because the chosen value is reported.
+
+The same treatment is required for the alignment between labels and feature frames, and for the same reason. Two lags separate an acoustic event from the frame whose feature represents it: the gammatone bank's frequency-dependent group delay, which is left uncompensated by default, and the featurisation kernel of equation (32), which is causal and therefore weights events already past. The second grows with τ~φ~. Holding the alignment at zero while sweeping τ~φ~ therefore imposes a misalignment penalty that grows along the axis, and then selects the value of τ~φ~ that suffers least from it — the very confound the paragraph above exists to remove, reintroduced through a quantity nobody declared. Measured on the synthetic corpus at the top budget the penalty is 18.5 accuracy points, several times any difference this study expects to resolve between encoders. The alignment offset is therefore a shared swept axis on the same footing as τ~φ~, selected per condition under the rule in §13 of the validation protocol, with the analytically predicted offset — the declared front-end lag plus the kernel's first moment — recorded beside the selected one as a check that the sweep is finding the lag it is meant to be finding.
 
 
 ### 6.2 Paired probes and the accessibility gap

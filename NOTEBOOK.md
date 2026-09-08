@@ -1926,3 +1926,68 @@ touched.
 **Blocked on:** the design-session round trip.
 **Next:** unchanged — nothing further built until the free-parameter cluster
 comes back.
+
+## 2026-09-08 | session: design
+**Did:** Answered Q19, Q20, Q23, Q24 and Q34 (D67-D72). This is the first of
+two patches; Q17, Q18, Q21, Q22, Q25-Q33 follow, and Q28 and Q31 wait on
+Oliver.
+
+**Q19 came back as a finding and D27 was not relaxed.** The APPLY sheet for the
+Q09-Q16 patch said a span under 4x would be a finding rather than a threshold
+to lower, and it was one. It is Q14's shape, not Q11's: the parameter is exactly
+`survivors / k` above k = 8, and the sweep had been centred where refractory
+still dominates. Two numbers were being asked of one — the encoder's natural
+default and the gates' mid-range point — and separating them resolved Q20 as
+well, without touching a test. The default of 4 had been chosen so that
+`test_G3`'s grid landed on integers, which is a default picked for the
+convenience of a generic gate and which then broke the encoder's defining
+measurement. Worth remembering as a shape: a value chosen to satisfy machinery
+rather than to describe the thing.
+
+**Q23 is the most serious specification error found so far and no test could
+have caught it.** `log(e + eps)` is negative everywhere on real audio, so E1
+and E4 have no operating range and E6 gates in the quietest frames while
+reporting them as the loudest — a sign flip, not a degradation. Every generic
+gate passed throughout, because `conftest`'s drive is positive and nothing in
+the suite exercises the compression axis. That is a coverage gap of the same
+shape as the error itself and it goes in the second patch: the gates need at
+least one drive that has been through the real front end under each compression
+method.
+
+**Q24 changes how existing results are read.** Every T1 number in `results/`
+is at offset zero and is a lower bound by 4.5 to 6.8 points. They are not wrong
+— the offset was not a declared axis when they were taken — so D72 records the
+interpretation rather than regenerating them. The R2 causal-versus-centred rows
+are what made the diagnosis convincing rather than merely plausible: an
+independent prediction, checked, and it landed.
+
+**The condition I attached to Q24 is the one to watch in review.** Reporting
+each condition at its best offset makes the offset a free parameter selected
+against the reported number, and it must therefore be chosen on held-out
+training data like the ridge penalty and the detection threshold. This is easy
+to get wrong by accident precisely because a sweep over offsets looks like the
+tau_phi sweep, which is selected the same way — so the resemblance that makes
+option 2 defensible is also what makes the error invisible.
+
+**Four instances of one principle were being decided separately.** D56, D59,
+D69 and proposal 6.1 all reached "select per condition on held-out training
+data, record the grid, never touch test" independently. That is now section 9
+of the validation protocol rather than a fifth question waiting to be asked.
+Noting the general lesson: when the same answer arrives three times from
+different directions, the thing to write down is the rule, not the third
+answer.
+
+**This drop applies by script rather than by shipping whole files.** Q18 is not
+answered yet but its point is acted on here: `apply_patch.py` edits by targeted
+string replacement and appends fragments to NOTEBOOK.md and DECISIONS.md, so
+anything written between the drop being built and applied survives. Each
+replacement asserts a single match and exits without writing if it fails.
+
+**Tests:** none run — no environment here. Expected: `test_T5_3` passes at the
+new default without modification, and `test_G3[E5]` reaches 10.5x at the new
+registry point, which is your measurement rather than my prediction this time.
+**Results written:** none.
+**Blocked on:** nothing in this patch. Q28 and Q31 need Oliver; Simon is
+raising the TIMIT dependency for the week 4 gate with him.
+**Next (design session):** the second patch — Q17, Q18, Q21, Q22, Q25, Q26,
+Q27, Q29, Q30, and the compression-axis coverage gap Q23 exposed.

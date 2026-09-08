@@ -90,8 +90,14 @@ def all_encoders():
         ("E2", E.SendOnDelta, dict(n_channels=4, C=0.1)),
         ("E3", E.TemporalContrast, dict(n_channels=4, theta=0.2)),
         ("E4", E.ALIF, dict(n_channels=4, theta_0=1.0, delta_a=0.5, tau_a=0.1)),
+        # cycle_divisor is 16 here and 1 in SPEC 4.6. The registry holds a
+        # mid-range operating point for the generic gates, which is not the
+        # same thing as the encoder's natural default: refractory at 1 ms caps
+        # the count near 7000, so a sweep centred on 4 spends three of its five
+        # points in the saturated region and spans 3.54x. Centred on 16 the
+        # whole sweep is on the clean survivors/k line and spans 10.5x. Q19.
         ("E5", E.PhaseLocked, dict(n_channels=4, threshold=0.05,
-                                   cycle_divisor=4)),
+                                   cycle_divisor=16)),
         ("E6", E.TTFS, dict(n_channels=4, e_frac=0.20)),
     ]
 

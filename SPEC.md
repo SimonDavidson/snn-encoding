@@ -159,7 +159,27 @@ callers that want to supply their own.
 **Compression method strings.** `compress` takes `method="log"` for the
 logarithmic branch of equation (10) and `method="power"` for the power-law
 branch, the latter using `exponent`. `epsilon` applies to the logarithmic
-branch only. `method="none"` returns the envelope unchanged, which is needed
+branch only.
+
+**The logarithmic branch is `log(1 + e/epsilon)`, not `log(e + epsilon)`.**
+D67. The two differ by the constant `log(epsilon)`, so this is the same
+compression curve shifted, and it is invisible to E2 and E3, which respond to
+changes in the drive and cancel an additive offset exactly. What it fixes is
+every encoder that compares the drive against an absolute zero. Under the
+unshifted form a peak-normalised utterance through a gammatone bank gives a
+drive that is negative everywhere — Q23 measured [-13.62, -0.96] on the
+synthetic corpus, 100 per cent of samples below zero — so E1 and E4 emit
+nothing at any non-negative `theta` and everything at any negative one, with no
+regime between, and E6 squares the drive and so gates *in* the quietest frames
+rather than the loudest, inverting the encoder.
+
+The shifted form is non-negative, maps silence to exactly zero, and therefore
+makes the silence requirement of §4.1 hold by construction rather than by the
+drive happening to sit below a positive threshold.
+
+Note that `test_G3` could not have caught this: it runs on `conftest`'s
+synthetic drive, which is positive, and no generic gate exercises the
+compression axis at all. `method="none"` returns the envelope unchanged, which is needed
 for E5, whose drive is the subband waveform rather than a compressed envelope.
 
 **Group delay.** Gammatone filters have frequency-dependent group delay: a
@@ -369,7 +389,7 @@ choice.
 
 ### 4.6 E5 — Phase-locked
 
-`PhaseLocked(n_channels, cycle_divisor=4, threshold=0.05, env_cutoff=100.0, gamma=1.0, f_lock=1500.0, refractory=0.001, mode="deterministic", centre_frequencies=None, lambda_max=200.0, z_0=0.0)`
+`PhaseLocked(n_channels, cycle_divisor=1, threshold=0.05, env_cutoff=100.0, gamma=1.0, f_lock=1500.0, refractory=0.001, mode="deterministic", centre_frequencies=None, lambda_max=200.0, z_0=0.0)`
 
 RATE_PARAM `"cycle_divisor"`, RATE_DIRECTION `-1`, DRIVE_KIND `"subband"`.
 State keys: `"envelope"`.
@@ -378,8 +398,24 @@ State keys: `"envelope"`.
 crossings of the subband waveform; discard those where the internal envelope
 does not exceed `threshold`; of the survivors in each channel, keep every
 `cycle_divisor`-th, counting from the first survivor in that channel; then
-apply `refractory`. `cycle_divisor` is a positive integer and the default of 4
-is chosen so that the `x0.25` to `x4` grid of `test_G3` lands on integers.
+apply `refractory`. `cycle_divisor` is a positive integer. The default is 1 — lock to every gated
+cycle, which is the setting the encoder's name describes and the one a caller
+who has not thought about budget should get. D68.
+
+It was 4, chosen so that `test_G3`'s `x0.25` to `x4` grid landed on integers.
+That conflated two different things: the natural operating point of the
+encoder, which belongs here, and the mid-range point the generic gates sweep
+around, which belongs in the `conftest` registry and is now 16. Q19 measured
+the span at a base of 4 as 3.54x, short of D27's 4x, because `refractory` at
+1 ms caps the count near 7000 and saturates the low-k half of that sweep;
+from `k = 8` upward the count is exactly `survivors / k`, so a base of 16 puts
+the whole sweep on the clean line and spans 10.5x. The parameter was never the
+problem, only where the sweep was centred — the same shape as Q14, not Q11.
+
+The default of 1 also resolves Q20 without touching a test. `test_T5_3`
+constructs without naming `cycle_divisor` and asserts that the pooled ISI
+histogram peaks at `1/F0`; under a default of 4 the encoder emits at `k/F0` and
+the assertion failed by 24 ms. At 1 it is the intended measurement again.
 
 **Why the rate parameter is not `threshold`.** Q11 measured a span of 1.04x
 over the standard sweep. The event count is bounded above by the number of
