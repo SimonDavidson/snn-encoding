@@ -12,17 +12,21 @@ generated rather than annotated is the only thing that can distinguish "the
 probe scores 40 per cent because the encoder lost the information" from "the
 probe scores 40 per cent because the harness mislabelled every frame". Real
 corpora cannot make that distinction, because on a real corpus every number is
-plausible. When TIMIT arrives, `TimitCorpus` implements the same three
-attributes and nothing downstream changes.
+plausible. `timit_corpus` at the foot of this file implements the same three
+attributes, so nothing downstream changes when the licence clears.
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-07
-Last modified: 2026-09-07
+Last modified: 2026-09-08
 """
+import dataclasses
+import pathlib
 from dataclasses import dataclass
 
 import numpy as np
 from scipy.signal import lfilter, butter, sosfilt
+
+from .sphere import read_audio
 
 
 @dataclass(frozen=True)
@@ -271,3 +275,190 @@ def synthetic_corpus(n_speakers=12, utterances_per_speaker=4,
 
     return Corpus(name=f"synthetic(seed={seed})", utterances=tuple(utterances),
                   labels=PHONES)
+
+
+# --- TIMIT ------------------------------------------------------------------
+
+# The two dialect sentences every one of the 630 speakers reads. They are
+# conventionally excluded, because with the same text in every speaker's set
+# they are shared between any train/test partition in content if not in
+# recording, and a probe can learn the sentence rather than the phone.
+SA_SENTENCES = ("SA1", "SA2")
+
+# The 61-to-39 collapse of proposal 4.1 — "following near-universal convention
+# on TIMIT, the 61-symbol label set is collapsed to 39 for scoring, and this
+# must be stated whenever a figure is quoted".
+#
+# PROVISIONAL. This is the mapping attributed to Lee and Hon (1989) and used by
+# the HTK and Kaldi TIMIT recipes, written out from that convention. It has not
+# been checked against the paper, which is not on this machine, and a folding
+# table is exactly the kind of thing that is quoted from memory and is wrong in
+# one row. Q39 asks the design session to confirm it against the source before
+# any 39-symbol figure is reported. Symbols not listed map to themselves.
+TIMIT_61_TO_39 = {
+    "ao": "aa",
+    "ax": "ah", "ax-h": "ah",
+    "axr": "er",
+    "hv": "hh",
+    "ix": "ih",
+    "el": "l",
+    "em": "m",
+    "en": "n", "nx": "n",
+    "eng": "ng",
+    "zh": "sh",
+    "ux": "uw",
+    # Every closure, pause and non-speech symbol becomes one silence class.
+    "pcl": "sil", "tcl": "sil", "kcl": "sil", "bcl": "sil", "dcl": "sil",
+    "gcl": "sil", "h#": "sil", "pau": "sil", "epi": "sil",
+    # The glottal stop is deleted rather than mapped, which is the convention
+    # and which leaves a labelled gap rather than inventing a label for it.
+    "q": None,
+}
+
+TIMIT_39 = ("aa", "ae", "ah", "aw", "ay", "b", "ch", "d", "dh", "dx", "eh",
+            "er", "ey", "f", "g", "hh", "ih", "iy", "jh", "k", "l", "m", "n",
+            "ng", "ow", "oy", "p", "r", "s", "sh", "sil", "t", "th", "uh",
+            "uw", "v", "w", "y", "z")
+
+
+def read_phn(path, sample_rate):
+    """TIMIT's hand-placed phone alignment: `start_sample end_sample label`.
+
+    Indices are sample offsets into the companion audio file, so the sample
+    rate has to come from that file rather than be assumed — a `.PHN` read at
+    the wrong rate produces segments that look entirely plausible and are all
+    in the wrong place, which is the failure mode C5 exists to catch and would
+    catch far too late.
+    """
+    segments = []
+    with open(path, encoding="ascii") as fh:
+        for line in fh:
+            parts = line.split()
+            if len(parts) != 3:
+                continue
+            start, end, label = parts
+            segments.append(Segment(int(start) / sample_rate,
+                                    int(end) / sample_rate, label))
+    return tuple(segments)
+
+
+def fold_to_39(corpus):
+    """Collapse a 61-symbol TIMIT corpus to the 39-symbol scoring set.
+
+    Adjacent segments folding to the same symbol are merged, which is not a
+    tidying step but the substance of the collapse: `pcl` followed by `p`
+    becomes `sil` followed by `p`, while `pcl` followed by `bcl` becomes one
+    `sil`, and leaving them separate would put a boundary where the 39-symbol
+    transcription has none. Segments whose label folds to `None` — the glottal
+    stop — are dropped, leaving a gap that `label_at` reports as unlabelled.
+
+    **Use this for T1 and not for T3.** T3's ground truth is the hand-placed
+    boundary set, and folding deletes some of those boundaries by construction.
+    """
+    out = []
+    for u in corpus:
+        merged = []
+        for seg in u.segments:
+            label = TIMIT_61_TO_39.get(seg.label, seg.label)
+            if label is None:
+                continue
+            if (merged and merged[-1].label == label
+                    and merged[-1].end == seg.start):
+                merged[-1] = Segment(merged[-1].start, seg.end, label)
+            else:
+                merged.append(Segment(seg.start, seg.end, label))
+        out.append(dataclasses.replace(u, segments=tuple(merged)))
+    labels = tuple(sorted({s.label for u in out for s in u.segments}))
+    return dataclasses.replace(corpus, name=f"{corpus.name}+39",
+                               utterances=tuple(out), labels=labels)
+
+
+def timit_corpus(root, subset="TRAIN", exclude_sa=True, speakers=None,
+                 max_utterances=None, f0_fn=None, f0_hop=0.010):
+    """TIMIT as a `Corpus` — the same three attributes as the stand-in.
+
+    `root` is the directory containing `TRAIN` and `TEST`. Case is not assumed:
+    distributions differ on whether paths and extensions are upper or lower,
+    and matching on the literal `.WAV` would silently find nothing on half of
+    them. Files are found by walking, so an extra level of nesting — some
+    copies wrap everything in a `TIMIT/` or `data/` directory — does not
+    matter as long as `root` contains the split directory somewhere below it.
+
+    `subset` selects `TRAIN` or `TEST`, or `None` for both. **This is not the
+    train/test split of the study.** C4 splits on speaker with
+    `speaker_disjoint_split`, from whichever utterances are loaded; TIMIT's own
+    partition is a different one, made for a different purpose, and using it
+    here would silently replace the control.
+
+    `f0_fn(utterance_audio, sample_rate, hop) -> (f0, voiced)` supplies T2's
+    reference contour, which TIMIT does not carry. With `f0_fn=None` the
+    utterances have no `f0` and T2 raises a named error rather than running on
+    something invented; proposal 4.2 requires two trackers and their measured
+    disagreement, and neither exists yet (Q40).
+
+    Labels are the 61-symbol set as read. `fold_to_39` collapses them for T1
+    scoring; see its docstring for why T3 must not use it.
+    """
+    root = pathlib.Path(root)
+    if not root.is_dir():
+        raise FileNotFoundError(f"TIMIT root {root} is not a directory")
+    wanted = None if subset is None else str(subset).upper()
+
+    found = []
+    for path in root.rglob("*"):
+        if path.suffix.upper() != ".PHN" or not path.is_file():
+            continue
+        parts = [p.upper() for p in path.parts]
+        if wanted is not None and wanted not in parts:
+            continue
+        stem = path.stem.upper()
+        if exclude_sa and stem in SA_SENTENCES:
+            continue
+        speaker = path.parent.name.upper()
+        if speakers is not None and speaker not in {s.upper()
+                                                    for s in speakers}:
+            continue
+        found.append((speaker, stem, path))
+    found.sort()
+    if not found:
+        raise FileNotFoundError(
+            f"no .PHN files under {root}"
+            + (f" for subset {wanted}" if wanted else "")
+            + ". Expected the TIMIT layout, e.g. TRAIN/DR1/FCJF0/SA1.PHN.")
+    if max_utterances is not None:
+        found = found[:max_utterances]
+
+    utterances = []
+    for speaker, stem, phn in found:
+        audio_path = None
+        for candidate in (phn.with_suffix(".WAV"), phn.with_suffix(".wav")):
+            if candidate.exists():
+                audio_path = candidate
+                break
+        if audio_path is None:
+            raise FileNotFoundError(f"{phn} has no companion .WAV")
+
+        audio, rate = read_audio(audio_path)
+        if audio.ndim > 1:
+            raise ValueError(
+                f"{audio_path} has {audio.shape[0]} channels; TIMIT is mono, "
+                "so this is not the corpus that was expected")
+        segments = read_phn(phn, rate)
+        # The last segment's end is the file length in TIMIT. Clip rather than
+        # trust it: a segment running past the audio would put labels on frames
+        # that do not exist, and `frame_labels` would not notice.
+        duration = len(audio) / rate
+        segments = tuple(Segment(s.start, min(s.end, duration), s.label)
+                         for s in segments if s.start < duration)
+
+        f0 = voiced = None
+        if f0_fn is not None:
+            f0, voiced = f0_fn(audio, rate, f0_hop)
+        utterances.append(Utterance(
+            uid=f"{speaker}_{stem}", speaker=speaker, audio=audio,
+            sample_rate=rate, segments=segments, f0=f0, voiced=voiced,
+            f0_hop=f0_hop))
+
+    labels = tuple(sorted({s.label for u in utterances for s in u.segments}))
+    name = f"TIMIT({wanted or 'all'}, {len(utterances)} utterances)"
+    return Corpus(name=name, utterances=tuple(utterances), labels=labels)
