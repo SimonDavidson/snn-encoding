@@ -249,6 +249,18 @@
       "output": "results/t3_boundary_e1_synthetic.json",
       "date": "2026-09-08",
       "predictions": []
+    },
+    {
+      "id": "p2_corruption_e1_synthetic",
+      "script": "scripts/run_p2.py",
+      "config": "configs/p2_corruption_e1_synthetic.json",
+      "commit": "edcb270c652bbe80ae7bfc7b9650ef5dfc58729f",
+      "seed": 0,
+      "output": "results/p2_corruption_e1_synthetic.json",
+      "date": "2026-09-08",
+      "predictions": [
+        "P-07"
+      ]
     }
   ]
 }

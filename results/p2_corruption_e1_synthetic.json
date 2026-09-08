@@ -1,0 +1,450 @@
+{
+  "achieved_lambda": 15343.441581791702,
+  "alignment_offsets": {
+    "T1": -1,
+    "T2": -2,
+    "T3": -1
+  },
+  "caveat": "REHEARSAL. The stand-in corpus has stationary phones and a linear f0 declination, so the demands the three tasks place on an encoding are weaker and more alike here than on speech (Q28). These profiles exercise the machinery; they cannot confirm or refute the spanning argument of 4.4, and must not be read as P2's answer or as a test of P-07. Degradation is reported as fraction of each task's headroom above its own floor, which is a choice the proposal does not make (Q36).",
+  "conditions": [
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": null,
+        "score": 0.8316358731430862,
+        "std": 0.013221874580811125
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": null,
+        "score": 0.5834610967015039,
+        "std": 0.12262805760330203
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": null,
+        "score": 0.6951248393118044,
+        "std": 0.020860003626981104
+      },
+      "level": null,
+      "operator": "clean",
+      "seconds": 77.37481093406677
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": -0.005155835665704846,
+        "score": 0.8348822920940231,
+        "std": 0.019150906178016458
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": -0.053171255708960447,
+        "score": 0.6144844558704501,
+        "std": 0.1133118723560475
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": -0.11550290552082845,
+        "score": 0.7075787382016889,
+        "std": 0.027188726898296905
+      },
+      "level": 0.0001,
+      "operator": "jitter",
+      "seconds": 73.68771767616272
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": 0.005705844083299452,
+        "score": 0.8280431363756349,
+        "std": 0.02361657669868641
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": -0.03621888045233332,
+        "score": 0.604593404411523,
+        "std": 0.16115267343126852
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": -0.146457172335875,
+        "score": 0.7109163279132792,
+        "std": 0.06813969604683674
+      },
+      "level": 0.0005,
+      "operator": "jitter",
+      "seconds": 71.79439210891724
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": 0.03421703919953524,
+        "score": 0.8100908023330885,
+        "std": 0.010114485713729637
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": 0.1283998510214564,
+        "score": 0.5085447788082152,
+        "std": 0.14211387015375154
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": 0.8929296041440965,
+        "score": 0.5988462655767921,
+        "std": 0.07669879199138432
+      },
+      "level": 0.002,
+      "operator": "jitter",
+      "seconds": 59.290618658065796
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": 0.15330820924261013,
+        "score": 0.7351039609392144,
+        "std": 0.018199212212524428
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": 0.25584851206609804,
+        "score": 0.4341834432619704,
+        "std": 0.21488262354471785
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": 1.8599922538461562,
+        "score": 0.4945744257882987,
+        "std": 0.024498021726526695
+      },
+      "level": 0.01,
+      "operator": "jitter",
+      "seconds": 60.38080048561096
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": 0.40300189751799204,
+        "score": 0.5778820527743589,
+        "std": 0.03125452612332597
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": 0.29402349584372667,
+        "score": 0.41190982536051307,
+        "std": 0.29831972157237924
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": 2.332105898789486,
+        "score": 0.4436695972721119,
+        "std": 0.034190594105362626
+      },
+      "level": 0.05,
+      "operator": "jitter",
+      "seconds": 57.37821006774902
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": -0.019683501613137963,
+        "score": 0.8440297694580403,
+        "std": 0.015477473358093956
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": 0.3386004848618722,
+        "score": 0.385900886460335,
+        "std": 0.06177959001541851
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": 1.6723818490520452,
+        "score": 0.514803189744153,
+        "std": 0.05174696366639384
+      },
+      "level": -4,
+      "operator": "channel_shift",
+      "seconds": 62.845524311065674
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": -0.002298999198079189,
+        "score": 0.83308345895628,
+        "std": 0.020891211625528004
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": 0.48030223473211514,
+        "score": 0.30322342807652086,
+        "std": 0.3748499668790911
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": 1.3715844276096814,
+        "score": 0.5472361459203564,
+        "std": 0.04740608999902525
+      },
+      "level": -2,
+      "operator": "channel_shift",
+      "seconds": 72.34738278388977
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": -0.005107473564129331,
+        "score": 0.8348518404556774,
+        "std": 0.014707605369190566
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": -0.049158420981157504,
+        "score": 0.6121431229192843,
+        "std": 0.08530996157584578
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": 0.9725663609419504,
+        "score": 0.5902595714793007,
+        "std": 0.05511806131085591
+      },
+      "level": -1,
+      "operator": "channel_shift",
+      "seconds": 71.40190029144287
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": -0.0036911458557104255,
+        "score": 0.8339600367963923,
+        "std": 0.016721798950449753
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": -0.0036484913391027444,
+        "score": 0.5855898494595227,
+        "std": 0.12253709939947716
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": -0.04179243172475934,
+        "score": 0.6996310352097829,
+        "std": 0.014241205957054503
+      },
+      "level": 1,
+      "operator": "channel_shift",
+      "seconds": 70.11622166633606
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": 0.0029862650684488296,
+        "score": 0.8297555441063755,
+        "std": 0.017467602861630783
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": -0.008377512460870044,
+        "score": 0.5883490493095537,
+        "std": 0.12534515799234844
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": -0.15090596676369128,
+        "score": 0.7113960113960113,
+        "std": 0.019003083926669277
+      },
+      "level": 2,
+      "operator": "channel_shift",
+      "seconds": 68.35711669921875
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": -0.0014192635279008986,
+        "score": 0.8325295253678844,
+        "std": 0.01402487433446
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": -0.014536045923863844,
+        "score": 0.591942313997945,
+        "std": 0.12783827049022425
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": -0.0061516998332899935,
+        "score": 0.6957881355932204,
+        "std": 0.01392470363939522
+      },
+      "level": 4,
+      "operator": "channel_shift",
+      "seconds": 58.134820222854614
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": 0.03926734320364273,
+        "score": 0.8069108323553825,
+        "std": 0.022232937573302216
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": 0.09795292510598076,
+        "score": 0.5263093755940481,
+        "std": 0.2513391674326898
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": 0.011906348762160996,
+        "score": 0.6938410580687003,
+        "std": 0.010736138196576026
+      },
+      "level": 0.1,
+      "operator": "delete",
+      "seconds": 65.53462290763855
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": 0.09231526521640766,
+        "score": 0.7735087244341402,
+        "std": 0.017554432349584356
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": 0.2728657804496456,
+        "score": 0.4242545291880419,
+        "std": 0.2338582059546396
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": 1.0731816207034603,
+        "score": 0.579410906969962,
+        "std": 0.08893388499765614
+      },
+      "level": 0.3,
+      "operator": "delete",
+      "seconds": 55.91819143295288
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": 0.1644300089113171,
+        "score": 0.7281010183409502,
+        "std": 0.014321003052314613
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": 0.40813821822856217,
+        "score": 0.3453283242880693,
+        "std": 0.17118550484319495
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": 1.2897865752490065,
+        "score": 0.556055856369336,
+        "std": 0.020634548170626155
+      },
+      "level": 0.5,
+      "operator": "delete",
+      "seconds": 55.72477984428406
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": 1.077365062239215,
+        "score": 0.15326313554874968,
+        "std": 0.015753126384123763
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": 0.6904315711112432,
+        "score": 0.18062113502359556,
+        "std": 0.2789528308879253
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": 2.847382588803485,
+        "score": 0.388110788869742,
+        "std": 0.04205271783209564
+      },
+      "level": null,
+      "operator": "randomise_times",
+      "seconds": 35.86931610107422
+    },
+    {
+      "T1": {
+        "floor": 0.20197675259912287,
+        "headroom_lost": 0.10495207400967314,
+        "score": 0.7655518425228904,
+        "std": 0.008378819030039973
+      },
+      "T2": {
+        "floor": 0.0,
+        "headroom_lost": 0.3029259104938009,
+        "score": 0.40671561274548923,
+        "std": 0.1601720764232572
+      },
+      "T3": {
+        "floor": 0.5873015873015873,
+        "headroom_lost": 2.7292457771005822,
+        "score": 0.4008486840896677,
+        "std": 0.04121782087680338
+      },
+      "level": null,
+      "operator": "randomise_times_in_segments",
+      "seconds": 54.400922536849976
+    }
+  ],
+  "contexts": {
+    "T1": 0,
+    "T2": 5,
+    "T3": 2
+  },
+  "corpus": {
+    "kind": "synthetic",
+    "n_speakers": 10,
+    "n_utterances": 30,
+    "name": "synthetic(seed=0)",
+    "noise_level": 0.005,
+    "phones_per_utterance": 8,
+    "sample_rate": 16000,
+    "seed": 0,
+    "utterances_per_speaker": 3
+  },
+  "corruption_seed": 4242,
+  "encoder": "E1",
+  "experiment": "P2",
+  "featurisation": {
+    "hop": 0.01,
+    "tau": 0.005
+  },
+  "front_end": {
+    "compensate_group_delay": false,
+    "compression": "power",
+    "envelope": "hilbert",
+    "exponent": 0.3,
+    "f_max": 8000.0,
+    "f_min": 50.0,
+    "spacing": "erb"
+  },
+  "n_channels": 32,
+  "probe": {
+    "alpha": 0.0001
+  },
+  "rate_param": 0.02458244068920199,
+  "rate_params_from": "probe_e1_t1_synthetic",
+  "split": {
+    "test_fraction": 0.3
+  },
+  "split_seeds": [
+    0,
+    1,
+    2
+  ],
+  "status": "rehearsal, not the week 4 gate",
+  "target_lambda": 16000
+}

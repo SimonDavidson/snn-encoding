@@ -1727,3 +1727,93 @@ clean environment CI exists to provide.
 has the four operators §7.2 needs — held as a rehearsal and not the week-4 gate,
 per Q28. Nothing else should be built on the current answers until the
 free-parameter question comes back, since it could change the shape of every run.
+
+## 2026-09-08 | session: implementation (seventh block)
+**Did:** Built and ran P2, corruption and dissociation (§7.2), on E1 at
+Λ = 15343, sixteen conditions × three seeds across all three tasks. **Recorded
+as a rehearsal, not the week 4 gate** — D60, and said so in the script, the
+config and the result caveat, because Q28's argument applies here as much as to
+P1.
+
+**The finding that does not depend on the corpus.** Before running anything I
+found that §7.2 and SPEC §7 define the fourth operator differently: the
+proposal randomises times *within each segment*, SPEC over `[0, duration]`. I
+ran both. They are not variants of one operator:
+
+| operator | T1 | T2 | T3 |
+|---|---|---|---|
+| `randomise_times` (SPEC) | **0.1533** (lost 1.08) | 0.1806 (0.69) | 0.3881 (2.85) |
+| within each segment (§7.2) | **0.7656** (lost 0.10) | 0.4067 (0.30) | 0.4008 (2.73) |
+| clean | 0.8316 | 0.5835 | 0.6951 |
+
+Under SPEC's version T1 falls **below its own majority floor of 0.2020** — the
+task is annihilated. Under the proposal's it loses a tenth of its headroom. The
+mechanism is exactly what §7.2's own phrase says: randomising across the whole
+utterance moves events between segments, so the per-segment rate profile goes
+with the fine timing, and "leaving rate intact" is false of it. **Unlike every
+other number here, this transfers to TIMIT unchanged** — it is a statement about
+what the operator does, not about what the stand-in contains. Q35, and it is
+blocking for P2's interpretation because the two operators support opposite
+conclusions about how much of T1 is timing.
+
+`corrupt.randomise_times` is untouched — SPEC-defined, known-answer covered, not
+mine. The proposal's operator sits beside it (D61).
+
+**`channel_shift` is not a translation.** Downward shifts cost T2 up to 0.48 of
+its headroom and T3 up to 1.67; upward shifts cost nothing at all (−0.04 to
++0.00). A translation should not be that asymmetric. SPEC §7 drops events
+falling outside the bank rather than wrapping, so shifting down by four discards
+the lowest four of thirty-two ERB channels — where F₀ and its low harmonics
+live, which is what T2 estimates. The measured T2 collapse is a band-removal
+experiment wearing a vocal-tract-length label, and the two are confounded in one
+parameter. Q37.
+
+That also explains the one cell where §7.2's predicted signature looks wrong.
+It predicts T3 robust to channel shift "since a boundary is a boundary wherever
+in the spectrum it appears". T3 *is* robust upward and not downward, which is
+consistent with the prediction about translation and with losing the channels
+carrying most of the energy — not with a failure of the spanning argument.
+
+**The normalisation is doing real work and has a failure mode.** Degradation is
+reported as fraction of each task's headroom above its own floor, because the
+three tasks sit on different scales: T1 headroom 0.6297, T2 0.5835, T3 **0.1078**.
+A raw drop of 0.10 costs T1 a sixth of its range and T3 almost all of it. But
+T3's headroom is so thin here that its normalised column is a ratio of small
+numbers — "+2.85" means it fell to 0.388 — and should not be read against T1's
+and T2's at face value. Q36, and it is partly Q28 again.
+
+**P-07 is untested, not supported.** The profiles do differ — T1 completely
+robust to channel shift where T2 and T3 are not, T3 hypersensitive to jitter
+(2.33) where T1 loses 0.40, T1 destroyed by whole-utterance randomisation and
+not by per-segment. The direction is consistent with the prediction. It is not
+evidence for it, because the corpus cannot carry the test, and I am not
+recording it as a test of P-07, which stays open.
+
+**A latent bug P2 found in code written earlier today.** `run_t2`, `run_t3` and
+`run_p1` each reported an "at offset zero" figure by indexing `by_offset["0"]`
+unconditionally. That holds for every sweep written so far and fails the moment
+a caller fixes the alignment instead of scanning it — which is what P2 does
+(D62: alignment held at each task's clean best, so a degradation measures
+information destroyed rather than alignment moving). The first P2 run died on a
+`KeyError`. Fixed in all three, with a regression test that fixes a single
+non-zero offset on all three tasks.
+
+**Margins rather than passes.** Jitter at 0.1 ms and 0.5 ms costs every task
+nothing — negative losses, i.e. within seed noise — which is the sanity check
+that the operator is not doing something gross at small σ. Alignment resolved to
+T1 −1, T2 −2, T3 −1 on clean data and was held there throughout.
+
+**Tests:** 184 passed, 2 failed, 1 skipped, from 173/2/1. The 11 new ones are
+`tests/test_p2.py`, including the assertion that per-segment counts survive one
+randomisation operator and not the other — which turns the Q35 discrepancy into
+a measurement rather than a reading of two documents. Two remaining failures
+unchanged: `test_G3[E5]` (Q19), `test_T5_3` (Q20).
+**Results written:** `results/p2_corruption_e1_synthetic.json`.
+**Blocked on:** the design-session round trip, which hit a token limit and
+returns in about three hours. Q35 now joins the priority list and is arguably
+above Q28 on it, being the one P2 finding that does not depend on the corpus.
+**Next:** nothing further should be built until the free-parameter question and
+Q35 come back. The remaining unblocked work is the survey report's narrative,
+now stale in nine passages — it describes no harness, no R2, no P1, no T2, no
+T3 and no P2 — and that is writing rather than regeneration, so it stays
+Simon's call.

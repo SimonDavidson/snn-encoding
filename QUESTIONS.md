@@ -2380,3 +2380,131 @@ design session's to make.
 **Blocking?** no. Every T2 condition records its grid, its chosen value and its
 validation curve.
 **Answer:** (open)
+
+### Q35 — SPEC and the proposal define P2's fourth operator differently, and it changes the result tenfold
+**Raised:** 2026-09-08 by implementation session
+**Context:** implementing P2. Proposal 7.2's fourth operator is
+"count-preserving randomisation: event times are resampled uniformly **within
+each segment** while preserving per-channel counts, destroying timing while
+leaving rate intact". SPEC section 7 defines `randomise_times` as resampling
+uniformly in `[0, duration]`.
+
+**These are different operators and the difference is not small.** Both were
+run, on E1 at Lambda = 15343, three seeds:
+
+| operator | T1 | T2 | T3 |
+|---|---|---|---|
+| `randomise_times` (SPEC, whole utterance) | **0.1533** (lost 1.08) | 0.1806 (0.69) | 0.3881 (2.85) |
+| within each segment (proposal 7.2) | **0.7656** (lost 0.10) | 0.4067 (0.30) | 0.4008 (2.73) |
+| clean | 0.8316 | 0.5835 | 0.6951 |
+
+Under SPEC's version T1 falls to 0.1533, **below its own majority floor of
+0.2020** — the corruption destroys the task completely. Under the proposal's it
+falls to 0.7656, losing a tenth of its headroom. The same operator, named the
+same way, either annihilates T1 or barely touches it.
+
+The mechanism is exactly what 7.2's phrase says. Randomising across the whole
+utterance moves events between segments, so the per-segment rate profile — which
+for T1 is nearly the whole signal — is destroyed along with the fine timing.
+"Leaving rate intact" is false of the SPEC version at any resolution finer than
+the utterance. Randomising within each segment preserves how many events each
+channel contributes to each segment and destroys only timing inside it, which is
+the control P1's temporal information index and P2's dissociation both want.
+
+**This is not corpus-dependent.** Unlike everything else in the P2 rehearsal,
+this conclusion transfers to TIMIT unchanged: it is a statement about what the
+operator does, not about what the stand-in contains.
+
+**Question:** which is P2's operator? If it is the proposal's, SPEC section 7
+needs amending and `corrupt.randomise_times` with it — and `test_G7`-style
+known-answer coverage would need to follow. If it is SPEC's, 7.2's "leaving rate
+intact" should be struck, and P1's equation (40) reading changes too, since the
+count condition it is meant to isolate is not what the operator preserves.
+
+**What I have done meanwhile.** `corrupt.randomise_times` is untouched — it is
+SPEC-defined and covered by a known-answer test, and not mine to change. The
+proposal's operator is added beside it as
+`p2.randomise_times_in_segments`, both are run, and a test asserts that
+per-segment counts survive one and not the other.
+
+**Blocking?** for P2's interpretation, yes — the two operators support opposite
+conclusions about T1's dependence on timing. Not for anything else.
+**Answer:** (open)
+
+### Q36 — comparing degradation across tasks needs a normalisation the proposal does not specify
+**Raised:** 2026-09-08 by implementation session
+**Context:** P2 asks whether the three tasks "degrade under different
+corruptions". Comparing degradation across tasks means comparing a frame
+accuracy, a correlation and an F-score, which sit on different scales over
+different floors:
+
+| task | clean | floor | headroom |
+|---|---|---|---|
+| T1 | 0.8316 | 0.2020 (majority) | 0.6297 |
+| T2 | 0.5835 | 0.0 (uninformative r) | 0.5835 |
+| T3 | 0.6951 | 0.5873 (uniform baseline) | **0.1078** |
+
+A raw drop of 0.10 costs T1 a sixth of its usable range and T3 almost all of
+it. Comparing raw drops would compare the scales as much as the corruptions,
+which is the one thing P2 must not do.
+
+I report the fraction of each task's headroom above its own floor. That makes
+the profiles commensurable, and it is a choice the proposal does not make.
+
+**It also has a failure mode, visible in this run.** T3's headroom on the
+stand-in is 0.1078, so its normalised figures are ratios of small numbers: a
+loss of "+2.85" means T3 fell to 0.388, far below its uniform baseline, and
+small absolute movements produce large normalised ones. T3's column should not
+be read against T1's and T2's at face value on this corpus. On a corpus where
+T3 has real headroom the problem shrinks, which makes this partly Q28 again.
+
+**Question:** how should cross-task degradation be normalised? Options: headroom
+above floor as implemented; raw drop with the floors quoted alongside; the drop
+as a fraction of the *clean* score; or a rank-based comparison of which
+operator hurts each task most, which avoids the scale question entirely at the
+cost of resolution.
+
+**Blocking?** no. Raw scores and floors are recorded at every condition, so any
+normalisation can be recomputed from the result file.
+**Answer:** (open)
+
+### Q37 — `channel_shift` is translation plus truncation, and the truncation dominates
+**Raised:** 2026-09-08 by implementation session
+**Context:** P2's channel-shift sweep, both directions, on a 32-channel ERB
+bank. 7.2's rationale is that shifting channel indices "approximates the
+log-frequency translation produced by a change in vocal tract length".
+
+| delta | T1 | T2 | T3 |
+|---|---|---|---|
+| -4 | -0.02 | **+0.34** | **+1.67** |
+| -2 | -0.00 | **+0.48** | **+1.37** |
+| -1 | -0.01 | -0.05 | +0.97 |
+| +1 | -0.00 | -0.00 | -0.04 |
+| +2 | +0.00 | -0.01 | -0.15 |
+| +4 | -0.00 | -0.01 | -0.01 |
+
+**Downward shifts cost T2 and T3 heavily; upward shifts cost nothing at all.**
+A translation should not be that asymmetric. SPEC section 7 says the operator
+"adds `delta` to every channel index and **drops** events falling outside
+`[0, n_channels)`; it does not wrap". On an ERB bank from 50 Hz, shifting down
+by four discards the lowest four of thirty-two channels — where F~0~ and its low
+harmonics live, which is precisely what T2 is estimating. So the measured T2
+collapse is a band-removal experiment, not a vocal-tract-length one, and the
+two are confounded in a single parameter.
+
+That also explains the one cell where the P-07 signature appears to fail. 7.2
+predicts T3 "robust to channel shift, since a boundary is a boundary wherever
+in the spectrum it appears". T3 is robust to upward shifts (-0.04 to -0.15) and
+not to downward ones (+0.97 to +1.67) — consistent with the prediction about
+translation and with losing the channels that carry most of the energy.
+
+**Question:** should the operator wrap, or pad, or should the sweep be
+restricted to the range where no channel is lost, or should the truncation be
+reported as a separate corruption in its own right? Dropping is a defensible
+model of a real vocal tract change — a shorter tract genuinely has no
+information below its lowest formant — but then 7.2's prediction for T3 should
+be stated for the interior only, and the degradation attributed accordingly.
+
+**Blocking?** no, and it matters for how P2's channel-shift row is read
+whenever it is run for real. Both signs are recorded.
+**Answer:** (open)
