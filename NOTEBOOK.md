@@ -1991,3 +1991,79 @@ registry point, which is your measurement rather than my prediction this time.
 raising the TIMIT dependency for the week 4 gate with him.
 **Next (design session):** the second patch — Q17, Q18, Q21, Q22, Q25, Q26,
 Q27, Q29, Q30, and the compression-axis coverage gap Q23 exposed.
+
+## 2026-09-08 | session: implementation (tenth block)
+**Did:** Applied the design session's Q19/Q20/Q23/Q24/Q34 drop. **The suite is
+fully green for the first time since E5 landed: 186 passed, 0 failed, 1
+skipped.** Q19, Q20, Q23, Q24 and Q34 are answered and closed; fifteen questions
+remain open.
+
+**The drop arrived in a new and better shape.** Not a tarball of files to unpack
+over the tree but a script that edits by targeted string replacement, asserting
+exactly one match per edit, with `DECISIONS_APPEND.md` and `NOTEBOOK_APPEND.md`
+concatenated onto the append-only files. That is Q18's fix, acted on before Q18
+is formally answered, and it worked: my "ninth block" entry and D59 both
+survived, and the notebook went from 30 entries to 31. One residual hazard worth
+noting for next time — `main()` writes each edit as it goes, so a failure on
+edit *n* leaves edits 1…*n*−1 applied. It did not fire, and git would have
+recovered it, but a drop that wrote nothing until every edit had matched would
+be strictly better.
+
+**A decision-number collision, which is exactly what check 3 exists to catch.**
+The drop was built at 07:06 against a GitHub read that predated D60, D61 and
+D62 — which I pushed at 10:23. Its D60/D61/D62 were *different decisions* with
+the same numbers: log compression, `cycle_divisor`, the alignment axis, against
+my P2 rehearsal, per-segment randomisation and P2 alignment. `DECISIONS.md` is
+append-only and authoritative, so duplicate numbers make every citation
+ambiguous.
+
+Simon's decision was to renumber the incoming set to **D67–D73**, mine being
+already published and cited in commit messages and notebook entries that must
+never be edited. 36 references across the drop's four files were renumbered.
+Verified afterwards: 69 decisions defined, highest D73, no duplicate numbers,
+and no citation anywhere in the tree resolving to nothing. **The design session
+must be told its numbers moved** — it will otherwise cite D60 for the log
+branch, which is now my P2 rehearsal entry.
+
+**Two section-number slips, fixed while renumbering.** D71's text and a
+self-reference inside the new section both called it "section 9" of the
+validation protocol. Section 9 is *Review practices*; the rule is installed as
+section 13. Consistent with the drop having been drafted as section 9 and
+renumbered late.
+
+**The sheet made a falsifiable prediction, it failed, and chasing it found the
+missing piece.** "`test_T5_3` passes at the new default without modification" —
+it did not, failing on the identical 32.12 ms. The reason is that the drop
+changes the *contract* and the implementation is mine: SPEC 4.6 now declares
+`cycle_divisor=1` and SPEC 3 declares the log branch as `log(1 + e/epsilon)`,
+while `src/` still had 4 and `log(e + epsilon)`. The design session cannot edit
+`src/`. Had the sheet not made a checkable prediction I would have applied the
+drop, seen one test still red, and had no way to tell a stale drop from an
+incomplete application.
+
+**D67 was verified to do what it claims rather than assumed.** Implemented as
+`np.log1p(e / epsilon)` — exact for small arguments, and exactly 0.0 in
+silence, which makes SPEC 4.1's all-zero-drive requirement hold by construction
+rather than by every encoder's threshold happening to sit above the floor.
+Measured: the log drive now spans **[4.801, 17.461]** with no negative samples,
+against [−13.62, −0.96] and 100 per cent negative. E1 gains a full operating
+range under log compression — Λ from 19662 down to 34 across θ = 1 to 16, a
+575× span against D27's required 4×. And E6 stops inverting: the correlation
+between its own frame energy and true audio RMS goes from **−0.280 to +0.261**.
+
+**No recorded result changes.** Every task run so far used power compression,
+precisely because log was unusable — which is what Q23 was raised about. D72
+covers the other direction: T1 figures taken before D69 are lower bounds rather
+than errors, and carry that note where cited rather than being regenerated.
+
+**Tests:** 186 passed, 0 failed, 1 skipped, from 184/2/1. Both former failures
+were Q19 and Q20. Nothing else moved, as the sheet predicted.
+**Results written:** none.
+**Blocked on:** Q28 and Q31 need Oliver. Fifteen questions open, of which the
+design session says Q17, Q18, Q21, Q22, Q25, Q26, Q27, Q29, Q30 plus a
+compression coverage gap are in patch 2.
+**Next:** CI should now go green for the first time, which clears Q25's
+blindness as a side effect — no implementation-session test has ever run in the
+clean environment because the Layer 1 step failed ahead of it. Verify that on
+the next push. Then the compression axis is genuinely available for the first
+time, so the T1 sweep could be re-run under log as well as power.
