@@ -137,6 +137,51 @@ def boundary_labels(utterance, hop, tolerance_frames=1, n_frames=None):
     return y
 
 
+#: Reference for the semitone scale, in hertz. Any constant works — a shift in
+#: reference is a constant offset in semitones and changes no correlation and
+#: no RMSE — but it must be recorded, since a predicted semitone value is
+#: meaningless without it.
+SEMITONE_REF_HZ = 100.0
+
+
+def semitones(f0, ref=SEMITONE_REF_HZ):
+    """Hertz to semitones relative to `ref`. Proposal 4.2's scale."""
+    f0 = np.asarray(f0, dtype=np.float64)
+    return 12.0 * np.log2(np.where(f0 > 0.0, f0, np.nan) / ref)
+
+
+def f0_targets(utterance, hop, ref=SEMITONE_REF_HZ, n_frames=None):
+    """T2 targets: `(semitone_contour, voiced)` on the SPEC section 5 grid.
+
+    The corpus supplies `f0` and `voiced` on a grid of spacing `utterance.f0_hop`.
+    That must equal the featurisation `hop`, or targets and features are not on
+    the same frames; a mismatch raises rather than being resampled, because a
+    silent resampling here is precisely the misalignment control C5 exists to
+    catch and it would be introduced by the very code meant to avoid it.
+
+    Unvoiced frames carry NaN in the contour and False in `voiced`. They are
+    excluded from fitting and from the correlation and RMSE, and are the
+    positive/negative classes of the separate voicing probe.
+    """
+    if utterance.f0 is None or utterance.voiced is None:
+        raise ValueError(f"{utterance.uid} carries no f0 reference")
+    if abs(utterance.f0_hop - hop) > 1e-12:
+        raise ValueError(
+            f"{utterance.uid}: f0 grid hop {utterance.f0_hop} does not match "
+            f"the featurisation hop {hop}; targets and features would sit on "
+            "different frames")
+    t = frame_times(utterance.duration, hop)
+    if len(utterance.f0) != len(t):
+        raise ValueError(
+            f"{utterance.uid}: f0 grid has {len(utterance.f0)} points against "
+            f"the SPEC section 5 grid's {len(t)}")
+    if n_frames is not None and n_frames != len(t):
+        raise ValueError(
+            f"{utterance.uid}: features have {n_frames} frames against the "
+            f"SPEC section 5 grid's {len(t)}")
+    return semitones(utterance.f0, ref), np.asarray(utterance.voiced, bool)
+
+
 def stack_context(x, context):
     """Concatenate each frame with `context` frames either side.
 

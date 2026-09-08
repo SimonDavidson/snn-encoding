@@ -25,6 +25,7 @@ Created:       2026-09-07
 Last modified: 2026-09-07
 """
 import numpy as np
+from scipy.linalg import solve
 from scipy.optimize import minimize
 from scipy.special import logsumexp
 
@@ -159,3 +160,70 @@ class LinearProbe:
         k = self.n_classes
         flat = np.bincount(y_true * k + y_pred, minlength=k * k)
         return flat.reshape(k, k)
+
+
+class RidgeProbe:
+    """L2-regularised linear regression — the T2 decoder of proposal 6.2.
+
+    Closed form rather than iterative: the normal equations are solved
+    directly, so there is no optimiser, no stopping criterion and no seed, and
+    two fits on identical data are bit-identical without anything having to be
+    arranged.
+
+    Targets are regressed in the space the metric is reported in. Proposal 4.2
+    reports RMSE in semitones and gives the reason — the perceptual scale is
+    logarithmic, and 10 Hz means something different at 100 Hz and at 300 Hz.
+    Fitting in hertz and converting afterwards would minimise squared *hertz*
+    error, weighting high-f0 frames more heavily than the metric does; fitting
+    in semitones makes estimator and metric agree (Q33). The caller passes
+    semitones; this class only records what it was given.
+    """
+
+    def __init__(self, alpha=1.0, standardise=True, target_space="semitones"):
+        self.alpha = float(alpha)
+        self.standardise = bool(standardise)
+        self.target_space = target_space
+        self.w = None
+        self.intercept = None
+        self._mu = None
+        self._sigma = None
+
+    @property
+    def settings(self):
+        return {"probe": "ridge", "alpha": self.alpha,
+                "standardise": self.standardise, "solver": "normal_equations",
+                "target_space": self.target_space}
+
+    def _prepare(self, x, fit):
+        x = np.asarray(x, dtype=np.float64)
+        if not self.standardise:
+            return x
+        if fit:
+            self._mu = x.mean(axis=0)
+            sigma = x.std(axis=0)
+            self._sigma = np.where(sigma > 0.0, sigma, 1.0)
+        return (x - self._mu) / self._sigma
+
+    def fit(self, x, y):
+        x = np.asarray(x, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
+        # Checked before standardising, not after: computing a mean over zero
+        # rows emits RuntimeWarnings and produces NaNs, so a guard placed after
+        # it raises the right error having already made a mess on the way.
+        if x.shape[0] == 0:
+            raise ValueError("no frames to fit on")
+        if x.shape[0] != y.shape[0]:
+            raise ValueError(f"{x.shape[0]} rows against {y.shape[0]} targets")
+        x = self._prepare(x, fit=True)
+        # The intercept is the target mean rather than a penalised coefficient:
+        # penalising it would shrink the prediction towards zero semitones,
+        # which is 100 Hz and not a neutral point.
+        self.intercept = float(y.mean())
+        gram = x.T @ x + self.alpha * np.eye(x.shape[1])
+        self.w = solve(gram, x.T @ (y - self.intercept), assume_a="pos")
+        return self
+
+    def predict(self, x):
+        if self.w is None:
+            raise RuntimeError("probe is not fitted")
+        return self._prepare(x, fit=False) @ self.w + self.intercept

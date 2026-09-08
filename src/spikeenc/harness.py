@@ -40,15 +40,16 @@ from . import encoders as _encoders
 from . import metrics
 from .features import featurise
 from .frontend import Filterbank
-from .probes import LinearProbe
+from .probes import LinearProbe, RidgeProbe
 from .boundaries import (DEFAULT_TOLERANCE, frame_auc, pick_peaks,
                          score_boundaries, uniform_baseline)
 from .reference import feature_bandwidth_bps, mel_features
 from .segments import (segment_counts, segment_table, segment_votes,
                        temporal_information_index)
 from .splits import speaker_disjoint_split
-from .tasks import (UNLABELLED, LabelSet, boundary_labels, frame_labels,
-                    majority_floor, shift_labels, stack_context)
+from .tasks import (SEMITONE_REF_HZ, UNLABELLED, LabelSet, boundary_labels,
+                    f0_targets, frame_labels, majority_floor, shift_labels,
+                    stack_context)
 
 
 def encoder_class(name):
@@ -735,5 +736,174 @@ def run_t3(corpus, trains, *, tau=0.005, hop=0.010, context=0,
                      "n_thresholds": n_thresholds,
                      "tau": tau, "hop": hop, "context": context,
                      "threshold_selected_on": "train"},
+        "seconds": time.time() - t0,
+    }
+
+
+def _shift_indices(n, offset):
+    """Frame k takes the target at frame k+offset; out of range is invalid.
+
+    The same convention as `tasks.shift_labels` and
+    `segments.frame_segment_index`, restated for float targets because
+    `shift_labels` fills with an integer sentinel that has no meaning in a
+    contour.
+    """
+    src = np.arange(n) + offset
+    valid = (src >= 0) & (src < n)
+    return np.clip(src, 0, max(n - 1, 0)), valid
+
+
+def _per_utterance_pearson(pred, ref, utt_index, min_frames=5):
+    """Mean within-utterance Pearson r — T2's headline (Q32).
+
+    Computed per utterance and averaged rather than pooled over all voiced
+    frames, because speakers differ in mean f0 far more than a contour moves
+    within one utterance. A pooled correlation is therefore dominated by
+    between-speaker variance, and a probe emitting one constant per utterance —
+    in effect estimating voice height — scores well on it while tracking no
+    contour at all. Proposal 4.2 puts T2 at the opposite corner of the demand
+    space from T1 and grounds it in phase locking to the glottal cycle; a
+    figure winnable by voice height would make it partly the speaker task D02
+    removed from the battery.
+
+    Utterances with fewer than `min_frames` voiced frames, or with no variance
+    in either series, are excluded and counted rather than scored as zero.
+    """
+    values, excluded = [], 0
+    for u in np.unique(utt_index):
+        m = utt_index == u
+        p, r = pred[m], ref[m]
+        if p.size < min_frames or np.std(p) == 0.0 or np.std(r) == 0.0:
+            excluded += 1
+            continue
+        values.append(float(np.corrcoef(p, r)[0, 1]))
+    return (float(np.mean(values)) if values else float("nan"), excluded,
+            len(values))
+
+
+def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
+           test_fraction=0.3, seed=0, alpha=1e-4, ridge_alpha=1.0,
+           offsets=(-2, -1, 0), ref=SEMITONE_REF_HZ, features=None,
+           min_frames=5):
+    """T2, fundamental frequency contour (proposal 4.2), on one operating point.
+
+    Ridge regression per frame on the voiced frames for the contour, and a
+    separate binary probe for the voiced/unvoiced decision, which 4.2 asks be
+    reported separately and which a regression cannot produce.
+
+    Both the per-utterance and the pooled correlation are returned. The first
+    is the headline; the gap between them is how much of the pooled figure is
+    voice height rather than contour (Q32).
+    """
+    t0 = time.time()
+    labelset = LabelSet(corpus.labels)
+    split = speaker_disjoint_split(corpus, test_fraction=test_fraction,
+                                   seed=seed)
+
+    if features is None:
+        x, _, uid = build_dataset(trains, corpus, labelset, tau, hop, context)
+    else:
+        x = features
+        _, _, uid = build_dataset({u.uid: None for u in corpus}, corpus,
+                                  labelset, tau, hop, context, labels_only=True)
+    train_mask = np.isin(uid, np.asarray(split.train, dtype=object))
+    test_mask = np.isin(uid, np.asarray(split.test, dtype=object))
+
+    contours, voiced_flags, utt_ids = [], [], []
+    for u in corpus:
+        s, v = f0_targets(u, hop, ref=ref)
+        contours.append(s)
+        voiced_flags.append(v)
+        utt_ids.append(np.full(len(s), u.uid, dtype=object))
+    contour = np.concatenate(contours)
+    voiced = np.concatenate(voiced_flags)
+    utt = np.concatenate(utt_ids)
+
+    def targets_at(offset):
+        s_out = np.full(len(contour), np.nan)
+        v_out = np.zeros(len(contour), dtype=bool)
+        ok = np.zeros(len(contour), dtype=bool)
+        base = 0
+        for u, c, v in zip(corpus, contours, voiced_flags):
+            n = len(c)
+            src, valid = _shift_indices(n, offset)
+            sl = slice(base, base + n)
+            s_out[sl] = np.where(valid, c[src], np.nan)
+            v_out[sl] = np.where(valid, v[src], False)
+            ok[sl] = valid
+            base += n
+        return s_out, v_out, ok
+
+    def evaluate(offset, shuffle=False):
+        s, v, ok = targets_at(offset)
+        fit_rows = train_mask & ok & v & ~np.isnan(s)
+        test_rows = test_mask & ok & v & ~np.isnan(s)
+        y = s.copy()
+        if shuffle:
+            rng = np.random.default_rng(seed + 991)
+            idx = np.flatnonzero(fit_rows)
+            y[idx] = s[rng.permutation(idx)]
+
+        probe = RidgeProbe(alpha=ridge_alpha).fit(x[fit_rows], y[fit_rows])
+        pred = probe.predict(x[test_rows])
+        truth = s[test_rows]
+
+        per_utt, excluded, n_scored = _per_utterance_pearson(
+            pred, truth, utt[test_rows], min_frames=min_frames)
+        pooled = (float(np.corrcoef(pred, truth)[0, 1])
+                  if pred.size > 1 and np.std(pred) > 0 else float("nan"))
+        rmse = float(np.sqrt(np.mean((pred - truth) ** 2)))
+        # The floor: predict the training mean for every frame. Its RMSE is the
+        # test contour's spread about that mean, and any probe not beating it
+        # has learned nothing about f0.
+        floor_rmse = float(np.sqrt(np.mean((truth - probe.intercept) ** 2)))
+
+        return {"pearson_per_utterance": per_utt, "pearson_pooled": pooled,
+                "rmse_semitones": rmse, "floor_rmse_semitones": floor_rmse,
+                "n_test_frames": int(test_rows.sum()),
+                "n_utterances_scored": n_scored,
+                "n_utterances_excluded": excluded,
+                "probe_settings": probe.settings}
+
+    by_offset = {str(o): evaluate(o) for o in offsets}
+    best = max(by_offset,
+               key=lambda k: (by_offset[k]["pearson_per_utterance"]
+                              if not np.isnan(
+                                  by_offset[k]["pearson_per_utterance"])
+                              else -np.inf))
+    shuffled = evaluate(int(best), shuffle=True)
+
+    # Voicing, reported separately per 4.2. All valid frames, not just voiced.
+    s0, v0, ok0 = targets_at(int(best))
+    vp = LinearProbe(2, alpha=alpha).fit(x[train_mask & ok0],
+                                         v0[train_mask & ok0].astype(np.int64))
+    v_true = v0[test_mask & ok0].astype(np.int64)
+    voicing_acc = float(np.mean(vp.predict(x[test_mask & ok0]) == v_true))
+    voicing_floor = float(max(v_true.mean(), 1.0 - v_true.mean()))
+
+    return {
+        "task": "T2",
+        "by_offset": by_offset,
+        "best_offset": best,
+        "pearson_per_utterance": by_offset[best]["pearson_per_utterance"],
+        "pearson_pooled": by_offset[best]["pearson_pooled"],
+        "rmse_semitones": by_offset[best]["rmse_semitones"],
+        "floor_rmse_semitones": by_offset[best]["floor_rmse_semitones"],
+        "pearson_per_utterance_at_zero":
+            by_offset["0"]["pearson_per_utterance"],
+        "shuffled_pearson_per_utterance":
+            shuffled["pearson_per_utterance"],                  # C3
+        "shuffled_pearson_pooled": shuffled["pearson_pooled"],  # C3
+        "voicing_accuracy": voicing_acc,
+        "voicing_floor": voicing_floor,                         # C2
+        "split": split.as_dict(),                               # C4
+        "lambda_events_per_s": (corpus_event_rate(trains, corpus)
+                                if features is None else 0.0),
+        "n_utterances_scored": by_offset[best]["n_utterances_scored"],
+        "n_utterances_excluded": by_offset[best]["n_utterances_excluded"],
+        "settings": {"tau": tau, "hop": hop, "context": context,
+                     "ridge_alpha": ridge_alpha, "semitone_ref_hz": ref,
+                     "min_frames_per_utterance": min_frames,
+                     "headline": "pearson_per_utterance"},
         "seconds": time.time() - t0,
     }
