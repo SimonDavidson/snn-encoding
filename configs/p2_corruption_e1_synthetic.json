@@ -1,0 +1,37 @@
+{
+  "result_id": "p2_corruption_e1_synthetic",
+  "experiment": "P2",
+  "encoder": "E1",
+  "n_channels": 32,
+  "rate_params_from": "probe_e1_t1_synthetic",
+  "target_lambda": 16000,
+  "corpus": {
+    "kind": "synthetic",
+    "n_speakers": 10,
+    "utterances_per_speaker": 3,
+    "phones_per_utterance": 8,
+    "sample_rate": 16000,
+    "seed": 0,
+    "noise_level": 0.005
+  },
+  "featurisation": {"tau": 0.005, "hop": 0.010},
+  "contexts": {"T1": 0, "T2": 5, "T3": 2},
+  "offsets": [-2, -1, 0],
+  "t2": {"ridge_alphas": [1.0, 100.0, 10000.0, 1000000.0, 100000000.0]},
+  "t3": {
+    "tolerance": 0.020,
+    "label_tolerance_frames": 1,
+    "min_separation": 0.020,
+    "n_thresholds": 25
+  },
+  "p2": {
+    "jitter_sigmas": [0.0001, 0.0005, 0.002, 0.010, 0.050],
+    "channel_deltas": [-4, -2, -1, 1, 2, 4],
+    "delete_probabilities": [0.1, 0.3, 0.5]
+  },
+  "corruption_seed": 4242,
+  "probe": {"alpha": 0.0001},
+  "split": {"test_fraction": 0.3},
+  "split_seeds": [0, 1, 2],
+  "predictions": ["P-07"]
+}
