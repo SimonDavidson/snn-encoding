@@ -1,0 +1,35 @@
+{
+  "result_id": "t2_f0_contour_e1_synthetic",
+  "task": "T2",
+  "encoder": "E1",
+  "n_channels": 32,
+  "rate_params_from": "probe_e1_t1_synthetic",
+  "corpus": {
+    "kind": "synthetic",
+    "n_speakers": 10,
+    "utterances_per_speaker": 3,
+    "phones_per_utterance": 8,
+    "sample_rate": 16000,
+    "seed": 0,
+    "noise_level": 0.005
+  },
+  "featurisation": {
+    "tau": 0.005,
+    "hop": 0.010,
+    "n_mels": 40,
+    "frame": 0.025,
+    "alignment": "causal"
+  },
+  "t2": {
+    "ridge_alpha": 1.0,
+    "semitone_ref_hz": 100.0,
+    "min_frames_per_utterance": 5
+  },
+  "contexts": [0, 5],
+  "target_lambdas": [160, 400, 2500, 16000],
+  "offsets": [-2, -1, 0],
+  "probe": {"alpha": 0.0001},
+  "split": {"test_fraction": 0.3},
+  "split_seeds": [0, 1, 2],
+  "predictions": ["P-03"]
+}
