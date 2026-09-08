@@ -30,7 +30,7 @@ What is not here, and why:
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-07
-Last modified: 2026-09-07
+Last modified: 2026-09-08
 """
 import time
 
@@ -46,6 +46,8 @@ from .boundaries import (DEFAULT_TOLERANCE, frame_auc, pick_peaks,
 from .reference import feature_bandwidth_bps, mel_features
 from .segments import (segment_counts, segment_table, segment_votes,
                        temporal_information_index)
+from .selection import (fold_sizes, interior_maximum, predicted_offset,
+                        profile_scores, select_on_folds, speaker_folds)
 from .splits import speaker_disjoint_split
 from .tasks import (SEMITONE_REF_HZ, UNLABELLED, LabelSet, boundary_labels,
                     f0_targets, frame_labels, majority_floor, shift_labels,
@@ -219,9 +221,59 @@ def budget_cross_check(trains):
                     "needs the release format, which is blocked on Q07"}
 
 
+def _uid_mask(uid, uids):
+    """Boolean mask over rows whose utterance id is in `uids`."""
+    return np.isin(uid, np.asarray(sorted(uids), dtype=object))
+
+
+def predicted_alignment(front_end, n_channels, sample_rate, drive_kind, taus,
+                        hop):
+    """The label alignment offset the declared lags predict, before any fit.
+
+    D69 makes the offset a swept axis; a swept axis with nothing to compare
+    against is a fit. The front end declares its own lag under D24 — the
+    filterbank group delay plus every declared stage in the envelope path — and
+    the equation (32) kernel's first moment is `tau` exactly, so the offset
+    that should win is computable from two quantities no probe has touched.
+    Recorded beside the selected offset, which turns the sweep into a check on
+    the two lags rather than a free parameter.
+
+    The per-channel spread is reported as well as the mean, because it is
+    large: at 32 ERB channels from 50 Hz the group delay runs 0.53 ms at the
+    top of the bank to 15.57 ms at the bottom. A task living in the low
+    channels — T2, which is about f0 — should align later than one spread over
+    the whole bank, and the bracket says by how much.
+    """
+    fb = Filterbank(n_channels, sample_rate=sample_rate,
+                    f_min=front_end.get("f_min", 50.0),
+                    f_max=front_end.get("f_max", 8000.0),
+                    spacing=front_end.get("spacing", "erb"),
+                    compensate_group_delay=front_end.get(
+                        "compensate_group_delay", False))
+    lag = fb.declared_lag(drive_kind,
+                          envelope=front_end.get("envelope", "hilbert"))
+    taus = [taus] if np.isscalar(taus) else list(taus)
+    return {
+        "front_end_lag_s": {"mean": float(np.mean(lag)),
+                            "median": float(np.median(lag)),
+                            "min": float(np.min(lag)),
+                            "max": float(np.max(lag))},
+        "compensated": bool(front_end.get("compensate_group_delay", False)),
+        "hop": hop,
+        "by_tau": {f"{t}": {
+            "lag_s": float(np.mean(lag) + t),
+            "offset": predicted_offset(float(np.mean(lag)) + t, hop),
+            "offset_low_channels": predicted_offset(float(np.max(lag)) + t,
+                                                    hop),
+            "offset_high_channels": predicted_offset(float(np.min(lag)) + t,
+                                                     hop)} for t in taus},
+    }
+
+
 def score_t1(corpus, x, y, uid, *, labelset=None, test_fraction=0.3, seed=0,
-             alpha=1e-4, control_offsets=(-1, 1)):
-    """Split, fit and run the Layer 2 controls on an already-built dataset.
+             alpha=1e-4, offsets=(0,), n_folds=3, c5_radius=2,
+             alignment_prediction=None):
+    """Split, select the alignment, fit, and run the Layer 2 controls.
 
     Factored out of `run_t1` so that the spiking conditions and the R2
     reference of proposal 5.9 go through *one* decoder path rather than two
@@ -231,6 +283,13 @@ def score_t1(corpus, x, y, uid, *, labelset=None, test_fraction=0.3, seed=0,
     still looked right on its own. This is the argument D30 made for E2 and E3
     sharing one lattice rule, applied to the decoder.
 
+    **The alignment offset is selected on speaker-disjoint folds inside the
+    training split** (D69, D71), never on test, and the grid is recorded. The
+    test-side profile is computed too and reported beside it, because the gap
+    between the offset validation picks and the offset test would have picked
+    is the size of the bias that selecting on test introduces — a quantity
+    worth measuring once rather than assuming.
+
     Everything above the features is shared: the split, the probe, C2, C3, C5,
     and the confusion matrix feeding equation (38). What differs between a
     spiking condition and R2 is only what produced `x`.
@@ -238,66 +297,123 @@ def score_t1(corpus, x, y, uid, *, labelset=None, test_fraction=0.3, seed=0,
     labelset = labelset or LabelSet(corpus.labels)
     split = speaker_disjoint_split(corpus, test_fraction=test_fraction,
                                    seed=seed)
-    train_mask = np.isin(uid, np.asarray(split.train, dtype=object))
-    test_mask = np.isin(uid, np.asarray(split.test, dtype=object))
+    train_mask = _uid_mask(uid, split.train)
+    test_mask = _uid_mask(uid, split.test)
+    speaker_of = {u.uid: u.speaker for u in corpus}
+    folds = speaker_folds(split.train, speaker_of, n_folds=n_folds, seed=seed)
 
-    def fit_score(y_all):
-        probe = LinearProbe(len(labelset), alpha=alpha).fit(
-            x[train_mask], y_all[train_mask])
-        return probe, probe.score(x[test_mask], y_all[test_mask])
+    offsets = tuple(int(o) for o in offsets)
+    ys = {o: np.concatenate([shift_labels(y[uid == u.uid], o) for u in corpus])
+          for o in offsets}
 
-    probe, accuracy = fit_score(y)
+    def evaluate(offset, fit_uids, val_uids):
+        y_o = ys[int(offset)]
+        fit_rows, val_rows = _uid_mask(uid, fit_uids), _uid_mask(uid, val_uids)
+        probe = LinearProbe(len(labelset), alpha=alpha).fit(x[fit_rows],
+                                                            y_o[fit_rows])
+        return probe.score(x[val_rows], y_o[val_rows])
+
+    chosen, grid = select_on_folds(offsets, folds, evaluate, key=str)
+    chosen = int(chosen)
+
+    # The test-side profile: every offset refitted on the whole training split.
+    # This is a diagnostic and never a selection — `chosen` is already fixed.
+    probes, test_profile = {}, {}
+    for o in offsets:
+        p = LinearProbe(len(labelset), alpha=alpha).fit(x[train_mask],
+                                                        ys[o][train_mask])
+        probes[o] = p
+        test_profile[str(o)] = p.score(x[test_mask], ys[o][test_mask])
+
+    probe, y_sel = probes[chosen], ys[chosen]
+    accuracy = test_profile[str(chosen)]
 
     # C3 — shuffled-label control. Training labels are permuted, the probe
     # refitted, and test performance must return to the floor. This is the
     # primary detector of leakage: if a speaker or an utterance is on both
     # sides of the split, a probe can still score above the floor here.
     rng = np.random.default_rng(seed + 991)
-    y_shuffled = y.copy()
-    idx = np.flatnonzero(train_mask & (y != UNLABELLED))
-    y_shuffled[idx] = y[rng.permutation(idx)]
-    _, shuffled_accuracy = fit_score(y_shuffled)
+    y_shuffled = y_sel.copy()
+    idx = np.flatnonzero(train_mask & (y_sel != UNLABELLED))
+    y_shuffled[idx] = y_sel[rng.permutation(idx)]
+    shuffled_accuracy = LinearProbe(len(labelset), alpha=alpha).fit(
+        x[train_mask], y_shuffled[train_mask]).score(x[test_mask],
+                                                     y_sel[test_mask])
 
-    # C5 — deliberate misalignment. Labels are offset against features and the
-    # probe refitted, so what is measured is whether the alignment carries
-    # information, not merely whether shifted labels score worse at test time.
-    misaligned = {}
-    for k in control_offsets:
-        y_k = np.concatenate([
-            shift_labels(y[uid == u.uid], k) for u in corpus])
-        misaligned[str(k)] = fit_score(y_k)[1]
+    # C5 — deliberate misalignment, in the form D70 restates: an interior
+    # maximum over at least two frames either side of the selected offset,
+    # rather than a drop at plus or minus one. As written the old control
+    # presumed zero was correct and would have been recorded as failed when
+    # that presumption, rather than the alignment, was what had failed.
+    val_profile = profile_scores(grid)
+    c5 = interior_maximum(val_profile, chosen, radius=c5_radius)
+    c5_test = interior_maximum(test_profile, chosen, radius=c5_radius)
+    # Only offsets actually in the sweep: this key is a dict of numbers that
+    # the report builder averages, and a None from an offset outside the grid
+    # would propagate into a table rather than announce itself.
+    misaligned = {str(chosen + d): test_profile[str(chosen + d)]
+                  for d in range(-c5_radius, c5_radius + 1)
+                  if d != 0 and str(chosen + d) in test_profile}
 
-    confusion = probe.confusion(x[test_mask], y[test_mask])
+    test_best = max((k for k, v in test_profile.items() if v is not None),
+                    key=lambda k: test_profile[k], default=str(chosen))
+    confusion = probe.confusion(x[test_mask], y_sel[test_mask])
     return {
         "accuracy": accuracy,
-        "majority_floor": majority_floor(y[test_mask]),   # C2
-        "chance": labelset.chance,                        # C2
-        "shuffled_label_accuracy": shuffled_accuracy,     # C3
-        "misaligned_accuracy": misaligned,                # C5
-        "split": split.as_dict(),                         # C4
+        "majority_floor": majority_floor(y_sel[test_mask]),   # C2
+        "chance": labelset.chance,                            # C2
+        "shuffled_label_accuracy": shuffled_accuracy,         # C3
+        "misaligned_accuracy": misaligned,                    # C5
+        "c5_alignment": {"validation": c5, "test": c5_test},  # C5, D70
+        "selection": {                                        # D71
+            "parameters": ["offset"],
+            "chosen": {"offset": chosen},
+            "criterion": "frame accuracy",
+            "selected_on": "speaker-disjoint folds within the training split",
+            "n_folds": len(folds),
+            "folds": fold_sizes(folds, speaker_of),
+            "grid": grid,
+            "candidates": list(offsets),
+            "test_profile": test_profile,
+            "test_argmax_offset": int(test_best),
+            "test_score_at_selected": accuracy,
+            "test_score_at_argmax": test_profile[test_best],
+            "selection_bias": (None if accuracy is None
+                               else test_profile[test_best] - accuracy),
+            "predicted": alignment_prediction,
+        },
+        "best_offset": chosen,
+        "split": split.as_dict(),                             # C4
         "decoded_information_bits": metrics.decoded_information(confusion),
         "confusion": confusion.tolist(),
-        "n_frames_train": int(np.sum(train_mask & (y != UNLABELLED))),
-        "n_frames_test": int(np.sum(test_mask & (y != UNLABELLED))),
+        "n_frames_train": int(np.sum(train_mask & (y_sel != UNLABELLED))),
+        "n_frames_test": int(np.sum(test_mask & (y_sel != UNLABELLED))),
         "n_features": int(x.shape[1]),
-        "probe_settings": probe.settings,                 # C4 fairness
+        "probe_settings": probe.settings,                     # C4 fairness
         "probe_converged": probe.converged_,
         "probe_iterations": probe.n_iter_,
         "_split": split,
         "_test_mask": test_mask,
-        "_y": y,
+        "_y": y_sel,
     }
 
 
 def run_t1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
-           test_fraction=0.3, seed=0, alpha=1e-4, control_offsets=(-1, 1),
+           test_fraction=0.3, seed=0, alpha=1e-4, offsets=(0,), n_folds=3,
+           c5_radius=2, alignment_prediction=None,
            timestamp_bits=20, polarity_bits=1):
     """Score one spiking operating point on T1, with its budget and controls.
 
     Returns a dict of everything the manifest should carry for this point:
-    the headline accuracy, both C2 floors, the C3 shuffled-label control, the
-    C5 misalignment controls, the C6 cross-check, the C4 split description, the
-    budget of equations (34)-(36), and the decoded information of equation (38).
+    the headline accuracy at the selected alignment, both C2 floors, the C3
+    shuffled-label control, the C5 interior-maximum control, the C6
+    cross-check, the C4 split description, the budget of equations (34)-(36),
+    and the decoded information of equation (38).
+
+    `offsets` defaults to `(0,)` — the alignment pinned, as every recorded T1
+    figure was taken. D72 keeps those figures as lower bounds rather than
+    errors; passing a wider grid makes T1 sweep the axis D69 declares, on the
+    same selection mechanism as T2, T3 and P1.
     """
     labelset = labelset or LabelSet(corpus.labels)
     t0 = time.time()
@@ -305,9 +421,10 @@ def run_t1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
     x, y, uid = build_dataset(trains, corpus, labelset, tau, hop, context)
     out = score_t1(corpus, x, y, uid, labelset=labelset,
                    test_fraction=test_fraction, seed=seed, alpha=alpha,
-                   control_offsets=control_offsets)
+                   offsets=offsets, n_folds=n_folds, c5_radius=c5_radius,
+                   alignment_prediction=alignment_prediction)
     split, test_mask = out.pop("_split"), out.pop("_test_mask")
-    out.pop("_y")
+    y = out.pop("_y")
 
     lam = corpus_event_rate(trains, corpus)
     n_ch = next(iter(trains.values())).n_channels
@@ -345,9 +462,9 @@ def run_t1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
 
 def run_t1_reference(corpus, *, labelset=None, n_mels=40, frame=0.025,
                      hop=0.010, alignment="causal", context=0,
-                     test_fraction=0.3, seed=0, alpha=1e-4,
-                     control_offsets=(-1, 1), bits_per_feature=32,
-                     f_min=50.0, f_max=8000.0):
+                     test_fraction=0.3, seed=0, alpha=1e-4, offsets=(0,),
+                     n_folds=3, c5_radius=2, alignment_prediction=None,
+                     bits_per_feature=32, f_min=50.0, f_max=8000.0):
     """R2, the non-spiking upper bound of proposal 5.9, on T1.
 
     Same corpus, same labels, same split, same probe, same controls as every
@@ -371,7 +488,8 @@ def run_t1_reference(corpus, *, labelset=None, n_mels=40, frame=0.025,
 
     out = score_t1(corpus, x, y, uid, labelset=labelset,
                    test_fraction=test_fraction, seed=seed, alpha=alpha,
-                   control_offsets=control_offsets)
+                   offsets=offsets, n_folds=n_folds, c5_radius=c5_radius,
+                   alignment_prediction=alignment_prediction)
     for k in ("_split", "_test_mask", "_y"):
         out.pop(k)
 
@@ -450,31 +568,68 @@ def mel_dataset(corpus, n_mels=40, frame=0.025, hop=0.010,
 
 def ceiling_accuracies(corpus, mel_x, *, labelset=None, hop=0.010,
                        offsets=(-2, -1, 0), test_fraction=0.3, seed=0,
-                       alpha=1e-4):
-    """Segment-level accuracy of the R2 ceiling, at each offset.
+                       alpha=1e-4, n_folds=3, c5_radius=2,
+                       alignment_prediction=None):
+    """Segment-level accuracy of the R2 ceiling, with its alignment selected.
 
     Equation (40)'s denominator. Separate from `run_p1` because R2 depends on
     neither the encoder nor its rate parameter, so a sweep computes this once
     per split seed rather than once per budget point — and because computing it
     six times and trusting the six to agree is a worse guarantee than computing
     it once.
+
+    The ceiling has a free parameter of its own, its alignment, and D71 applies
+    to it exactly as to the conditions it is the denominator for: chosen on
+    folds inside the training split, never on test. Choosing the numerator
+    honestly and the denominator on test would bias the index downwards, which
+    is not the safe direction — it is simply a different wrong number.
     """
     labelset = labelset or LabelSet(corpus.labels)
     split = speaker_disjoint_split(corpus, test_fraction=test_fraction,
                                    seed=seed)
+    speaker_of = {u.uid: u.speaker for u in corpus}
+    folds = speaker_folds(split.train, speaker_of, n_folds=n_folds, seed=seed)
     seg_label, seg_uid, _, _, _ = segment_table(corpus, labelset)
-    _, seg_test = _segment_masks(split, seg_uid)
+    seg_train, seg_test = _segment_masks(split, seg_uid)
 
     _, y, uid = build_dataset({u.uid: None for u in corpus}, corpus, labelset,
                               0.005, hop, 0, labels_only=True)
     frame_train = np.isin(uid, np.asarray(split.train, dtype=object))
-    return {str(o): _score_frames_to_segments(
+    offsets = tuple(int(o) for o in offsets)
+
+    def evaluate(offset, fit_uids, val_uids):
+        return _score_frames_to_segments(
+            mel_x, y, uid, corpus, labelset, hop, int(offset),
+            _uid_mask(uid, fit_uids), seg_label, _uid_mask(seg_uid, val_uids),
+            alpha)
+
+    chosen, grid = select_on_folds(offsets, folds, evaluate, key=str)
+    chosen = int(chosen)
+    test_profile = {str(o): _score_frames_to_segments(
         mel_x, y, uid, corpus, labelset, hop, o, frame_train, seg_label,
         seg_test, alpha) for o in offsets}
+    return {
+        "chosen_offset": chosen,
+        "accuracy": test_profile[str(chosen)],
+        "test_profile": test_profile,
+        "selection": {"parameters": ["offset"], "chosen": {"offset": chosen},
+                      "criterion": "segment accuracy",
+                      "selected_on": "speaker-disjoint folds within the "
+                                     "training split",
+                      "n_folds": len(folds),
+                      "folds": fold_sizes(folds, speaker_of),
+                      "grid": grid, "candidates": list(offsets),
+                      "predicted": alignment_prediction},
+        "c5_alignment": {
+            "validation": interior_maximum(profile_scores(grid), chosen,
+                                           radius=c5_radius),
+            "test": interior_maximum(test_profile, chosen, radius=c5_radius)},
+    }
 
 
 def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
            test_fraction=0.3, seed=0, alpha=1e-4, offsets=(-2, -1, 0),
+           n_folds=3, c5_radius=2, alignment_prediction=None,
            n_mels=40, frame=0.025, alignment="causal", f_min=50.0,
            f_max=8000.0, count_offset_control=0.020, mel_x=None,
            ceiling=None, taus=None):
@@ -489,11 +644,16 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
     - `temporal`— the frame probe on equation (32), majority-voted to segments.
     - `ceiling` — R2's mel features, same probe, same vote.
 
-    and the temporal information index of equation (40) built from them. The
-    two frame-based conditions are scored at every offset in `offsets`, because
-    Q24 established that offset zero is not their best alignment and an index
-    computed there would understate the numerator and the denominator by
-    different amounts.
+    and the temporal information index of equation (40) built from them.
+
+    **`tau_phi` and the alignment offset are one joint grid, selected together
+    on folds inside the training split.** D69 puts them on the same footing and
+    the reason is in that decision: holding the alignment at zero while
+    sweeping `tau_phi` imposes a misalignment penalty that grows along the
+    axis, then selects the `tau_phi` least harmed by it. Selecting the pair on
+    test — which is what this function did until D71 — instead lets the index
+    absorb whatever noise the test set happens to carry, in the numerator and
+    the denominator separately.
     """
     labelset = labelset or LabelSet(corpus.labels)
     t0 = time.time()
@@ -501,6 +661,8 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
 
     split = speaker_disjoint_split(corpus, test_fraction=test_fraction,
                                    seed=seed)
+    speaker_of = {u.uid: u.speaker for u in corpus}
+    folds = speaker_folds(split.train, speaker_of, n_folds=n_folds, seed=seed)
     seg_label, seg_uid, _, _, _ = segment_table(corpus, labelset)
     seg_train, seg_test = _segment_masks(split, seg_uid)
 
@@ -531,6 +693,7 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
 
     # --- the two frame-based conditions -------------------------------------
     taus = tuple(taus) if taus else (tau,)
+    offsets = tuple(int(o) for o in offsets)
     _, y, uid = build_dataset({u.uid: None for u in corpus}, corpus, labelset,
                               tau, hop, context, labels_only=True)
     frame_train = np.isin(uid, np.asarray(split.train, dtype=object))
@@ -539,26 +702,49 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
                        alignment=alignment, context=context, f_min=f_min,
                        f_max=f_max) if mel_x is None else mel_x
 
-    temporal, n_features_temporal = {}, 0
-    for tv in taus:
-        x_t, _, _ = build_dataset(trains, corpus, labelset, tv, hop, context)
-        n_features_temporal = x_t.shape[1]
-        temporal[f"{tv}"] = {str(o): _score_frames_to_segments(
-            x_t, y, uid, corpus, labelset, hop, o, frame_train, seg_label,
-            seg_test, alpha) for o in offsets}
-    if ceiling is None:
-        ceiling = {str(o): _score_frames_to_segments(
-            x_r2, y, uid, corpus, labelset, hop, o, frame_train, seg_label,
-            seg_test, alpha) for o in offsets}
+    # The featurisation is built once per tau_phi, not once per candidate: the
+    # offset moves labels, not features.
+    x_by_tau = {tv: build_dataset(trains, corpus, labelset, tv, hop,
+                                  context)[0] for tv in taus}
+    n_features_temporal = int(next(iter(x_by_tau.values())).shape[1])
+    candidates = [(tv, o) for tv in taus for o in offsets]
 
-    flat_t = {(tv, o): a for tv, byoff in temporal.items()
-              for o, a in byoff.items()}
-    best_tv, best_t = max(flat_t, key=flat_t.get)
-    best_c = max(ceiling, key=ceiling.get)
-    # The literal offset-zero reading, at the first tau in the sweep, kept so
-    # the strict version of equation (40) is still recoverable. None when zero
-    # is not in the sweep; see run_t2.
+    def key(c):
+        return f"{c[0]}|{c[1]}"
+
+    def evaluate(candidate, fit_uids, val_uids):
+        tv, o = candidate
+        return _score_frames_to_segments(
+            x_by_tau[tv], y, uid, corpus, labelset, hop, int(o),
+            _uid_mask(uid, fit_uids), seg_label, _uid_mask(seg_uid, val_uids),
+            alpha)
+
+    chosen, grid = select_on_folds(candidates, folds, evaluate, key=key)
+    best_tv, best_o = chosen[0], int(chosen[1])
+
+    temporal = {f"{tv}": {str(o): _score_frames_to_segments(
+        x_by_tau[tv], y, uid, corpus, labelset, hop, o, frame_train,
+        seg_label, seg_test, alpha) for o in offsets} for tv in taus}
+    a_temporal = temporal[f"{best_tv}"][str(best_o)]
+
+    if ceiling is None:
+        ceiling = ceiling_accuracies(
+            corpus, x_r2, labelset=labelset, hop=hop, offsets=offsets,
+            test_fraction=test_fraction, seed=seed, alpha=alpha,
+            n_folds=n_folds, c5_radius=c5_radius,
+            alignment_prediction=alignment_prediction)
+    a_ceiling = ceiling["accuracy"]
+
+    # C5 for the temporal condition: the offset profile at the selected
+    # tau_phi, on the validation folds that did the selecting and on test.
+    val_at_best_tau = {str(o): grid[key((best_tv, o))]["score"]
+                       for o in offsets}
+    flat_test = {(tv, o): temporal[f"{tv}"][str(o)]
+                 for tv in taus for o in offsets}
+    test_best = max(flat_test, key=flat_test.get)
+
     zero_t = temporal[f"{taus[0]}"].get("0")
+    zero_c = ceiling["test_profile"].get("0")
     n_test_seg = int(np.sum(seg_test & (seg_label != UNLABELLED)))
     floor = float(np.bincount(seg_label[seg_test & (seg_label != UNLABELLED)]
                               ).max() / max(1, n_test_seg))
@@ -568,27 +754,55 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
         "accuracy_count": a_count,
         "accuracy_rate": a_rate,
         "accuracy_temporal": temporal,
-        "accuracy_ceiling": ceiling,
-        "best_offset_temporal": best_t,
+        "accuracy_ceiling": ceiling["test_profile"],
+        "best_offset_temporal": best_o,
         "best_tau_temporal": best_tv,
-        "best_accuracy_temporal": flat_t[(best_tv, best_t)],
-        "best_offset_ceiling": best_c,
-        # Equation (40) two ways: at the literal offset zero, and with each
-        # frame-based condition at its own best alignment. Reported together
-        # because Q24 is open and the two readings differ.
-        "tii_at_zero": (temporal_information_index(zero_t, a_count,
-                                                   ceiling["0"])
-                        if zero_t is not None and "0" in ceiling else None),
-        "tii_at_best": temporal_information_index(
-            flat_t[(best_tv, best_t)], a_count, ceiling[best_c]),
+        "best_accuracy_temporal": a_temporal,
+        "best_offset_ceiling": ceiling["chosen_offset"],
+        "selection": {                                        # D71
+            "parameters": ["tau_phi", "offset"],
+            "chosen": {"tau_phi": best_tv, "offset": best_o},
+            "criterion": "segment accuracy",
+            "selected_on": "speaker-disjoint folds within the training split",
+            "n_folds": len(folds),
+            "folds": fold_sizes(folds, speaker_of),
+            "grid": grid,
+            "candidates": [list(c) for c in candidates],
+            "test_profile": {key(c): v for c, v in flat_test.items()},
+            "test_argmax": {"tau_phi": test_best[0], "offset": test_best[1]},
+            "test_score_at_selected": a_temporal,
+            "test_score_at_argmax": flat_test[test_best],
+            "selection_bias": flat_test[test_best] - a_temporal,
+            "predicted": alignment_prediction,
+            "ceiling": ceiling["selection"],
+        },
+        "c5_alignment": {                                     # C5, D70
+            "temporal": {
+                "validation": interior_maximum(val_at_best_tau, best_o,
+                                               radius=c5_radius),
+                "test": interior_maximum(temporal[f"{best_tv}"], best_o,
+                                         radius=c5_radius)},
+            "ceiling": ceiling["c5_alignment"],
+        },
+        # Equation (40) three ways: at the literal offset zero, at the selected
+        # operating point, and at the test argmax the pre-D71 code reported.
+        # The last is kept only so the size of that bias is on the record.
+        "tii_at_zero": (temporal_information_index(zero_t, a_count, zero_c)
+                        if zero_t is not None and zero_c is not None
+                        else None),
+        "tii_at_best": temporal_information_index(a_temporal, a_count,
+                                                  a_ceiling),
         "tii_at_best_using_rate": temporal_information_index(
-            flat_t[(best_tv, best_t)], a_rate, ceiling[best_c]),
+            a_temporal, a_rate, a_ceiling),
+        "tii_at_test_argmax": temporal_information_index(
+            flat_test[test_best], a_count,
+            max(v for v in ceiling["test_profile"].values())),
         # Equation (40)'s denominator, reported because the index alone cannot
         # be judged without it: a thin denominator makes a large index that
         # reads as a strong result and is seed noise.
-        "tii_denominator_at_zero": (ceiling["0"] - a_count
-                                    if "0" in ceiling else None),
-        "tii_denominator_at_best": ceiling[best_c] - a_count,
+        "tii_denominator_at_zero": (zero_c - a_count if zero_c is not None
+                                    else None),
+        "tii_denominator_at_best": a_ceiling - a_count,
         "majority_floor": floor,                          # C2
         "chance": labelset.chance,                        # C2
         "count_shuffled_accuracy": a_count_shuffled,      # C3
@@ -599,7 +813,7 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
         "n_segments_train": int(np.sum(seg_train & (seg_label != UNLABELLED))),
         "n_segments_test": n_test_seg,
         "n_features_count": int(counts.shape[1]),
-        "n_features_temporal": int(n_features_temporal),
+        "n_features_temporal": n_features_temporal,
         "n_features_ceiling": int(x_r2.shape[1]),
         "probe_settings": count_probe.settings,           # C4
         "featurisation": {"taus": list(taus), "hop": hop, "context": context,
@@ -616,8 +830,10 @@ def _per_utterance(values, uid, corpus):
 
 def run_t3(corpus, trains, *, tau=0.005, hop=0.010, context=0,
            test_fraction=0.3, seed=0, alpha=1e-4, offsets=(-2, -1, 0),
+           n_folds=3, c5_radius=2, alignment_prediction=None,
            tolerance=DEFAULT_TOLERANCE, label_tolerance_frames=1,
-           min_separation=0.020, n_thresholds=49, features=None):
+           min_separation=0.020, n_thresholds=49, n_thresholds_select=None,
+           features=None):
     """T3, boundary detection (proposal 4.3), on one operating point.
 
     The probe is binary logistic regression per frame — 6.2's rule for T1 and
@@ -625,13 +841,27 @@ def run_t3(corpus, trains, *, tau=0.005, hop=0.010, context=0,
     matched to the reference by `match_boundaries`, and scored by
     `score_boundaries`.
 
-    **The detection threshold is chosen on the training split and applied
-    unchanged to test.** It has to be chosen somehow: F-score at a single
-    operating point is meaningless without one, and 4.3 does not name it.
-    Choosing it on test would tune a free parameter against the number being
-    reported, which is the thing C5 and the fairness constraints exist to
-    prevent, and it would flatter every encoder by an amount depending on how
-    peaked its posterior happened to be.
+    **Two free parameters, both chosen off the reported number.** The detection
+    threshold is chosen on the fitting side and applied unchanged to the
+    scoring side: F-score at a single operating point is meaningless without
+    one, 4.3 names none, and choosing it on test would flatter every encoder by
+    an amount depending on how peaked its posterior happened to be. The
+    alignment offset is chosen the same way, on speaker-disjoint folds inside
+    the training split (D71) — until that decision it was chosen by maximising
+    the test F-score, which is the same fault the threshold rule was written to
+    avoid, one level up.
+
+    The threshold grid is taken from the posterior on the fitting utterances
+    alone, not the whole corpus. Deriving even the *range* of the sweep from
+    the scoring side is a small leak, and small leaks in a threshold are how a
+    detector scores above what it can actually do.
+
+    Inside the selection folds the threshold grid is deliberately coarser
+    (`n_thresholds_select`, a quarter of the reported grid by default). The
+    threshold is a nuisance parameter there: what a fold has to do is rank the
+    offsets against each other, and it dominates the cost of the whole sweep
+    because it re-runs the peak picker once per grid point per fold. The
+    reported figure is always computed at the full grid.
 
     `features=None` builds the equation (32) featurisation; passing an array
     instead scores any other frame-wise representation on the same task, which
@@ -641,6 +871,8 @@ def run_t3(corpus, trains, *, tau=0.005, hop=0.010, context=0,
     labelset = LabelSet(corpus.labels)
     split = speaker_disjoint_split(corpus, test_fraction=test_fraction,
                                    seed=seed)
+    speaker_of = {u.uid: u.speaker for u in corpus}
+    folds = speaker_folds(split.train, speaker_of, n_folds=n_folds, seed=seed)
 
     if features is None:
         x, _, uid = build_dataset(trains, corpus, labelset, tau, hop, context)
@@ -648,65 +880,82 @@ def run_t3(corpus, trains, *, tau=0.005, hop=0.010, context=0,
         x = features
         _, _, uid = build_dataset({u.uid: None for u in corpus}, corpus,
                                   labelset, tau, hop, context, labels_only=True)
-    train_mask = np.isin(uid, np.asarray(split.train, dtype=object))
 
     y = np.concatenate([
         boundary_labels(u, hop, tolerance_frames=label_tolerance_frames)
         for u in corpus])
+    by_uid = {u.uid: u for u in corpus}
+    offsets = tuple(int(o) for o in offsets)
 
-    train_utts = [u for u in corpus if u.uid in set(split.train)]
-    test_utts = [u for u in corpus if u.uid in set(split.test)]
+    n_select = int(n_thresholds_select or max(9, n_thresholds // 4))
 
-    def fit_and_score(y_all, offset):
+    def fit_and_score(y_all, offset, fit_uids, eval_uids, n_thr=None):
+        """Fit on `fit_uids`, pick the threshold there, score on `eval_uids`."""
         y_o = np.concatenate([shift_labels(y_all[uid == u.uid], offset)
                               for u in corpus])
-        keep = train_mask & (y_o != UNLABELLED)
+        fit_rows = _uid_mask(uid, fit_uids)
+        keep = fit_rows & (y_o != UNLABELLED)
         probe = LinearProbe(2, alpha=alpha).fit(x[keep], y_o[keep])
         posterior = probe.predict_proba(x)[:, 1]
         by_utt = dict(zip([u.uid for u in corpus],
                           _per_utterance(posterior, uid, corpus)))
+        fit_utts = [by_uid[u] for u in sorted(fit_uids)]
+        eval_utts = [by_uid[u] for u in sorted(eval_uids)]
 
-        # Threshold chosen on train, applied to test. Swept over the observed
-        # posterior range rather than [0, 1]: a probe whose posterior never
-        # exceeds 0.3 would otherwise be scored entirely at zero detections.
-        lo, hi = float(posterior.min()), float(posterior.max())
-        grid = np.linspace(lo, hi, n_thresholds)[:-1]
+        # Threshold chosen on the fitting side, applied to the scoring side.
+        # Swept over the posterior range observed there rather than [0, 1]: a
+        # probe whose posterior never exceeds 0.3 would otherwise be scored
+        # entirely at zero detections.
+        fit_post = posterior[fit_rows]
+        lo, hi = float(fit_post.min()), float(fit_post.max())
+        grid = np.linspace(lo, hi, int(n_thr or n_thresholds))[:-1]
         best_thr, best_f = grid[0] if grid.size else 0.5, -1.0
         for thr in grid:
             pred = [pick_peaks(by_utt[u.uid], hop, thr, min_separation)
-                    for u in train_utts]
-            f = score_boundaries(pred, [u.boundaries() for u in train_utts],
+                    for u in fit_utts]
+            f = score_boundaries(pred, [u.boundaries() for u in fit_utts],
                                  tolerance)["f_score"]
             if f > best_f:
                 best_thr, best_f = float(thr), f
 
-        pred_test = [pick_peaks(by_utt[u.uid], hop, best_thr, min_separation)
-                     for u in test_utts]
-        scored = score_boundaries(pred_test,
-                                  [u.boundaries() for u in test_utts],
+        pred_eval = [pick_peaks(by_utt[u.uid], hop, best_thr, min_separation)
+                     for u in eval_utts]
+        scored = score_boundaries(pred_eval,
+                                  [u.boundaries() for u in eval_utts],
                                   tolerance)
         scored["threshold"] = best_thr
         scored["train_f_score"] = best_f
         # The probe on its own, before any threshold or peak picker touches it.
-        test_mask = np.isin(uid, np.asarray(split.test, dtype=object))
-        valid = test_mask & (y_o != UNLABELLED)
+        eval_rows = _uid_mask(uid, eval_uids)
+        valid = eval_rows & (y_o != UNLABELLED)
         scored["frame_auc"] = frame_auc(posterior[valid], y_o[valid])
         return scored
 
-    by_offset = {str(o): fit_and_score(y, o) for o in offsets}
-    best = max(by_offset, key=lambda k: by_offset[k]["f_score"])
+    def evaluate(offset, fit_uids, val_uids):
+        return fit_and_score(y, int(offset), fit_uids, val_uids,
+                             n_thr=n_select)["f_score"]
+
+    chosen, grid = select_on_folds(offsets, folds, evaluate, key=str)
+    chosen = int(chosen)
+
+    by_offset = {str(o): fit_and_score(y, o, split.train, split.test)
+                 for o in offsets}
+    test_profile = {k: v["f_score"] for k, v in by_offset.items()}
+    test_best = max(test_profile, key=test_profile.get)
+    best = str(chosen)
 
     # C3 — permuted training labels. A detector fitted on shuffled boundaries
     # must not localise anything, and if it does the split leaks.
     rng = np.random.default_rng(seed + 991)
     y_shuffled = y.copy()
-    idx = np.flatnonzero(train_mask)
+    idx = np.flatnonzero(_uid_mask(uid, split.train))
     y_shuffled[idx] = y[rng.permutation(idx)]
-    shuffled = fit_and_score(y_shuffled, int(best))
+    shuffled = fit_and_score(y_shuffled, chosen, split.train, split.test)
 
     # C2 for a detection task — evenly spaced boundaries at the reference rate.
     # This is the strategy the R-value exists to penalise, so it is the floor
     # any reported F-score has to clear.
+    test_utts = [by_uid[u] for u in sorted(split.test)]
     baseline = score_boundaries(
         uniform_baseline([u.duration for u in test_utts],
                          [len(u.boundaries()) for u in test_utts]),
@@ -715,7 +964,7 @@ def run_t3(corpus, trains, *, tau=0.005, hop=0.010, context=0,
     return {
         "task": "T3",
         "by_offset": by_offset,
-        "best_offset": best,
+        "best_offset": chosen,
         "f_score": by_offset[best]["f_score"],
         "r_value": by_offset[best]["r_value"],
         "precision": by_offset[best]["precision"],
@@ -727,6 +976,28 @@ def run_t3(corpus, trains, *, tau=0.005, hop=0.010, context=0,
         "frame_auc": by_offset[best]["frame_auc"],
         "frame_auc_at_zero": (by_offset["0"]["frame_auc"]
                               if "0" in by_offset else None),
+        "selection": {                                         # D71
+            "parameters": ["offset", "threshold"],
+            "chosen": {"offset": chosen,
+                       "threshold": by_offset[best]["threshold"]},
+            "criterion": "boundary F-score",
+            "selected_on": "speaker-disjoint folds within the training split; "
+                           "threshold on the fitting side of each",
+            "n_folds": len(folds),
+            "folds": fold_sizes(folds, speaker_of),
+            "grid": grid,
+            "candidates": list(offsets),
+            "test_profile": test_profile,
+            "test_argmax_offset": int(test_best),
+            "test_score_at_selected": test_profile[best],
+            "test_score_at_argmax": test_profile[test_best],
+            "selection_bias": test_profile[test_best] - test_profile[best],
+            "predicted": alignment_prediction,
+        },
+        "c5_alignment": {                                      # C5, D70
+            "validation": interior_maximum(profile_scores(grid), chosen,
+                                           radius=c5_radius),
+            "test": interior_maximum(test_profile, chosen, radius=c5_radius)},
         "shuffled_f_score": shuffled["f_score"],           # C3
         "shuffled_r_value": shuffled["r_value"],           # C3
         "shuffled_frame_auc": shuffled["frame_auc"],       # C3
@@ -735,13 +1006,14 @@ def run_t3(corpus, trains, *, tau=0.005, hop=0.010, context=0,
         "lambda_events_per_s": (corpus_event_rate(trains, corpus)
                                 if features is None else 0.0),
         "n_test_utterances": len(test_utts),
-        "positive_frame_rate": float(np.mean(y[train_mask])),
+        "positive_frame_rate": float(np.mean(y[_uid_mask(uid, split.train)])),
         "settings": {"tolerance": tolerance,
                      "label_tolerance_frames": label_tolerance_frames,
                      "min_separation": min_separation,
                      "n_thresholds": n_thresholds,
+                     "n_thresholds_select": n_select,
                      "tau": tau, "hop": hop, "context": context,
-                     "threshold_selected_on": "train"},
+                     "threshold_selected_on": "fitting side"},
         "seconds": time.time() - t0,
     }
 
@@ -787,44 +1059,10 @@ def _per_utterance_pearson(pred, ref, utt_index, min_frames=5):
             len(values))
 
 
-def _select_ridge_alpha(x, y, groups, alphas, seed):
-    """Choose the ridge penalty on a speaker-disjoint split *inside* training.
-
-    A single fixed penalty cannot serve every operating point. At the lowest
-    budgets events are sparse, so many features have tiny variance,
-    standardisation turns them into large spikes, and the context-stacked
-    copies of them are near-collinear; a penalty negligible against a Gram
-    diagonal of order n then leaves the small eigendirections unregularised and
-    the predictions land hundreds of octaves out. Correlation survives that,
-    being scale-free, which is exactly why RMSE has to be watched alongside it.
-
-    Selected on held-out speakers within the training set, never on test:
-    tuning a penalty against the reported number is the thing C5 and the
-    fairness constraints exist to stop. Every condition is offered the same
-    grid, which is what C4's "identical regularisation" requires — identical
-    procedure, not identical value.
-    """
-    speakers = np.unique(groups)
-    if len(speakers) < 2 or len(alphas) == 1:
-        return float(alphas[0]), {}
-    rng = np.random.default_rng(seed + 17)
-    held = set(rng.permutation(speakers)[:max(1, len(speakers) // 3)].tolist())
-    val = np.array([g in held for g in groups])
-    if val.all() or not val.any():
-        return float(alphas[0]), {}
-
-    scores = {}
-    for a in alphas:
-        probe = RidgeProbe(alpha=float(a)).fit(x[~val], y[~val])
-        err = probe.predict(x[val]) - y[val]
-        scores[str(a)] = float(np.sqrt(np.mean(err ** 2)))
-    best = min(scores, key=scores.get)
-    return float(best), scores
-
-
 def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
            test_fraction=0.3, seed=0, alpha=1e-4, ridge_alpha=1.0,
-           ridge_alphas=None, offsets=(-2, -1, 0), ref=SEMITONE_REF_HZ,
+           ridge_alphas=None, offsets=(-2, -1, 0), n_folds=3, c5_radius=2,
+           alignment_prediction=None, ref=SEMITONE_REF_HZ,
            features=None, min_frames=5):
     """T2, fundamental frequency contour (proposal 4.2), on one operating point.
 
@@ -835,11 +1073,23 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
     Both the per-utterance and the pooled correlation are returned. The first
     is the headline; the gap between them is how much of the pooled figure is
     voice height rather than contour (Q32).
+
+    **Two free parameters, one grid, two criteria.** The ridge penalty and the
+    alignment offset are scored together on speaker-disjoint folds inside the
+    training split, from one pass of fits, and then chosen in a nesting that
+    respects what each is for. The penalty is chosen on validation RMSE,
+    because D59's failure — a prediction 468 octaves wide — is invisible to a
+    correlation, which is scale-free. The offset is then chosen on the
+    per-utterance correlation, because that is the headline being reported and
+    selecting an offset on RMSE would mean choosing for one quantity and
+    reporting another. Both grids are recorded (D71).
     """
     t0 = time.time()
     labelset = LabelSet(corpus.labels)
     split = speaker_disjoint_split(corpus, test_fraction=test_fraction,
                                    seed=seed)
+    speaker_of = {u.uid: u.speaker for u in corpus}
+    folds = speaker_folds(split.train, speaker_of, n_folds=n_folds, seed=seed)
 
     if features is None:
         x, _, uid = build_dataset(trains, corpus, labelset, tau, hop, context)
@@ -847,10 +1097,9 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
         x = features
         _, _, uid = build_dataset({u.uid: None for u in corpus}, corpus,
                                   labelset, tau, hop, context, labels_only=True)
-    train_mask = np.isin(uid, np.asarray(split.train, dtype=object))
-    test_mask = np.isin(uid, np.asarray(split.test, dtype=object))
+    train_mask = _uid_mask(uid, split.train)
+    test_mask = _uid_mask(uid, split.test)
 
-    speaker_of = {u.uid: u.speaker for u in corpus}
     contours, voiced_flags, utt_ids = [], [], []
     for u in corpus:
         s, v = f0_targets(u, hop, ref=ref)
@@ -858,8 +1107,10 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
         voiced_flags.append(v)
         utt_ids.append(np.full(len(s), u.uid, dtype=object))
     contour = np.concatenate(contours)
-    voiced = np.concatenate(voiced_flags)
     utt = np.concatenate(utt_ids)
+    offsets = tuple(int(o) for o in offsets)
+    alphas = [float(a) for a in (ridge_alphas if ridge_alphas
+                                 else [ridge_alpha])]
 
     def targets_at(offset):
         s_out = np.full(len(contour), np.nan)
@@ -876,27 +1127,25 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
             base += n
         return s_out, v_out, ok
 
-    def evaluate(offset, shuffle=False):
+    def score_at(offset, ridge, fit_mask, eval_mask, shuffle=False):
+        """Fit at one (offset, penalty) on `fit_mask`, score on `eval_mask`."""
         s, v, ok = targets_at(offset)
-        fit_rows = train_mask & ok & v & ~np.isnan(s)
-        test_rows = test_mask & ok & v & ~np.isnan(s)
+        fit_rows = fit_mask & ok & v & ~np.isnan(s)
+        eval_rows = eval_mask & ok & v & ~np.isnan(s)
+        if fit_rows.sum() < 2 or eval_rows.sum() < 2:
+            return None
         y = s.copy()
         if shuffle:
             rng = np.random.default_rng(seed + 991)
             idx = np.flatnonzero(fit_rows)
             y[idx] = s[rng.permutation(idx)]
 
-        chosen, alpha_scores = (
-            _select_ridge_alpha(x[fit_rows], y[fit_rows],
-                                np.array([speaker_of[u] for u in utt[fit_rows]]),
-                                ridge_alphas, seed)
-            if ridge_alphas else (ridge_alpha, {}))
-        probe = RidgeProbe(alpha=chosen).fit(x[fit_rows], y[fit_rows])
-        pred = probe.predict(x[test_rows])
-        truth = s[test_rows]
+        probe = RidgeProbe(alpha=float(ridge)).fit(x[fit_rows], y[fit_rows])
+        pred = probe.predict(x[eval_rows])
+        truth = s[eval_rows]
 
         per_utt, excluded, n_scored = _per_utterance_pearson(
-            pred, truth, utt[test_rows], min_frames=min_frames)
+            pred, truth, utt[eval_rows], min_frames=min_frames)
         pooled = (float(np.corrcoef(pred, truth)[0, 1])
                   if pred.size > 1 and np.std(pred) > 0 else float("nan"))
         rmse = float(np.sqrt(np.mean((pred - truth) ** 2)))
@@ -907,23 +1156,80 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
 
         return {"pearson_per_utterance": per_utt, "pearson_pooled": pooled,
                 "rmse_semitones": rmse, "floor_rmse_semitones": floor_rmse,
-                "n_test_frames": int(test_rows.sum()),
+                "n_test_frames": int(eval_rows.sum()),
                 "n_utterances_scored": n_scored,
                 "n_utterances_excluded": excluded,
-                "ridge_alpha_chosen": chosen,
-                "ridge_alpha_validation_rmse": alpha_scores,
+                "ridge_alpha_chosen": float(ridge),
                 "probe_settings": probe.settings}
 
-    by_offset = {str(o): evaluate(o) for o in offsets}
-    best = max(by_offset,
-               key=lambda k: (by_offset[k]["pearson_per_utterance"]
-                              if not np.isnan(
-                                  by_offset[k]["pearson_per_utterance"])
-                              else -np.inf))
-    shuffled = evaluate(int(best), shuffle=True)
+    candidates = [(o, a) for o in offsets for a in alphas]
+
+    def key(c):
+        return f"{int(c[0])}|{c[1]:g}"
+
+    def evaluate(candidate, fit_uids, val_uids):
+        o, a = candidate
+        r = score_at(o, a, _uid_mask(uid, fit_uids), _uid_mask(uid, val_uids))
+        if r is None:
+            return None
+        return {"pearson": r["pearson_per_utterance"],
+                "rmse": r["rmse_semitones"]}
+
+    def choose(grid):
+        """Penalty on RMSE within each offset, then offset on correlation."""
+        per_offset = {}
+        for o in offsets:
+            keys = [key((o, a)) for a in alphas]
+            by_rmse = {k: grid[k]["scores"]["rmse"] for k in keys
+                       if "rmse" in grid[k]["scores"]}
+            if not by_rmse:
+                continue
+            k = min(by_rmse, key=by_rmse.get)
+            if "pearson" in grid[k]["scores"]:
+                per_offset[k] = grid[k]["scores"]["pearson"]
+        if not per_offset:
+            return key(candidates[0])
+        return max(per_offset, key=per_offset.get)
+
+    chosen, grid = select_on_folds(candidates, folds, evaluate, key=key,
+                                   choose=choose)
+    chosen_offset, chosen_alpha = int(chosen[0]), float(chosen[1])
+
+    # Each offset's own validation-best penalty, so the test-side profile shows
+    # what that offset would have reported had it been the one selected.
+    alpha_for = {}
+    for o in offsets:
+        keys = [key((o, a)) for a in alphas]
+        by_rmse = {k: grid[k]["scores"]["rmse"] for k in keys
+                   if "rmse" in grid[k]["scores"]}
+        alpha_for[o] = (float(min(by_rmse, key=by_rmse.get).split("|")[1])
+                        if by_rmse else chosen_alpha)
+
+    by_offset = {str(o): score_at(o, alpha_for[o], train_mask, test_mask)
+                 for o in offsets}
+    best = str(chosen_offset)
+    test_profile = {k: (v["pearson_per_utterance"] if v else None)
+                    for k, v in by_offset.items()}
+    scored = {k: v for k, v in test_profile.items()
+              if v is not None and not np.isnan(v)}
+    test_best = max(scored, key=scored.get) if scored else best
+    val_profile = {str(o): grid[key((o, alpha_for[o]))]["scores"].get("pearson")
+                   for o in offsets}
+    # Q38: the offset validation RMSE would have chosen, recorded beside the
+    # one the headline correlation chose. On this corpus they disagree and the
+    # correlation profile is nearly flat, so the alternative reading has to be
+    # recoverable from the result file without re-running the sweep.
+    val_rmse = {str(o): grid[key((o, alpha_for[o]))]["scores"].get("rmse")
+                for o in offsets}
+    scored_rmse = {k: v for k, v in val_rmse.items() if v is not None}
+    rmse_offset = (int(min(scored_rmse, key=scored_rmse.get))
+                   if scored_rmse else chosen_offset)
+
+    shuffled = score_at(chosen_offset, chosen_alpha, train_mask, test_mask,
+                        shuffle=True)
 
     # Voicing, reported separately per 4.2. All valid frames, not just voiced.
-    s0, v0, ok0 = targets_at(int(best))
+    s0, v0, ok0 = targets_at(chosen_offset)
     vp = LinearProbe(2, alpha=alpha).fit(x[train_mask & ok0],
                                          v0[train_mask & ok0].astype(np.int64))
     v_true = v0[test_mask & ok0].astype(np.int64)
@@ -933,7 +1239,7 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
     return {
         "task": "T2",
         "by_offset": by_offset,
-        "best_offset": best,
+        "best_offset": chosen_offset,
         "pearson_per_utterance": by_offset[best]["pearson_per_utterance"],
         "pearson_pooled": by_offset[best]["pearson_pooled"],
         "rmse_semitones": by_offset[best]["rmse_semitones"],
@@ -944,10 +1250,42 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
         # guaranteed and raised a KeyError the first time one differed.
         "pearson_per_utterance_at_zero":
             (by_offset["0"]["pearson_per_utterance"]
-             if "0" in by_offset else None),
+             if by_offset.get("0") else None),
+        "selection": {                                          # D71
+            "parameters": ["offset", "ridge_alpha"],
+            "chosen": {"offset": chosen_offset,
+                       "ridge_alpha": chosen_alpha},
+            "criterion": "ridge_alpha on validation RMSE within each offset, "
+                         "then offset on mean within-utterance Pearson r",
+            "selected_on": "speaker-disjoint folds within the training split",
+            "n_folds": len(folds),
+            "folds": fold_sizes(folds, speaker_of),
+            "grid": grid,
+            "candidates": [[o, a] for o, a in candidates],
+            "ridge_alpha_by_offset": {str(o): alpha_for[o] for o in offsets},
+            "validation_pearson_by_offset": val_profile,
+            "validation_rmse_by_offset": val_rmse,
+            "rmse_selected_offset": rmse_offset,                    # Q38
+            "score_at_rmse_selected_offset": test_profile.get(str(rmse_offset)),
+            "test_profile": test_profile,
+            "test_argmax_offset": int(test_best),
+            "test_score_at_selected": test_profile[best],
+            "test_score_at_argmax": test_profile[test_best],
+            "selection_bias": ((test_profile[test_best] - test_profile[best])
+                               if test_profile[best] is not None
+                               and test_profile[test_best] is not None
+                               else None),
+            "predicted": alignment_prediction,
+        },
+        "c5_alignment": {                                       # C5, D70
+            "validation": interior_maximum(val_profile, chosen_offset,
+                                           radius=c5_radius),
+            "test": interior_maximum(test_profile, chosen_offset,
+                                     radius=c5_radius)},
         "shuffled_pearson_per_utterance":
-            shuffled["pearson_per_utterance"],                  # C3
-        "shuffled_pearson_pooled": shuffled["pearson_pooled"],  # C3
+            (shuffled["pearson_per_utterance"] if shuffled else None),   # C3
+        "shuffled_pearson_pooled":
+            (shuffled["pearson_pooled"] if shuffled else None),          # C3
         "voicing_accuracy": voicing_acc,
         "voicing_floor": voicing_floor,                         # C2
         "split": split.as_dict(),                               # C4
@@ -955,11 +1293,12 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
                                 if features is None else 0.0),
         "n_utterances_scored": by_offset[best]["n_utterances_scored"],
         "n_utterances_excluded": by_offset[best]["n_utterances_excluded"],
-        "ridge_alpha_chosen": by_offset[best]["ridge_alpha_chosen"],
+        "ridge_alpha_chosen": chosen_alpha,
         "settings": {"tau": tau, "hop": hop, "context": context,
                      "ridge_alpha": ridge_alpha,
-                     "ridge_alphas": list(ridge_alphas) if ridge_alphas else None,
-                     "ridge_alpha_selected_on": "held-out speakers within train",
+                     "ridge_alphas": list(alphas),
+                     "ridge_alpha_selected_on":
+                         "speaker-disjoint folds within the training split",
                      "semitone_ref_hz": ref,
                      "min_frames_per_utterance": min_frames,
                      "headline": "pearson_per_utterance"},

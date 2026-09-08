@@ -13,7 +13,7 @@ approximation in between.
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-02
-Last modified: 2026-09-05
+Last modified: 2026-09-08
 """
 import numpy as np
 from scipy.signal import butter, fftconvolve, hilbert, sosfilt
@@ -246,6 +246,28 @@ class Filterbank:
             f"envelope method {method!r} declares no group delay, so "
             "compensate_group_delay=True cannot be honoured for it (SPEC "
             "section 3, D24). Declare its lag in _envelope_stage_lag.")
+
+    def declared_lag(self, drive_kind="envelope", envelope="hilbert",
+                     f_cut=1000.0, lowpass_order=4):
+        """Total lag the front end declares for this path, per channel, seconds.
+
+        The same sum `compensate_group_delay` applies under D24 — the
+        filterbank's own group delay plus every declared lag in the envelope
+        path — exposed rather than left private because it is also what
+        predicts the label alignment offset (D69). A path whose lag can be
+        stated is a path whose optimal alignment can be predicted before any
+        probe is fitted, which is what turns the offset sweep into a check on
+        two independently computed quantities instead of a free parameter.
+
+        Zero when `compensate_group_delay` is set, since the path has then
+        already been advanced by exactly this amount, to the nearest sample.
+        """
+        if self.compensate_group_delay:
+            return np.zeros(self.n_channels, dtype=np.float64)
+        lag = np.asarray(self.group_delays, dtype=np.float64)
+        if drive_kind == "subband":
+            return lag
+        return lag + self._envelope_stage_lag(envelope, f_cut, lowpass_order)
 
     def envelope(self, audio, method="hilbert", f_cut=1000.0, lowpass_order=4):
         """Subband envelopes, equation (8) or (9).

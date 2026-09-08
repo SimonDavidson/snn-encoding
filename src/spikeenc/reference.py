@@ -31,7 +31,7 @@ result:
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-07
-Last modified: 2026-09-07
+Last modified: 2026-09-08
 """
 import numpy as np
 
@@ -100,6 +100,28 @@ def frame_signal(audio, sample_rate, n_frames, frame=0.025, hop=0.010,
         if hi > lo:
             out[k, lo - s:hi - s] = audio[lo:hi]
     return out
+
+
+def mel_alignment_prediction(frame=0.025, hop=0.010, alignment="causal",
+                             window="hamming"):
+    """The label alignment offset R2's analysis window predicts (D69).
+
+    R2 has a declared lag of its own, and it is not the front end's: the
+    causal window of D52 ends at the frame instant, so its energy is centred
+    half a window earlier and a frame at `t` describes speech around
+    `t - frame/2`. A centred window has no such lag. The symmetric taper does
+    not move the centroid, so the window shape does not enter.
+
+    Reported beside R2's selected offset for the same reason the gammatone
+    prediction is reported beside a spiking one: it makes the sweep a check on
+    a quantity computed without fitting anything, rather than a free parameter.
+    """
+    lag = 0.5 * float(frame) if alignment == "causal" else 0.0
+    return {"analysis_window_lag_s": lag, "alignment": alignment,
+            "window": window, "hop": hop,
+            "by_tau": {"0": {"lag_s": lag,
+                             "offset": int(-np.round(lag / float(hop)))}},
+            "offset": int(-np.round(lag / float(hop)))}
 
 
 def mel_features(utterance, n_mels=40, frame=0.025, hop=0.010,

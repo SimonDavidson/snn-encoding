@@ -137,12 +137,12 @@ def test_tasks_accept_an_offset_sweep_without_zero(corpus, trains):
     so the sweep need not contain zero. Every task reported an 'at zero' figure
     by indexing it unconditionally, which raised the first time one did not."""
     from spikeenc.harness import run_t1, run_t2, run_t3
-    t1 = run_t1(corpus, trains, test_fraction=0.5, seed=0,
-                control_offsets=(-1,))
+    t1 = run_t1(corpus, trains, test_fraction=0.5, seed=0, offsets=(-1,))
     t2 = run_t2(corpus, trains, test_fraction=0.5, seed=0, offsets=(-2,))
     t3 = run_t3(corpus, trains, test_fraction=0.5, seed=0, offsets=(-1,),
                 n_thresholds=9)
     assert t1["accuracy"] == t1["accuracy"]          # not NaN
+    assert t1["best_offset"] == -1
     assert t2["pearson_per_utterance_at_zero"] is None
     assert t3["f_score_at_zero"] is None
     assert t3["frame_auc_at_zero"] is None
