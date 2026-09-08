@@ -141,7 +141,7 @@
             "tol": 1e-08
           },
           "reference": "R2",
-          "seconds": 37.34413027763367,
+          "seconds": 35.21021628379822,
           "shuffled_label_accuracy": 0.11141304347826086,
           "split": {
             "n_test": 9,
@@ -285,7 +285,7 @@
             "tol": 1e-08
           },
           "reference": "R2",
-          "seconds": 38.47549796104431,
+          "seconds": 29.98700976371765,
           "shuffled_label_accuracy": 0.11428571428571428,
           "split": {
             "n_test": 9,
@@ -429,7 +429,7 @@
             "tol": 1e-08
           },
           "reference": "R2",
-          "seconds": 33.811670541763306,
+          "seconds": 30.38155508041382,
           "shuffled_label_accuracy": 0.1697054698457223,
           "split": {
             "n_test": 9,
@@ -452,7 +452,7 @@
           }
         }
       ],
-      "seconds": 109.63888835906982
+      "seconds": 95.58603692054749
     },
     {
       "accuracy_by_seed": [
@@ -593,7 +593,7 @@
             "tol": 1e-08
           },
           "reference": "R2",
-          "seconds": 35.14064335823059,
+          "seconds": 30.77876615524292,
           "shuffled_label_accuracy": 0.11548913043478261,
           "split": {
             "n_test": 9,
@@ -737,7 +737,7 @@
             "tol": 1e-08
           },
           "reference": "R2",
-          "seconds": 35.24740242958069,
+          "seconds": 33.33135747909546,
           "shuffled_label_accuracy": 0.1469387755102041,
           "split": {
             "n_test": 9,
@@ -881,7 +881,7 @@
             "tol": 1e-08
           },
           "reference": "R2",
-          "seconds": 33.282459020614624,
+          "seconds": 31.726609706878662,
           "shuffled_label_accuracy": 0.11640953716690042,
           "split": {
             "n_test": 9,
@@ -904,7 +904,7 @@
           }
         }
       ],
-      "seconds": 103.67228031158447
+      "seconds": 95.83784294128418
     }
   ],
   "corpus": {

@@ -127,7 +127,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 89.11722445487976,
+          "seconds": 50.47557973861694,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -215,7 +215,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 95.24285578727722,
+          "seconds": 48.83526635169983,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -303,7 +303,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 93.51043486595154,
+          "seconds": 47.58920860290527,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -330,7 +330,7 @@
           "tii_denominator_at_zero": 0.16666666666666674
         }
       ],
-      "seconds": 290.5114150047302,
+      "seconds": 157.48290729522705,
       "target_lambda": 160.0,
       "tii_at_best": 0.19999999999999965,
       "tii_at_zero": -2.1944444444444455,
@@ -419,7 +419,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 105.16083812713623,
+          "seconds": 47.725632190704346,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -507,7 +507,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 91.7911913394928,
+          "seconds": 48.616737842559814,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -595,7 +595,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 104.67591261863708,
+          "seconds": 55.105021238327026,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -622,7 +622,7 @@
           "tii_denominator_at_zero": 0.05555555555555558
         }
       ],
-      "seconds": 315.1962311267853,
+      "seconds": 164.43032336235046,
       "target_lambda": 400.0,
       "tii_at_best": 0.1578947368421044,
       "tii_at_zero": -3.2666666666666613,
@@ -711,7 +711,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 95.9560272693634,
+          "seconds": 46.664836168289185,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -799,7 +799,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 97.39715623855591,
+          "seconds": 43.31832504272461,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -840,7 +840,7 @@
               "0": 0.7777777777777778
             },
             "0.005": {
-              "-1": 0.9305555555555556,
+              "-1": 0.9166666666666666,
               "-2": 0.9444444444444444,
               "0": 0.9166666666666666
             },
@@ -887,7 +887,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 101.13193535804749,
+          "seconds": 44.5184280872345,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -914,7 +914,7 @@
           "tii_denominator_at_zero": -0.01388888888888884
         }
       ],
-      "seconds": 307.32230520248413,
+      "seconds": 146.9976167678833,
       "target_lambda": 1000.0,
       "tii_at_best": -0.11111111111111437,
       "tii_at_zero": -9.400000000000057,
@@ -1003,7 +1003,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 58.21893763542175,
+          "seconds": 32.20065355300903,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -1091,7 +1091,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 58.25006556510925,
+          "seconds": 31.16885805130005,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -1179,7 +1179,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 57.65270471572876,
+          "seconds": 32.38480877876282,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -1206,7 +1206,7 @@
           "tii_denominator_at_zero": 0.0
         }
       ],
-      "seconds": 186.1819553375244,
+      "seconds": 109.14221024513245,
       "target_lambda": 2500.0,
       "tii_at_best": null,
       "tii_at_zero": null,
@@ -1295,7 +1295,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 62.29372191429138,
+          "seconds": 40.57671570777893,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -1383,7 +1383,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 65.17025899887085,
+          "seconds": 36.74135112762451,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -1471,7 +1471,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 66.67425847053528,
+          "seconds": 35.75399732589722,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -1498,7 +1498,7 @@
           "tii_denominator_at_zero": 0.0
         }
       ],
-      "seconds": 207.7731192111969,
+      "seconds": 122.16120028495789,
       "target_lambda": 6300.0,
       "tii_at_best": null,
       "tii_at_zero": null,
@@ -1587,7 +1587,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 80.26466155052185,
+          "seconds": 38.813891649246216,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -1675,7 +1675,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 75.43067693710327,
+          "seconds": 42.583898067474365,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -1763,7 +1763,7 @@
             "standardise": true,
             "tol": 1e-08
           },
-          "seconds": 75.13511276245117,
+          "seconds": 44.878851652145386,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -1790,7 +1790,7 @@
           "tii_denominator_at_zero": 0.01388888888888895
         }
       ],
-      "seconds": 247.55205512046814,
+      "seconds": 142.42602682113647,
       "target_lambda": 16000.0,
       "tii_at_best": 0.7999999999999952,
       "tii_at_zero": null,

@@ -1682,3 +1682,48 @@ correlation here is measured against a contour with little to track.
 4 gate — for which all three tasks and the four corruption operators of
 `corrupt.py` now exist, though Q28 says plainly that a P2 run on this corpus
 cannot settle the gate it exists for.
+
+## 2026-09-08 | session: implementation (sixth block)
+**Did:** Re-ran the four results that predated D58 and superseded them, closing
+the provenance gap flagged at the end of the previous block. Mechanical:
+committed configs, no code changed, run in dependency order because P1 and T3
+take their rate-parameter values from the T1 sweep's recorded result.
+
+**Nothing moved that changes anything.** Diffed field by field against the
+superseded entries rather than eyeballed:
+
+| result | change |
+|---|---|
+| `probe_e1_t1_synthetic` | Λ=160 accuracy 0.4837 → 0.4841. Five of six points bit-identical. **Rate parameters bit-identical at all six**, so P1's and T3's comparability against this sweep is preserved. |
+| `reference_r2_t1_synthetic` | bit-identical. R2's mel features have no zero-variance columns, so D58 drops nothing. |
+| `p1_count_only_e1_synthetic` | bit-identical, every count accuracy and every TII. |
+| `t3_boundary_e1_synthetic` | no F-score or R-value changed anywhere. Three conditions moved in the fourth decimal of frame AUC, and one *shuffled control* moved 0.4122 → 0.4088. |
+
+The largest movement in any headline figure across all four results is 0.0005,
+at one budget point of one of them, against a seed spread of 0.0169 there. No
+conclusion in any earlier entry is affected, and the manifest now carries nine
+superseded entries with the old values still visible.
+
+**Worth noting for its own sake:** the T1 sweep's calibrated `theta` values came
+back bit-identical, which they had to — `calibrate_rate_param` touches encoders
+and the front end and never a probe — but it is the property that makes P1 and
+T3 comparable against the sweep at all, and checking it cost one assertion.
+
+**Tests:** 173 passed, 2 failed, 1 skipped. Unchanged; no code touched this
+block.
+**Results written:** four ids re-recorded under supersede —
+`probe_e1_t1_synthetic`, `reference_r2_t1_synthetic`,
+`p1_count_only_e1_synthetic`, `t3_boundary_e1_synthetic`.
+**Blocked on:** the design-session round trip Simon is now taking. The
+priority order given to him: the free-parameter principle (Q22, Q24, Q27, Q30,
+Q34, and half of Q31 — six questions that are one question, since §6.1 already
+states the rule for τ_φ and the question is whether it generalises); then Q23
+(compression, blocks a declared sweep axis before the week-8 screen); then Q28
+(whether the stand-in gains formant transitions or P1/P2 wait for TIMIT); then
+Q31 (R2 bounds T1 but not T2 or T3); then Q19+Q20, which are cheap and are why
+CI is red, and Q25 shows that means none of the 173 tests has ever run in the
+clean environment CI exists to provide.
+**Next:** P2 as an explicit rehearsal — all three tasks exist and `corrupt.py`
+has the four operators §7.2 needs — held as a rehearsal and not the week-4 gate,
+per Q28. Nothing else should be built on the current answers until the
+free-parameter question comes back, since it could change the shape of every run.
