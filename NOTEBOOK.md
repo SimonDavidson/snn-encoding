@@ -1874,3 +1874,55 @@ nothing.
 (Q22, Q24, Q27, Q30, Q34 and half of Q31) comes back, since it could change the
 shape of every run recorded so far. §15 of the report puts that cluster first
 and says why, which is also the order Simon has for the round trip.
+
+## 2026-09-08 | session: implementation (ninth block)
+**Did:** Recorded three corrections owed to report v3, and stopped a rebuild
+from silently replacing a version that has been sent.
+
+**Simon found a genuine defect in v2 by reading the table.** The Drive column in
+§2 carries two meanings. `DRIVE_KIND` is declared only as `"envelope"` or
+`"subband"` (SPEC §4.1) and §1.2 says exactly that — "one of two things" — but
+the table shows a third value, `"audio"`, on E7, R1 and R2. None of those three
+is an `Encoder` subclass and none declares a `DRIVE_KIND` at all; for those rows
+the column silently changes meaning to "bypasses the shared front end". A reader
+who trusts §1.2 will read the third value as a typo.
+
+The elaboration owed for v3 is the signal chain itself: audio → gammatone
+filterbank → `x_c(t)` the subband waveform → envelope → `u_c(t)` the compressed
+envelope. Measured on one utterance to make it concrete: subband channel 4
+(centre 203 Hz) has 211 upward zero crossings per second and is negative half
+the time; channel 24 (centre 3603 Hz) has 3606. **The crossing rate of a subband
+is its centre frequency** — that is the carrier, and it is exactly what E5 exists
+to encode and what the envelope discards. The envelope of the same channel has
+zero crossings and never goes negative.
+
+**A near-miss worth recording, because the mechanism was invisible.** v2 had
+already gone to Oliver. Adding the pending list to the builder and running it
+rewrote `reports/spikeEncode_encoder_survey_v2.docx` — same size, 79923 bytes,
+but a different file, because **the front matter embeds the commit hash** and
+the commit had moved. Nothing about the narrative changed. I caught it only
+because `git status` listed the binary as modified, and had I not looked, the
+committed v2 would no longer have been the v2 in Oliver's inbox. The sent file
+is restored byte-for-byte from git.
+
+Both builders now refuse to overwrite an existing output without `--force`, with
+the reason in the error text. This is the same shape as every other mechanical
+guard added this week — the drop protocol that appends rather than copies, the
+controls that run unconditionally, the split that cannot be constructed leaking.
+Relying on remembering not to rebuild a sent document is exactly the kind of
+care that fails once and fails silently.
+
+**`PENDING_NEXT_VERSION` is printed at the end of every build**, so the three
+outstanding items are in front of whoever rebuilds at the moment they are
+actionable, rather than sitting in a notebook entry nobody re-reads. The other
+two: §13 needs re-running wholesale once the free-parameter cluster is answered,
+and E4's adaptation-ratio table is still marked "not yet registered in the
+manifest" and should be produced under a committed config like every other
+reported number, or dropped.
+
+**Tests:** unchanged, 184 passed, 2 failed, 1 skipped. No source under `src/`
+touched.
+**Results written:** none.
+**Blocked on:** the design-session round trip.
+**Next:** unchanged — nothing further built until the free-parameter cluster
+comes back.
