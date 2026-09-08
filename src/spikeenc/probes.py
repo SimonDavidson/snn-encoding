@@ -53,6 +53,7 @@ class LinearProbe:
         self.b = None
         self._mu = None
         self._sigma = None
+        self._keep = None
         self.n_iter_ = None
         self.converged_ = None
 
@@ -73,11 +74,16 @@ class LinearProbe:
         if fit:
             self._mu = x.mean(axis=0)
             sigma = x.std(axis=0)
-            # A feature constant over the training set carries no information
-            # and would divide by zero. Left at unit scale, which maps it to a
-            # constant column the intercept absorbs.
-            self._sigma = np.where(sigma > 0.0, sigma, 1.0)
-        return (x - self._mu) / self._sigma
+            # A feature with no variance over the training set carries no
+            # information, and is *dropped* rather than rescaled. Mapping its
+            # sigma to 1.0 leaves an all-zero column, which makes X'X exactly
+            # singular — and for a unipolar encoder that is not an edge case:
+            # `featurise` leaves the whole OFF half at zero by design, so half
+            # of every E1 feature vector is constant and cond(X'X) is infinite
+            # at every operating point.
+            self._keep = sigma > 0.0
+            self._sigma = sigma[self._keep]
+        return (x[:, self._keep] - self._mu[self._keep]) / self._sigma
 
     def _objective(self, theta, x, onehot, n_features):
         w = theta[:n_features * self.n_classes].reshape(n_features,
@@ -187,6 +193,7 @@ class RidgeProbe:
         self.intercept = None
         self._mu = None
         self._sigma = None
+        self._keep = None
 
     @property
     def settings(self):
@@ -201,8 +208,15 @@ class RidgeProbe:
         if fit:
             self._mu = x.mean(axis=0)
             sigma = x.std(axis=0)
-            self._sigma = np.where(sigma > 0.0, sigma, 1.0)
-        return (x - self._mu) / self._sigma
+            # Dropped, not rescaled — see LinearProbe._prepare. Ridge felt this
+            # far more sharply than the logistic probe: the zero columns make
+            # the Gram matrix singular, and with alpha small against a diagonal
+            # of order n the informative-but-collinear directions are then
+            # under-regularised enough to produce predictions off by hundreds
+            # of octaves.
+            self._keep = sigma > 0.0
+            self._sigma = sigma[self._keep]
+        return (x[:, self._keep] - self._mu[self._keep]) / self._sigma
 
     def fit(self, x, y):
         x = np.asarray(x, dtype=np.float64)

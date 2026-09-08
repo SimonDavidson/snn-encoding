@@ -15,7 +15,7 @@
   },
   "featurisation": {
     "tau": 0.005,
-    "hop": 0.010,
+    "hop": 0.01,
     "n_mels": 40,
     "frame": 0.025,
     "alignment": "causal"
@@ -25,11 +25,34 @@
     "semitone_ref_hz": 100.0,
     "min_frames_per_utterance": 5
   },
-  "contexts": [0, 5],
-  "target_lambdas": [160, 400, 2500, 16000],
-  "offsets": [-2, -1, 0],
-  "probe": {"alpha": 0.0001},
-  "split": {"test_fraction": 0.3},
-  "split_seeds": [0, 1, 2],
-  "predictions": ["P-03"]
+  "contexts": [
+    0,
+    5
+  ],
+  "target_lambdas": [
+    160,
+    400,
+    2500,
+    16000
+  ],
+  "offsets": [
+    -2,
+    -1,
+    0
+  ],
+  "probe": {
+    "alpha": 0.0001
+  },
+  "split": {
+    "test_fraction": 0.3
+  },
+  "split_seeds": [
+    0,
+    1,
+    2
+  ],
+  "predictions": [
+    "P-03"
+  ],
+  "supersede": true
 }
