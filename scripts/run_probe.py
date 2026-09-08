@@ -17,7 +17,7 @@ Usage:
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-07
-Last modified: 2026-09-07
+Last modified: 2026-09-08
 """
 import sys
 import time
@@ -25,7 +25,8 @@ import time
 import numpy as np
 
 from spikeenc.corpus import synthetic_corpus
-from spikeenc.harness import calibrate_rate_param, encode_corpus, run_t1
+from spikeenc.harness import (calibrate_rate_param, encode_corpus,
+                              encoder_class, predicted_alignment, run_t1)
 from spikeenc.provenance import load_config, record
 
 
@@ -55,8 +56,17 @@ def main(config_path):
     n_channels = cfg["n_channels"]
     encoder = cfg["encoder"]
 
+    offsets = tuple(cfg.get("offsets", (0,)))
+    prediction = predicted_alignment(
+        front_end, n_channels, cfg["corpus"]["sample_rate"],
+        encoder_class(encoder).DRIVE_KIND, [feat["tau"]], feat["hop"])
+
     print(f"{corpus.name}: {len(corpus)} utterances, "
           f"{corpus.total_duration:.1f} s, {len(corpus.speakers)} speakers")
+    predicted = prediction["by_tau"][f"{feat['tau']}"]["offset"]
+    print(f"alignment offset swept over {list(offsets)}, selected on "
+          f"{cfg.get('n_folds', 3)} speaker-disjoint folds inside train "
+          f"(D71); declared lags predict {predicted}")
 
     points = []
     for target in cfg["target_lambda"]:
@@ -77,9 +87,10 @@ def main(config_path):
         runs = [run_t1(corpus, trains, tau=feat["tau"], hop=feat["hop"],
                        context=feat.get("context", 0),
                        test_fraction=cfg["split"]["test_fraction"], seed=s,
-                       alpha=cfg["probe"]["alpha"],
-                       control_offsets=tuple(cfg.get("control_offsets",
-                                                     (-1, 1))))
+                       alpha=cfg["probe"]["alpha"], offsets=offsets,
+                       n_folds=cfg.get("n_folds", 3),
+                       c5_radius=cfg.get("c5_radius", 2),
+                       alignment_prediction=prediction)
                 for s in cfg["split_seeds"]]
 
         acc = [r["accuracy"] for r in runs]
@@ -91,6 +102,13 @@ def main(config_path):
             "accuracy_mean": float(np.mean(acc)),
             "accuracy_std": float(np.std(acc, ddof=1)) if len(acc) > 1 else 0.0,
             "accuracy_by_seed": acc,
+            "offset_by_seed": [r["best_offset"] for r in runs],
+            "predicted_offset": predicted,
+            "selection_bias_by_seed": [r["selection"]["selection_bias"]
+                                       for r in runs],
+            "c5_interior_maximum_by_seed": [
+                r["c5_alignment"]["validation"]["interior_maximum"]
+                for r in runs],
             "runs": runs,
             "seconds": time.time() - t0,
         }
@@ -99,7 +117,9 @@ def main(config_path):
               f"={value:.5g}): accuracy {point['accuracy_mean']:.4f} "
               f"+/- {point['accuracy_std']:.4f}, floor "
               f"{runs[0]['majority_floor']:.4f}, shuffled "
-              f"{np.mean([r['shuffled_label_accuracy'] for r in runs]):.4f} "
+              f"{np.mean([r['shuffled_label_accuracy'] for r in runs]):.4f}, "
+              f"offsets {point['offset_by_seed']} "
+              f"(predicted {point['predicted_offset']}) "
               f"[{point['seconds']:.0f} s]")
 
     values = {

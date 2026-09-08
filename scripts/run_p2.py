@@ -46,7 +46,7 @@ def score_all(corpus, trains, cfg, offsets):
                 context=cfg["contexts"]["T1"],
                 test_fraction=cfg["split"]["test_fraction"], seed=seed,
                 alpha=cfg["probe"]["alpha"],
-                control_offsets=(offsets["T1"],))
+                offsets=(offsets["T1"],))
     t2 = run_t2(corpus, trains, tau=feat["tau"], hop=feat["hop"],
                 context=cfg["contexts"]["T2"],
                 test_fraction=cfg["split"]["test_fraction"], seed=seed,
@@ -86,36 +86,31 @@ def main(config_path):
           f"E1 at Lambda = {point['achieved_lambda']:.0f}")
     print("REHEARSAL: this corpus cannot settle the week 4 gate (Q28)")
 
-    # Alignment: taken from the clean condition of the first seed, then held.
+    # Alignment: selected on the clean condition of the first seed, then held
+    # (D62). All three tasks now select the offset the same way — on
+    # speaker-disjoint folds inside the training split (D71) — so the scan is
+    # one call each and reads `best_offset` from each of them.
     cfg["_seed"] = cfg["split_seeds"][0]
-    probe_offsets = cfg["offsets"]
-    scan = {}
-    for task, run in (("T1", run_t1), ("T3", run_t3)):
-        r = run(corpus, trains, tau=cfg["featurisation"]["tau"],
-                hop=cfg["featurisation"]["hop"],
-                context=cfg["contexts"][task],
-                test_fraction=cfg["split"]["test_fraction"],
-                seed=cfg["_seed"], alpha=cfg["probe"]["alpha"],
-                **({"control_offsets": tuple(probe_offsets)} if task == "T1"
-                   else {"offsets": tuple(probe_offsets),
-                         "tolerance": cfg["t3"]["tolerance"],
-                         "label_tolerance_frames":
-                             cfg["t3"]["label_tolerance_frames"],
-                         "min_separation": cfg["t3"]["min_separation"],
-                         "n_thresholds": cfg["t3"]["n_thresholds"]}))
-        if task == "T1":
-            by = dict(r["misaligned_accuracy"]); by["0"] = r["accuracy"]
-            scan[task] = int(max(by, key=by.get))
-        else:
-            scan[task] = int(r["best_offset"])
-    r2t = run_t2(corpus, trains, tau=cfg["featurisation"]["tau"],
-                 hop=cfg["featurisation"]["hop"], context=cfg["contexts"]["T2"],
-                 test_fraction=cfg["split"]["test_fraction"],
-                 seed=cfg["_seed"], alpha=cfg["probe"]["alpha"],
-                 ridge_alphas=cfg["t2"]["ridge_alphas"],
-                 offsets=tuple(probe_offsets))
-    scan["T2"] = int(r2t["best_offset"])
-    print(f"alignment fixed at clean best: {scan}")
+    probe_offsets = tuple(cfg["offsets"])
+    n_folds = cfg.get("n_folds", 3)
+    common = dict(tau=cfg["featurisation"]["tau"],
+                  hop=cfg["featurisation"]["hop"],
+                  test_fraction=cfg["split"]["test_fraction"],
+                  seed=cfg["_seed"], alpha=cfg["probe"]["alpha"],
+                  offsets=probe_offsets, n_folds=n_folds)
+    clean = {
+        "T1": run_t1(corpus, trains, context=cfg["contexts"]["T1"], **common),
+        "T2": run_t2(corpus, trains, context=cfg["contexts"]["T2"],
+                     ridge_alphas=cfg["t2"]["ridge_alphas"], **common),
+        "T3": run_t3(corpus, trains, context=cfg["contexts"]["T3"],
+                     tolerance=cfg["t3"]["tolerance"],
+                     label_tolerance_frames=cfg["t3"]["label_tolerance_frames"],
+                     min_separation=cfg["t3"]["min_separation"],
+                     n_thresholds=cfg["t3"]["n_thresholds"], **common),
+    }
+    scan = {t: int(r["best_offset"]) for t, r in clean.items()}
+    print(f"alignment fixed at clean best (selected on {n_folds} folds "
+          f"inside train): {scan}")
 
     grid = corruption_grid(
         jitter_sigmas=tuple(cfg["p2"]["jitter_sigmas"]),
@@ -168,7 +163,9 @@ def main(config_path):
                    **cfg["corpus"]},
         "n_channels": cfg["n_channels"], "front_end": source["front_end"],
         "featurisation": cfg["featurisation"], "contexts": cfg["contexts"],
-        "alignment_offsets": scan, "probe": cfg["probe"],
+        "alignment_offsets": scan,
+        "alignment_selection": {t: r["selection"] for t, r in clean.items()},
+        "probe": cfg["probe"],
         "split": cfg["split"], "split_seeds": cfg["split_seeds"],
         "corruption_seed": cfg["corruption_seed"],
         "conditions": conditions,

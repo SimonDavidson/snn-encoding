@@ -26,9 +26,13 @@
     ]
   },
   "offsets": [
+    -4,
+    -3,
     -2,
     -1,
-    0
+    0,
+    1,
+    2
   ],
   "probe": {
     "alpha": 0.0001
@@ -44,5 +48,7 @@
   "predictions": [
     "P-06"
   ],
-  "supersede": true
+  "supersede": true,
+  "n_folds": 7,
+  "c5_radius": 2
 }

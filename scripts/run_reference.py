@@ -18,7 +18,7 @@ Usage:
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-07
-Last modified: 2026-09-07
+Last modified: 2026-09-08
 """
 import sys
 import time
@@ -27,7 +27,8 @@ import numpy as np
 
 from spikeenc.harness import run_t1_reference
 from spikeenc.provenance import load_config, record
-from spikeenc.reference import feature_bandwidth_bps
+from spikeenc.reference import (feature_bandwidth_bps,
+                                mel_alignment_prediction)
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
 from run_probe import build_corpus  # noqa: E402  — one corpus builder, not two
@@ -44,9 +45,16 @@ def main(config_path):
           f"window, {feat['hop'] * 1000:.0f} ms hop, context "
           f"{feat.get('context', 0)}")
 
+    offsets = tuple(cfg.get("offsets", (0,)))
+    print(f"alignment offset swept over {list(offsets)}, selected on "
+          f"{cfg.get('n_folds', 3)} speaker-disjoint folds inside train (D71)")
+
     conditions = []
     for alignment in cfg["alignments"]:
         t0 = time.time()
+        prediction = mel_alignment_prediction(frame=feat["frame"],
+                                              hop=feat["hop"],
+                                              alignment=alignment)
         runs = [run_t1_reference(
             corpus, n_mels=feat["n_mels"], frame=feat["frame"],
             hop=feat["hop"], alignment=alignment,
@@ -55,22 +63,33 @@ def main(config_path):
             test_fraction=cfg["split"]["test_fraction"], seed=s,
             alpha=cfg["probe"]["alpha"],
             bits_per_feature=cfg.get("bits_per_feature", 32),
-            control_offsets=tuple(cfg.get("control_offsets", (-1, 1))))
+            offsets=offsets, n_folds=cfg.get("n_folds", 3),
+            c5_radius=cfg.get("c5_radius", 2),
+            alignment_prediction=prediction)
             for s in cfg["split_seeds"]]
 
         acc = [r["accuracy"] for r in runs]
-        offsets = {k: float(np.mean([r["misaligned_accuracy"][k] for r in runs]))
-                   for k in runs[0]["misaligned_accuracy"]}
-        best = max({**offsets, "0": float(np.mean(acc))}.items(),
-                   key=lambda kv: kv[1])
+        # The test-side profile, averaged over seeds. Reported, never selected
+        # on: each run's offset was chosen on folds inside its own training
+        # split (D71), and the gap between the two is recorded as the bias.
+        profile = {k: float(np.mean([r["selection"]["test_profile"][k]
+                                     for r in runs]))
+                   for k in runs[0]["selection"]["test_profile"]}
         cond = {
             "alignment": alignment,
             "accuracy_mean": float(np.mean(acc)),
             "accuracy_std": float(np.std(acc, ddof=1)) if len(acc) > 1 else 0.0,
             "accuracy_by_seed": acc,
-            "offset_profile": offsets,
-            "best_offset": best[0],
-            "best_offset_accuracy": best[1],
+            "offset_profile": profile,
+            "offset_by_seed": [r["best_offset"] for r in runs],
+            "predicted_offset": prediction["offset"],
+            "selection_bias_by_seed": [r["selection"]["selection_bias"]
+                                       for r in runs],
+            "c5_interior_maximum_by_seed": [
+                r["c5_alignment"]["validation"]["interior_maximum"]
+                for r in runs],
+            "test_argmax_offset": max(profile, key=profile.get),
+            "test_argmax_accuracy": max(profile.values()),
             "runs": runs,
             "seconds": time.time() - t0,
         }
@@ -79,7 +98,8 @@ def main(config_path):
               f"+/- {cond['accuracy_std']:.4f}, floor "
               f"{runs[0]['majority_floor']:.4f}, shuffled "
               f"{np.mean([r['shuffled_label_accuracy'] for r in runs]):.4f}, "
-              f"best offset {best[0]} at {best[1]:.4f} "
+              f"offsets {cond['offset_by_seed']} "
+              f"(predicted {cond['predicted_offset']}) "
               f"[{cond['seconds']:.0f} s]")
 
     values = {

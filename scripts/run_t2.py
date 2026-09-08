@@ -24,9 +24,10 @@ from pathlib import Path
 
 import numpy as np
 
-from spikeenc.harness import encode_corpus, run_t2
+from spikeenc.harness import (encode_corpus, encoder_class,
+                              predicted_alignment, run_t2)
 from spikeenc.provenance import load_config, record, repo_root
-from spikeenc.reference import mel_features
+from spikeenc.reference import mel_alignment_prediction, mel_features
 from spikeenc.tasks import stack_context
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -46,6 +47,17 @@ def main(config_path):
           f"{voiced_frac:.1%} voiced frames")
     print(f"context swept over {cfg['contexts']}, headline is the mean "
           f"within-utterance Pearson r")
+    spiking_prediction = predicted_alignment(
+        source["front_end"], cfg["n_channels"], cfg["corpus"]["sample_rate"],
+        encoder_class(cfg["encoder"]).DRIVE_KIND, [feat["tau"]], feat["hop"])
+    r2_prediction = mel_alignment_prediction(frame=feat["frame"],
+                                             hop=feat["hop"],
+                                             alignment=feat["alignment"])
+    print(f"offset swept over {cfg['offsets']}, selected on "
+          f"{cfg.get('n_folds', 3)} speaker-disjoint folds inside train "
+          f"(D71); declared lags predict "
+          f"{spiking_prediction['by_tau'][f'{feat["tau"]}']['offset']} for "
+          f"E-conditions and {r2_prediction['offset']} for R2")
 
     def call(trains, context, features=None):
         return [run_t2(corpus, trains, tau=feat["tau"], hop=feat["hop"],
@@ -56,7 +68,13 @@ def main(config_path):
                        ridge_alphas=t2.get("ridge_alphas"),
                        ref=t2["semitone_ref_hz"],
                        min_frames=t2["min_frames_per_utterance"],
-                       offsets=tuple(cfg["offsets"]), features=features)
+                       offsets=tuple(cfg["offsets"]),
+                       n_folds=cfg.get("n_folds", 3),
+                       c5_radius=cfg.get("c5_radius", 2),
+                       alignment_prediction=(r2_prediction if features
+                                             is not None
+                                             else spiking_prediction),
+                       features=features)
                 for s in cfg["split_seeds"]]
 
     def summarise(runs, label, context, lam):
@@ -73,6 +91,15 @@ def main(config_path):
                "voicing_accuracy": mean("voicing_accuracy"),
                "voicing_floor": mean("voicing_floor"),
                "ridge_alpha_chosen": [r["ridge_alpha_chosen"] for r in runs],
+               "offset_by_seed": [r["best_offset"] for r in runs],
+               "predicted_offset": runs[0]["selection"]["predicted"]["by_tau"][
+                   next(iter(runs[0]["selection"]["predicted"]["by_tau"]))
+               ]["offset"],
+               "selection_bias_by_seed": [r["selection"]["selection_bias"]
+                                          for r in runs],
+               "c5_interior_maximum_by_seed": [
+                   r["c5_alignment"]["validation"]["interior_maximum"]
+                   for r in runs],
                "pearson_std": float(np.nanstd(
                    [r["pearson_per_utterance"] for r in runs], ddof=1)),
                "runs": runs}
@@ -84,7 +111,9 @@ def main(config_path):
               f"{out['rmse_semitones']:.3f} st vs floor "
               f"{out['floor_rmse_semitones']:.3f}  voicing "
               f"{out['voicing_accuracy']:.4f}  shuffled r/utt "
-              f"{out['shuffled_pearson_per_utterance']:+.4f}")
+              f"{out['shuffled_pearson_per_utterance']:+.4f}  offsets "
+              f"{out['offset_by_seed']} (pred {out['predicted_offset']}) "
+              f"alpha {out['ridge_alpha_chosen']}")
         return out
 
     conditions = []

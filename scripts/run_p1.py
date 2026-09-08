@@ -15,7 +15,7 @@ Usage:
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-07
-Last modified: 2026-09-07
+Last modified: 2026-09-08
 """
 import json
 import sys
@@ -25,8 +25,10 @@ from pathlib import Path
 import numpy as np
 
 from spikeenc.harness import (ceiling_accuracies, encode_corpus,
-                              mel_dataset, run_p1)
+                              encoder_class, mel_dataset,
+                              predicted_alignment, run_p1)
 from spikeenc.provenance import load_config, record, repo_root
+from spikeenc.reference import mel_alignment_prediction
 from spikeenc.segments import temporal_information_index
 from spikeenc.tasks import LabelSet
 
@@ -69,14 +71,32 @@ def main(config_path):
                         hop=feat["hop"], alignment=feat["alignment"],
                         context=feat.get("context", 0))
     print(f"tau_phi swept over {feat['taus']} (section 6.1)")
+    r2_prediction = mel_alignment_prediction(frame=feat["frame"],
+                                             hop=feat["hop"],
+                                             alignment=feat["alignment"])
+    spiking_prediction = predicted_alignment(
+        source["front_end"], cfg["n_channels"], cfg["corpus"]["sample_rate"],
+        encoder_class(cfg["encoder"]).DRIVE_KIND, feat["taus"], feat["hop"])
+    print(f"offset swept over {list(offsets)}, selected jointly with tau_phi "
+          f"on {cfg.get('n_folds', 3)} speaker-disjoint folds inside train "
+          f"(D71); declared lags predict "
+          + ", ".join(f"tau {k}: {v['offset']}"
+                      for k, v in spiking_prediction["by_tau"].items())
+          + f", R2: {r2_prediction['offset']}")
     ceilings = {}
     for s in cfg["split_seeds"]:
         ceilings[s] = ceiling_accuracies(
             corpus, mel_x, labelset=labelset, hop=feat["hop"],
             offsets=offsets, test_fraction=cfg["split"]["test_fraction"],
-            seed=s, alpha=cfg["probe"]["alpha"])
-        print(f"  ceiling (seed {s}): "
-              + ", ".join(f"{k}:{v:.4f}" for k, v in ceilings[s].items()))
+            seed=s, alpha=cfg["probe"]["alpha"],
+            n_folds=cfg.get("n_folds", 3),
+            c5_radius=cfg.get("c5_radius", 2),
+            alignment_prediction=r2_prediction)
+        print(f"  ceiling (seed {s}): selected offset "
+              f"{ceilings[s]['chosen_offset']} at "
+              f"{ceilings[s]['accuracy']:.4f}; profile "
+              + ", ".join(f"{k}:{v:.4f}"
+                          for k, v in ceilings[s]["test_profile"].items()))
 
     points = []
     for p in source["points"]:
@@ -91,16 +111,25 @@ def main(config_path):
                        alpha=cfg["probe"]["alpha"], offsets=offsets,
                        n_mels=feat["n_mels"], frame=feat["frame"],
                        alignment=feat["alignment"], mel_x=mel_x,
+                       n_folds=cfg.get("n_folds", 3),
+                       c5_radius=cfg.get("c5_radius", 2),
+                       alignment_prediction=spiking_prediction,
                        ceiling=ceilings[s])
                 for s in cfg["split_seeds"]]
 
         count = [r["accuracy_count"] for r in runs]
         rate = [r["accuracy_rate"] for r in runs]
         best_t = [r["best_accuracy_temporal"] for r in runs]
-        best_c = [max(r["accuracy_ceiling"].values()) for r in runs]
-        zero_t = [r["accuracy_temporal"][f'{feat["taus"][0]}']["0"]
+        # The ceiling at *its* selected offset, not at the best it reached on
+        # test: equation (40)'s denominator is a free parameter of R2's like
+        # any other, and D71 applies to it (see `ceiling_accuracies`).
+        best_c = [r["accuracy_ceiling"][str(r["best_offset_ceiling"])]
                   for r in runs]
-        zero_c = [r["accuracy_ceiling"]["0"] for r in runs]
+        zero_t = [r["accuracy_temporal"][f'{feat["taus"][0]}']["0"]
+                  for r in runs
+                  if "0" in r["accuracy_temporal"][f'{feat["taus"][0]}']]
+        zero_c = [r["accuracy_ceiling"]["0"] for r in runs
+                  if "0" in r["accuracy_ceiling"]]
 
         point = {
             "target_lambda": p["target_lambda"],
@@ -110,11 +139,27 @@ def main(config_path):
             "accuracy_count_std": float(np.std(count, ddof=1)),
             "accuracy_rate_mean": float(np.mean(rate)),
             "accuracy_temporal_best_mean": float(np.mean(best_t)),
-            "accuracy_temporal_zero_mean": float(np.mean(zero_t)),
+            "accuracy_temporal_zero_mean": (float(np.mean(zero_t))
+                                            if zero_t else None),
             "accuracy_ceiling_best_mean": float(np.mean(best_c)),
-            "accuracy_ceiling_zero_mean": float(np.mean(zero_c)),
+            "accuracy_ceiling_zero_mean": (float(np.mean(zero_c))
+                                           if zero_c else None),
             "best_tau_by_seed": [r["best_tau_temporal"] for r in runs],
             "best_offset_by_seed": [r["best_offset_temporal"] for r in runs],
+            "ceiling_offset_by_seed": [r["best_offset_ceiling"] for r in runs],
+            "predicted_offset_by_tau": {
+                k: v["offset"] for k, v in spiking_prediction["by_tau"].items()},
+            "predicted_offset_ceiling": r2_prediction["offset"],
+            "selection_bias_by_seed": [r["selection"]["selection_bias"]
+                                       for r in runs],
+            "c5_interior_maximum_by_seed": [
+                r["c5_alignment"]["temporal"]["validation"]["interior_maximum"]
+                for r in runs],
+            "tii_at_test_argmax": float(np.mean(
+                [r["tii_at_test_argmax"] for r in runs
+                 if r["tii_at_test_argmax"] is not None])) if any(
+                     r["tii_at_test_argmax"] is not None for r in runs)
+                else None,
             "tii_denominator_at_best": float(np.mean(best_c))
                                        - float(np.mean(count)),
             # Equation (40) on the seed means, rather than the mean of
@@ -124,9 +169,9 @@ def main(config_path):
             "tii_at_best": temporal_information_index(
                 float(np.mean(best_t)), float(np.mean(count)),
                 float(np.mean(best_c))),
-            "tii_at_zero": temporal_information_index(
+            "tii_at_zero": (temporal_information_index(
                 float(np.mean(zero_t)), float(np.mean(count)),
-                float(np.mean(zero_c))),
+                float(np.mean(zero_c))) if zero_t and zero_c else None),
             "runs": runs,
             "seconds": time.time() - t0,
         }

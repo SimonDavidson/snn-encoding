@@ -16,7 +16,7 @@ Usage:
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-07
-Last modified: 2026-09-07
+Last modified: 2026-09-08
 """
 import json
 import sys
@@ -26,9 +26,10 @@ from pathlib import Path
 import numpy as np
 
 from spikeenc.boundaries import score_boundaries, uniform_baseline
-from spikeenc.harness import encode_corpus, run_t3
+from spikeenc.harness import (encode_corpus, encoder_class,
+                              predicted_alignment, run_t3)
 from spikeenc.provenance import load_config, record, repo_root
-from spikeenc.reference import mel_features
+from spikeenc.reference import mel_alignment_prediction, mel_features
 from spikeenc.tasks import stack_context
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -48,6 +49,14 @@ def main(config_path):
           f"{sum(len(u.boundaries()) for u in corpus)} interior boundaries")
     print(f"context swept over {cfg['contexts']}, tolerance "
           f"{t3['tolerance'] * 1000:.0f} ms")
+    spiking_prediction = predicted_alignment(
+        source["front_end"], cfg["n_channels"], cfg["corpus"]["sample_rate"],
+        encoder_class(cfg["encoder"]).DRIVE_KIND, [feat["tau"]], feat["hop"])
+    r2_prediction = mel_alignment_prediction(frame=feat["frame"],
+                                             hop=feat["hop"],
+                                             alignment=feat["alignment"])
+    print(f"offset swept over {cfg['offsets']}, selected on "
+          f"{cfg.get('n_folds', 3)} speaker-disjoint folds inside train (D71)")
 
     def call(trains, context, features=None):
         return [run_t3(corpus, trains, tau=feat["tau"], hop=feat["hop"],
@@ -55,6 +64,11 @@ def main(config_path):
                        test_fraction=cfg["split"]["test_fraction"], seed=s,
                        alpha=cfg["probe"]["alpha"],
                        offsets=tuple(cfg["offsets"]),
+                       n_folds=cfg.get("n_folds", 3),
+                       c5_radius=cfg.get("c5_radius", 2),
+                       alignment_prediction=(r2_prediction if features
+                                             is not None
+                                             else spiking_prediction),
                        tolerance=t3["tolerance"],
                        label_tolerance_frames=t3["label_tolerance_frames"],
                        min_separation=t3["min_separation"],
@@ -74,6 +88,17 @@ def main(config_path):
                "shuffled_frame_auc": mean("shuffled_frame_auc"),
                "f_score_std": float(np.std([r["f_score"] for r in runs],
                                            ddof=1)),
+               "offset_by_seed": [r["best_offset"] for r in runs],
+               "predicted_offset": runs[0]["selection"]["predicted"]["by_tau"][
+                   next(iter(runs[0]["selection"]["predicted"]["by_tau"]))
+               ]["offset"],
+               "selection_bias_by_seed": [r["selection"]["selection_bias"]
+                                          for r in runs],
+               "c5_interior_maximum_by_seed": [
+                   r["c5_alignment"]["validation"]["interior_maximum"]
+                   for r in runs],
+               "threshold_by_seed": [r["selection"]["chosen"]["threshold"]
+                                     for r in runs],
                "uniform_baseline_f": float(np.mean(
                    [r["uniform_baseline"]["f_score"] for r in runs])),
                "uniform_baseline_r": float(np.mean(

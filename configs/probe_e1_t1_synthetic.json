@@ -50,11 +50,17 @@
     1,
     2
   ],
-  "control_offsets": [
+  "offsets": [
+    -4,
+    -3,
     -2,
     -1,
-    1
+    0,
+    1,
+    2
   ],
+  "n_folds": 7,
+  "c5_radius": 2,
   "predictions": [],
   "supersede": true
 }

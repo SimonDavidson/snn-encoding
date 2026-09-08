@@ -14,24 +14,77 @@
     "seed": 0,
     "noise_level": 0.005
   },
-  "featurisation": {"tau": 0.005, "hop": 0.010},
-  "contexts": {"T1": 0, "T2": 5, "T3": 2},
-  "offsets": [-2, -1, 0],
-  "t2": {"ridge_alphas": [1.0, 100.0, 10000.0, 1000000.0, 100000000.0]},
+  "featurisation": {
+    "tau": 0.005,
+    "hop": 0.01
+  },
+  "contexts": {
+    "T1": 0,
+    "T2": 5,
+    "T3": 2
+  },
+  "offsets": [
+    -4,
+    -3,
+    -2,
+    -1,
+    0,
+    1,
+    2
+  ],
+  "t2": {
+    "ridge_alphas": [
+      1.0,
+      100.0,
+      10000.0,
+      1000000.0,
+      100000000.0
+    ]
+  },
   "t3": {
-    "tolerance": 0.020,
+    "tolerance": 0.02,
     "label_tolerance_frames": 1,
-    "min_separation": 0.020,
+    "min_separation": 0.02,
     "n_thresholds": 25
   },
   "p2": {
-    "jitter_sigmas": [0.0001, 0.0005, 0.002, 0.010, 0.050],
-    "channel_deltas": [-4, -2, -1, 1, 2, 4],
-    "delete_probabilities": [0.1, 0.3, 0.5]
+    "jitter_sigmas": [
+      0.0001,
+      0.0005,
+      0.002,
+      0.01,
+      0.05
+    ],
+    "channel_deltas": [
+      -4,
+      -2,
+      -1,
+      1,
+      2,
+      4
+    ],
+    "delete_probabilities": [
+      0.1,
+      0.3,
+      0.5
+    ]
   },
   "corruption_seed": 4242,
-  "probe": {"alpha": 0.0001},
-  "split": {"test_fraction": 0.3},
-  "split_seeds": [0, 1, 2],
-  "predictions": ["P-07"]
+  "probe": {
+    "alpha": 0.0001
+  },
+  "split": {
+    "test_fraction": 0.3
+  },
+  "split_seeds": [
+    0,
+    1,
+    2
+  ],
+  "predictions": [
+    "P-07"
+  ],
+  "n_folds": 7,
+  "c5_radius": 2,
+  "supersede": true
 }
