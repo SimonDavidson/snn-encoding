@@ -6,9 +6,12 @@ restating stale ones. Run:
 
     python scripts/build_encoder_report.py
 
+Version 2 (2026-09-08) adds the probe harness and the first task results, and
+corrects every passage that described E5 and E6 as unimplemented.
+
 Author:        Simon Davidson & Claude
 Created:       2026-09-06
-Last modified: 2026-09-06
+Last modified: 2026-09-08
 """
 import datetime as _dt
 import json
@@ -26,7 +29,22 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "reports" / "spikeEncode_encoder_survey.docx"
+
+#: Bumped whenever a version goes to Oliver, and carried in the filename so two
+#: versions cannot be confused in an inbox. v1 (2026-09-06) covered E1-E4 and
+#: the front end; v2 adds E5, E6, the probe harness and the first task results.
+REPORT_VERSION = 2
+OUT = ROOT / "reports" / f"spikeEncode_encoder_survey_v{REPORT_VERSION}.docx"
+
+#: Known-answer suite totals at the last recorded run. Not derived, because
+#: running the suite inside the build would make the report slow and able to
+#: fail for a reason unrelated to the report; stated here so a mismatch with
+#: NOTEBOOK.md is one grep away.
+SUITE = {"passed": 82, "failed": 2, "skipped": 1, "collected": 85}
+#: Per encoder: (passed, collected). E6's tenth test is test_G7b, which skips
+#: because E6 declares no refractory.
+ENCODER_TESTS = {"E1": (10, 10), "E2": (16, 16), "E3": (13, 13),
+                 "E4": (11, 11), "E5": (10, 12), "E6": (9, 10)}
 
 # --- palette --------------------------------------------------------------
 NAVY = RGBColor(0x1F, 0x38, 0x64)
@@ -63,6 +81,20 @@ def _normalise_zip_times(path):
 def load(name):
     p = ROOT / "results" / f"{name}.json"
     return json.load(open(p)) if p.exists() else None
+
+
+def open_questions():
+    """Count questions whose Answer block is still open, from QUESTIONS.md.
+
+    Derived rather than stated: the count moved from 9 to 20 in two days, and
+    it is exactly the kind of number that goes stale in a document without
+    anyone noticing.
+    """
+    import re
+    text = (ROOT / "QUESTIONS.md").read_text(encoding="utf-8")
+    blocks = re.split(r"^### (Q\d+) — ", text, flags=re.M)[1:]
+    return [q for q, b in zip(blocks[::2], blocks[1::2])
+            if b.split("**Answer:**")[-1].strip().startswith("(open")]
 
 
 def commit():
@@ -280,7 +312,8 @@ def front_matter(doc, ctx):
 
     p = doc.add_paragraph()
     p.paragraph_format.space_after = Pt(16)
-    r = p.add_run("Candidate spike encodings for audio — encoder survey")
+    r = p.add_run(f"Candidate spike encodings for audio — encoder survey, "
+                  f"version {REPORT_VERSION}")
     r.font.size = Pt(14)
     r.font.color.rgb = TEAL
     _rule(p)
@@ -290,6 +323,9 @@ def front_matter(doc, ctx):
                   "release alongside DVS event-camera data"],
         ["Authors", "Simon Davidson, Oliver Rhodes (University of Manchester)"],
         ["Target venue", "Neuromorphic Computing and Engineering (IOP) — D04"],
+        ["Version", f"{REPORT_VERSION} — supersedes version 1 of 6 September 2026, "
+                    f"which described E5 and E6 as unimplemented and carried no "
+                    f"task results"],
         ["Report generated", f"{ctx['date']} from commit {ctx['commit']}"],
         ["Suite status", f"{ctx['passed']} passed, {ctx['failed']} failed, "
                          f"{ctx['skipped']} skipped (Layer 1 known-answer tests)"],
@@ -298,7 +334,8 @@ def front_matter(doc, ctx):
     ], widths=[4.0, 12.4])
 
     body(doc, "This report summarises every encoder in the study — those implemented, "
-              "those specified but blocked, and the two reference points that bound the "
+              "those blocked or deliberately excluded, and the two reference points that "
+              "frame the "
               "comparison. For each it gives the encoding methodology and its defining "
               "equations, the design parameters available for tuning and which of them "
               "are swept, the characteristics of the output the encoder produces, and, "
@@ -315,12 +352,15 @@ def front_matter(doc, ctx):
               "marked as such.")
 
     callout(doc, "Status at a glance.",
-            f"Four of the six candidate encoders are implemented and pass their full "
-            f"known-answer blocks. E5 and E6 are specified but blocked on open questions "
-            f"against the specification, not on implementation effort. E7 is deliberately "
-            f"not implemented (D09). The {ctx['failed']} failing tests are attributable "
-            f"entirely to those blocks and to four individual open questions; none "
-            f"represents a defect in implemented code.", fill=LILAC)
+            f"**All six candidate encoders are implemented.** E1 to E4 and E6 pass their "
+            f"complete known-answer blocks; E5 passes ten of twelve, both remaining "
+            f"failures being open specification questions raised before the encoder was "
+            f"written. E7 is deliberately not implemented (D09). **The probe harness now "
+            f"exists and all three probe tasks run end to end**, with the non-spiking "
+            f"reference R2 measured alongside them, on a synthetic stand-in corpus because "
+            f"the TIMIT licence question O2 remains open after nineteen days. The "
+            f"{ctx['failed']} failing tests are attributable entirely to open questions; "
+            f"none represents a defect in implemented code.", fill=LILAC)
 
 
 def overview(doc, ctx):
@@ -344,12 +384,16 @@ def overview(doc, ctx):
               "is not hypothetical — a candidate rule considered for E3 gave counts of 52, "
               "52, 52, 35, 0 across the sweep, which is monotonic, has distinct endpoints, "
               "and is useless.")
-    body(doc, "This single requirement is the reason two encoders are currently blocked, "
-              "and it is worth stating plainly because it is the property most likely to "
-              "disqualify a scheme that otherwise looks reasonable. Both E5 and E6 fail it "
-              "at their declared defaults, for entirely different reasons, and the "
-              "distinction between those reasons determines whether the encoder is "
-              "salvageable.")
+    body(doc, "This requirement held up two encoders for a week, and it is worth stating "
+              "plainly because it is the property most likely to disqualify a scheme that "
+              "otherwise looks reasonable. Both E5 and E6 failed it at the rate parameters "
+              "originally specified, for entirely different reasons. E6's was resolved by "
+              "redefining its gate relative to the largest frame energy (D43), which spans "
+              "12.36×; E5's rate parameter was replaced with a cycle divisor (D40), which "
+              "reaches 3.48× — still short of the required four, and still open as Q19. "
+              "Measuring the span of a proposed rate rule *before* writing the encoder is "
+              "now standard practice in this project, precisely because it is cheap and "
+              "catches this class of problem at the specification stage.")
 
     h2(doc, "1.2  Drive kinds")
     body(doc, "Encoders consume one of two things. Most take the compressed subband "
@@ -374,12 +418,12 @@ def summary_table(doc, ctx):
         ["E1", "LIF", "Rate-like anchor", "theta", "envelope", "Implemented", "10 / 10"],
         ["E2", "SendOnDelta", "Send-on-delta (DVS-symmetric)", "C", "envelope", "Implemented", "16 / 16"],
         ["E3", "TemporalContrast", "Onset/offset bandpass", "theta", "envelope", "Implemented", "13 / 13"],
-        ["E4", "ALIF", "Adaptive-threshold LIF", "theta_0", "envelope", "Implemented", "10 / 11"],
-        ["E5", "PhaseLocked", "Phase-locked fine structure", "threshold", "subband", "Blocked", "0 / 12"],
-        ["E6", "TTFS", "Time-to-first-spike", "e_min", "envelope", "Blocked", "0 / 9"],
+        ["E4", "ALIF", "Adaptive-threshold LIF", "theta_0", "envelope", "Implemented", "11 / 11"],
+        ["E5", "PhaseLocked", "Phase-locked fine structure", "cycle_divisor", "subband", "Implemented", "10 / 12"],
+        ["E6", "TTFS", "Time-to-first-spike", "e_frac", "envelope", "Implemented", "9 / 10"],
         ["E7", "Spiketrum", "Matching pursuit (third-party)", "atoms / s", "audio", "Not implemented", "—"],
         ["R1", "Lauscher / SHD", "Reference channel format", "—", "audio", "Not started", "—"],
-        ["R2", "Mel filterbank", "Non-spiking upper bound", "—", "audio", "Not started", "—"],
+        ["R2", "Mel filterbank", "Non-spiking reference", "—", "audio", "Implemented", "n/a"],
     ]
     status_fill = {"Implemented": GREEN, "Blocked": AMBER,
                    "Not implemented": GREY, "Not started": GREY}
@@ -389,16 +433,23 @@ def summary_table(doc, ctx):
     table(doc, ["", "Class", "Scheme", "RATE_PARAM", "Drive", "Status", "Known-answer tests"],
           rows, widths=[1.1, 3.0, 4.6, 2.0, 1.9, 2.3, 2.6], fills=fills)
     caption(doc, "Test counts are the encoder's own T-block plus its parametrised share of "
-                 "the generic G block. E4's single failure is test_T4_3 (Q10); E5 and E6 "
-                 "fail everything because their encode_from_drive raises NotImplementedError.")
+                 "the generic G block. E4's former failure, test_T4_3, was replaced under "
+                 "D39 and the block is now complete. E5's two failures are test_G3[E5] "
+                 "(Q19, the 3.48× span) and test_T5_3 (Q20), both raised before the encoder "
+                 "was written. E6's tenth test is test_G7b, which skips because E6 declares "
+                 "no refractory period. R2 is a reference rather than an encoder and has no "
+                 "known-answer block; it is covered by fifteen implementation-session tests "
+                 "instead.")
 
-    body(doc, "The four implemented encoders divide cleanly into two integrating schemes "
-              "(E1, E4) and two change-based schemes (E2, E3). That is the axis the study "
-              "is built around: E1 against E4 isolates spike-frequency adaptation, and E2 "
-              "against E3 isolates the bandpass, because decision D30 makes the two share "
-              "one implementation of the event rule so that nothing else differs between "
-              "them. Both contrasts are single-factor by construction rather than by "
-              "inspection.")
+    body(doc, "The six implemented encoders group into two integrating schemes (E1, E4), "
+              "two change-based schemes (E2, E3), one carrier-locked scheme (E5) and one "
+              "latency scheme (E6). That is the axis the study is built around: E1 against "
+              "E4 isolates spike-frequency adaptation, and E2 against E3 isolates the "
+              "bandpass, because decision D30 makes the two share one implementation of the "
+              "event rule so that nothing else differs between them. Both contrasts are "
+              "single-factor by construction rather than by inspection. E1 against E6 is "
+              "the sparsest contrast in the set — all information in count against all "
+              "information in timing — and is what prediction P-04 turns on.")
 
 
 def front_end(doc, ctx):
@@ -856,11 +907,16 @@ def e4(doc, ctx):
 
 def e5(doc, ctx):
     h1(doc, "8.  E5 — Phase-locked fine structure")
-    callout(doc, "Status: specified, not implemented. Blocked on Q11 and Q12.",
+    callout(doc, "Status: implemented, 10 of 12 known-answer tests passing.",
             "The only encoder that consumes the subband waveform rather than the envelope, "
             "because its entire purpose is to represent the carrier the envelope discards. "
             "Prediction P-03 rests on the contrast between E5 and the envelope encoders on "
-            "T2.", fill=AMBER)
+            "T2. Its rate parameter was replaced under D40 — `threshold` spanned only "
+            "1.04×, because the event count is capped by the carrier's own crossing rate — "
+            "and the replacement `cycle_divisor`, which keeps every k-th gated crossing, "
+            "reaches 3.48× against D27's required 4×. That shortfall is Q19 and is the "
+            "cause of one of the two remaining failures; the other is Q20. Both were raised "
+            "before the encoder was written, and neither is a defect in it.", fill=AMBER)
 
     h2(doc, "8.1  Methodology")
     body(doc, "Two forms are specified. The deterministic form emits at each upward zero "
@@ -961,11 +1017,16 @@ def e5(doc, ctx):
 
 def e6(doc, ctx):
     h1(doc, "9.  E6 — Time-to-first-spike")
-    callout(doc, "Status: specified, not implemented. Blocked on Q14 and Q16.",
+    callout(doc, "Status: implemented, complete — nine passing, one skipped.",
             "The extreme temporal case and the sparsest scheme in the set. The exact "
             "inverse of E1: all information in timing, none in event count, which makes the "
             "pair (E1, E6) the cleanest available test of whether timing buys anything at "
-            "matched budget.", fill=AMBER)
+            "matched budget. Its gate became relative under D43 — `e_frac` times the "
+            "largest frame energy over all channels and frames — after the absolute "
+            "`e_min` default was measured sitting 6.8 decades below the quietest frame and "
+            "gating nothing at all. The relative form spans 12.36×, comfortably clear of "
+            "D27's 4×. The skipped test is test_G7b, which requires a refractory period E6 "
+            "does not declare.", fill=GREEN)
 
     h2(doc, "9.1  Methodology")
     body(doc, "The signal is divided into frames of length T_f with hop H. Within each frame "
@@ -977,63 +1038,81 @@ def e6(doc, ctx):
     equation(doc, "E_c[m] = ∫ e_c(t)² dt  over frame m    (27)")
     equation(doc, "t_c[m] = m·H + T_f·( 1 − (log E_c[m] − log E_min)/(log E_max − log E_min) )   (28)")
     equation(doc, "t_c = τ_m · log( I / (I − θ) )   for I > θ    (29)")
-    body(doc, "Channels whose energy falls below E_min emit nothing, which is the mechanism "
-              "by which the scheme is sparsified. Frame energy is defined in the "
-              "specification as the sum of squared drive samples in the frame, computed on "
+    body(doc, "Channels whose energy does not exceed the gate emit nothing, which is the "
+              "mechanism by which the scheme is sparsified. Under D43 and D44 the gate is "
+              "`e_frac · E_max`, with E_max the largest frame energy over **all** channels "
+              "and **all** frames, and E_min in equation (28) is that same quantity — the "
+              "two roles the symbol formerly played collapse into one positive number. The "
+              "gate is strict, which places every offset strictly inside its frame without "
+              "a clipping rule and stops the encoder emitting everywhere on silence. Taking "
+              "the maximum per channel instead would destroy the spectral profile, and "
+              "test_T6_2 detects that reading: subclassing the encoder to do it moves the "
+              "worst Pearson residual from 3.3e−16 to 1.89 against a tolerance of 1e−9. "
+              "Frame energy is the sum of squared drive samples in the frame, computed on "
               "whatever drive is supplied with no further transformation, so that a test can "
               "reproduce it independently.")
 
     h2(doc, "9.2  Design parameters")
     table(doc, ["Parameter", "Default", "Role", "Swept?"], [
-        ["e_min", "1e−6", "Energy gate — the declared RATE_PARAM", "Intended rate axis — see Q14"],
+        ["e_frac", "0.20", "Energy gate as a fraction of E_max — the declared RATE_PARAM", "Yes — 12.36× span, clears D27"],
         ["frame", "0.025 s", "Frame length T_f", "Secondary axis"],
         ["hop", "0.010 s", "Frame hop H; bounds the budget at N_ch/H events per second", "Secondary rate axis (§5.6)"],
         ["tau_m", "0.02 s", "Membrane time constant for the lif mode, equation (29)", "Secondary axis"],
         ["theta", "1.0", "Threshold for the lif mode, equation (29)", "Secondary axis"],
         ["mode", "log", "log uses equation (28); lif uses equation (29)", "Yes"],
-        ["E_max", "not defined", "Normalisation ceiling in equation (28) — **defined nowhere**", "Cannot be set"],
+        ["E_max", "derived", "Largest frame energy over all channels and frames; both the gate and equation (28)'s ceiling (D44)", "Not settable — it is a property of the drive"],
     ], widths=[3.4, 2.4, 7.6, 3.6],
-        fills={(0, 3): AMBER, (6, 1): ROSE, (6, 2): ROSE, (6, 3): ROSE})
+        fills={(0, 3): GREEN})
 
-    h2(doc, "9.3  The rate parameter fails, but not structurally")
-    body(doc, "At the declared default the event count is pinned at exactly the ceiling — "
-              "every channel fires in every frame at every point in the sweep.")
+    h2(doc, "9.3  The rate parameter was in the wrong place, and was moved")
+    body(doc, "At the originally declared default the event count was pinned at exactly the "
+              "ceiling — every channel firing in every frame at every point in the sweep. "
+              "The measurement below is kept because it is the case for probing a rate rule "
+              "*before* writing the encoder, which is now standard practice in this project.")
     r = load("e6_rate_parameter_span")
     if r:
-        rows = [["e_min"] + [f"{v:g}" for v in r["param_values"]],
+        rows = [["e_min (superseded)"] + [f"{v:g}" for v in r["param_values"]],
                 ["events"] + [str(c) for c in r["counts"]]]
         table(doc, ["", "0.25×", "0.5×", "1×", "2×", "4×"], rows,
               widths=[3.2, 2.4, 2.4, 2.4, 2.4, 2.4],
               fills={(1, i): ROSE for i in range(1, 6)})
         d = r["diagnostics"]
-        caption(doc, f"Manifest id e6_rate_parameter_span. Span {r['span']:.3f}×, and "
-                     f"{r['counts'][0]} is exactly the ceiling N_ch × N_frames. Frame energy "
-                     f"on this drive runs min {d['frame_energy_min']:.2f}, median "
-                     f"{d['frame_energy_median']:.1f}, max {d['frame_energy_max']:.0f} — so "
-                     f"the default e_min sits {d['decades_below_quietest_frame']:.1f} decades "
-                     f"below the quietest frame in the signal and gates nothing at all.")
-    callout(doc, "This is a default in the wrong place, not a structural defect — and the "
-                 "test suite predicts otherwise.",
-            "test_G3's own docstring names E6 as the foreseeable casualty of D27, on the "
-            "grounds that its count is \"structurally fixed\", and prescribes taking matched "
-            "budgets from channel count or frame rate instead. **That does not describe "
-            "E6.** Swept over the range the energies actually occupy, e_min moves the count "
-            "across the full dynamic range: 792, 744, 640, 534, 401, 186, 78, 0. The "
-            "parameter works; the default is six-point-eight decades away from where the "
-            "signal is. Any base between 205.8 and 462.8 clears the required 4× without an "
-            "endpoint at extinction. The remedy the docstring prescribes is not needed "
-            "(Q14).", fill=LILAC)
-    body(doc, "The fix cannot be made from the implementation side. The operating point lives "
-              "in the test registry and the signature default lives in the specification, "
-              "both of which are design-session files, so there is no change available in "
-              "src/ that turns the test green. Q14 puts two options: retune the absolute "
-              "value, or make e_min **relative** to the maximum frame energy, which is "
-              "scale-free — verified to give identical counts across five decades of drive "
-              "scale — and which would also define the E_max that equation (28) needs.")
+        caption(doc, f"Manifest id e6_rate_parameter_span, now superseded. Span "
+                     f"{r['span']:.3f}×, and {r['counts'][0]} is exactly the ceiling "
+                     f"N_ch × N_frames. The absolute default sat "
+                     f"{d['decades_below_quietest_frame']:.1f} decades below the quietest "
+                     f"frame in the signal and gated nothing at all.")
+    body(doc, "The diagnosis was that this was a default in the wrong place rather than a "
+              "structural defect — test_G3's own docstring had named E6 as the foreseeable "
+              "casualty of D27 on the grounds that its count is \"structurally fixed\", and "
+              "that turned out to be wrong on both halves (D46). The remedy taken was the "
+              "second option Q14 put: make the gate **relative** to the largest frame "
+              "energy, which is scale-free and which simultaneously supplies the E_max that "
+              "equation (28) needs (D43, D44).")
+    r2 = load("e6_e_frac_span")
+    if r2:
+        rows = [["e_frac"] + [f"{v:g}" for v in r2["param_values"]],
+                ["events"] + [str(c) for c in r2["counts"]]]
+        table(doc, ["", "0.25×", "0.5×", "1×", "2×", "4×"], rows,
+              widths=[3.2, 2.4, 2.4, 2.4, 2.4, 2.4],
+              fills={(1, i): GREEN for i in range(1, 6)})
+        si = r2["diagnostics"]["scale_invariance"]
+        caption(doc, f"Manifest id e6_e_frac_span. Span {r2['span']:.2f}× against D27's "
+                     f"required 4×, monotonic, and the gate now sits above the quietest "
+                     f"frame rather than below it. The rule is scale-free: multiplying the "
+                     f"drive over "
+                     f"{si['decades_of_drive_amplitude']:.0f} decades of amplitude — "
+                     f"{si['decades_of_frame_energy']:.0f} of frame energy, since energy "
+                     f"goes as the square — gives identical event counts at every scale. "
+                     f"The encoder's own output was cross-checked event for event against "
+                     f"an independent simulation of the same SPEC rule.")
 
-    h2(doc, "9.4  Three further gaps found before writing a line (Q16)")
+    h2(doc, "9.4  Three further gaps found before writing a line — all now closed")
     body(doc, "Probing the specification ahead of implementation found three problems, none "
-              "of which needed the encoder to exist:")
+              "of which needed the encoder to exist. All three were resolved together by "
+              "D44, and the pattern is worth noting: making the gate relative fixed the "
+              "first two as a side effect, because it defines E_max and collapses the two "
+              "roles the symbol had been playing into one positive quantity.")
     table(doc, ["#", "Finding", "Consequence"], [
         ["1", "Equation (28) has no E_max. Not a constructor argument, not defined in the "
               "specification or the proposal.",
@@ -1104,8 +1183,8 @@ def e7_and_references(doc, ctx):
     equation(doc, "r^(k) = r^(k−1) − ⟨ r^(k−1), g_{c_k,t_k} ⟩ · g_{c_k,t_k}    (31)")
     body(doc, "The event train is the sequence of selected atom indices and times, and the "
               "number of atoms retained per unit time is a directly controllable rate "
-              "parameter — which, notably, is the property E5 and E6 are currently blocked "
-              "on. The reported properties of precisely controllable spike rate, robustness "
+              "parameter — which, notably, is the property that cost E5 and E6 a week each "
+              "to establish, and which E5 still does not fully have. The reported properties of precisely controllable spike rate, robustness "
               "to spike loss, and signal reconstruction all follow from this structure.")
     body(doc, "Its reconstruction capability is exactly the tension noted for E2, in sharper "
               "form: an encoder that optimises reconstruction fidelity is optimising the "
@@ -1133,13 +1212,37 @@ def e7_and_references(doc, ctx):
               "700 should nonetheless be a target for the release, for interoperability, is a "
               "separate question.")
 
-    h2(doc, "10.3  R2 — Non-spiking upper bound")
+    h2(doc, "10.3  R2 — the non-spiking reference")
     body(doc, "The essential control, and arguably the single most important row in the "
               "results table. Forty mel-scale filterbank features computed over 25 ms windows "
               "at 10 ms hop, fed to the same decoder architecture as every spiking condition. "
               "This is the standard front end used by Wu and colleagues and by Bittar and "
               "Garner, so results are directly comparable to the published literature as well "
-              "as internally.")
+              "as internally. **It is now implemented and measured on all three tasks** "
+              "(§13), and it shares one decoder path with every spiking condition rather "
+              "than a matching one, so the fairness constraint that decoding be identical "
+              "holds by construction (D51).")
+    body(doc, "Two things about it were decisions rather than lookups. Section 5.9 fixes "
+              "the band count, window and hop but not where the window sits relative to the "
+              "frame instant, and a window centred on that instant sees 12.5 ms of audio "
+              "the strictly causal featurisation kernel cannot — so R2 would outscore every "
+              "spiking condition partly by seeing the future. The default is therefore a "
+              "causal window ending at the frame instant, with the centred convention "
+              "available and the choice recorded on every result (D52). The two differ by "
+              "10.6 accuracy points on T1, which is why it was worth deciding rather than "
+              "defaulting.")
+    callout(doc, "R2 bounds T1. It does not bound T2 or T3.",
+            "Measured, each condition at its own best configuration: on T1, R2 reaches "
+            "0.9133 against E1's 0.8996 — a gap of 1.4 points at the highest budget. On T2 "
+            "and T3 the gap is **negative**: E1 reaches a within-utterance correlation of "
+            "0.5755 against R2's 0.4991, and an F-score of 0.7576 against 0.6852. The "
+            "mechanism is the one the study was built to find — 25 ms windows smear a "
+            "transition that an event stream resolves at event precision, and §4.3 names "
+            "transient timing as exactly what T3 rewards — but it makes *upper bound* the "
+            "wrong name, and §5.9's instruction to report every accuracy as a gap to R2 "
+            "produces a negative gap that reads as an error. Whether E1 beats R2 or beats "
+            "*this* R2, whose window length was chosen for phone classification, is open as "
+            "Q31.", fill=ROSE)
     callout(doc, "Every accuracy should be reported as a gap to this bound.",
             "Without it a phone accuracy figure means nothing: the reader cannot tell "
             "whether a shortfall reflects the encoding, the decoder, the corpus or the task "
@@ -1231,8 +1334,218 @@ def shared_machinery(doc, ctx):
                  "and information-per-spike metrics are in scope now (D08).")
 
 
+def harness_section(doc, ctx):
+    h1(doc, "12.  The probe harness")
+    body(doc, "Between the encoders and any number worth reporting sits the machinery that "
+              "turns a body of audio into a scored operating point: a corpus, a "
+              "speaker-disjoint split, per-frame targets, a probe, and the Layer 2 controls "
+              "that say whether the result means anything. None of it existed a week ago; "
+              "all of it does now, and every task result in §13 comes through it.")
+
+    h2(doc, "12.1  The corpus problem, and the stand-in")
+    callout(doc, "There is still no corpus. The TIMIT licence question O2 is nineteen days "
+            "old.",
+            "Stage one of the study runs on TIMIT, which is LDC-licensed; the MANCHESTER "
+            "Dataset is unrecorded. The harness is therefore written against a corpus "
+            "*interface*, with a synthetic stand-in behind it, and when a licence arrives "
+            "only the loader changes. **Every number in §13 is on that stand-in and none of "
+            "them is a statement about speech.**", fill=ROSE)
+    body(doc, "The stand-in is not a placeholder to be thrown away. It is a source-filter "
+              "corpus: per-speaker vocal tract scaling and fundamental frequency, phones "
+              "synthesised as formant resonances or noise bands, exact segment boundaries "
+              "and an exact f_0 contour. The point of generating rather than annotating the "
+              "ground truth is that it is the only thing that can distinguish *the encoder "
+              "lost the information* from *the harness mislabelled every frame*. On a real "
+              "corpus every accuracy is plausible and neither reading can be excluded; on "
+              "this one the answer is known by construction, which is what makes the "
+              "controls below able to fail.")
+    body(doc, "Its limitations are known and are stated wherever they bear on a result. "
+              "Phones are stationary resonances with no formant transitions, so a "
+              "segment-level count vector nearly determines phone identity. Phone durations "
+              "are drawn uniformly on 60–140 ms, so boundaries are quasi-regular and "
+              "evenly-spaced guesses score well. The f_0 contour is a linear declination "
+              "moving one to three semitones, where real speech carries accents and question "
+              "intonation. Each of these makes a task *easier* or its trivial baseline "
+              "*stronger* than on speech, and each is the reason a corresponding result "
+              "below is reported as machinery working rather than as a finding.")
+
+    h2(doc, "12.2  Probes")
+    body(doc, "The linear probe is multinomial logistic regression fitted by L-BFGS-B, and "
+              "the T2 decoder is closed-form ridge regression. Both are written out rather "
+              "than imported, which was forced rather than preferred: continuous integration "
+              "installs numpy, scipy and pytest and runs every test file, and the workflow is "
+              "a design-session file this session may not edit — so a probe requiring "
+              "scikit-learn would make its own tests unrunnable in the one environment that "
+              "checks them independently. The logistic probe was validated against "
+              "scikit-learn out of tree instead, agreeing to 8.2e−06 in coefficients and "
+              "exactly in predictions (D49).")
+    body(doc, "The nonlinear probe of §6.2 — a two-layer bidirectional GRU — does not exist. "
+              "It needs a tensor library this machine does not have, on eight CPU cores with "
+              "no GPU, and committing to an architecture before measuring what one training "
+              "run costs would be guesswork. **The accessibility gap of equation (33), which "
+              "the proposal argues is among the most useful numbers the study can produce, "
+              "is therefore unmeasured.**")
+
+    h2(doc, "12.3  The Layer 2 controls, and why they run unconditionally")
+    body(doc, "Validation protocol §4 lists the pipeline controls as things to do. A control "
+              "that must be remembered is one that will one day be forgotten, and the run it "
+              "is forgotten on is by construction the one nobody was watching — so they are "
+              "computed on every call and returned beside the headline number, with no "
+              "argument to switch them off (D48). Split disjointness goes further: it is "
+              "enforced in the constructor, so a leaking split cannot be built.")
+    rows = [
+        ["C1", "Upper-bound anchor against published TIMIT accuracy",
+         "Not evaluable — needs TIMIT (O2)"],
+        ["C2", "Chance and majority floors, reported per task",
+         "Every run. T3 uses a uniform-baseline floor instead, since a majority rate is "
+         "meaningless for a detection task"],
+        ["C3", "Shuffled-label control — the primary leakage detector",
+         "Every run. Returns to chance everywhere: 0.104–0.141 on T1 against 0.125 chance"],
+        ["C4", "Identical decoding across conditions",
+         "By construction — R2 and every encoder share one scoring function (D51)"],
+        ["C5", "Deliberate ±1-frame misalignment",
+         "Every run, and it found a real misalignment rather than confirming none (§13.2)"],
+        ["C6", "Budget cross-check, two independent counts",
+         "In-memory form only; the file-format form needs the release format (Q07)"],
+        ["C7", "Round-trip integrity of the release format",
+         "Not possible — the format is blocked on Q07"],
+        ["C8", "Three seeds minimum, spread reported",
+         "Every reported figure"],
+    ]
+    fills = {}
+    for i, r in enumerate(rows):
+        fills[(i, 2)] = ROSE if r[2].startswith("Not") else GREEN
+    table(doc, ["", "Control", "Status"], rows, widths=[1.1, 7.4, 8.0],
+          fills=fills, size=9)
+    caption(doc, "Three of the eight cannot be evaluated yet, and all three are blocked on "
+                 "something outside the harness: two on the release event format, one on "
+                 "the corpus licence. That is worth stating plainly, because C1 is the "
+                 "control that would tell us the pipeline is calibrated rather than merely "
+                 "self-consistent, and until TIMIT arrives no result here carries that "
+                 "assurance.")
+
+
+def task_results_section(doc, ctx):
+    h1(doc, "13.  First task results")
+    callout(doc, "Read these as evidence the machinery works, not as findings about "
+            "encodings.",
+            "Every figure below is on the synthetic stand-in described in §12.1, whose "
+            "known limitations make each task easier or its baseline stronger than on "
+            "speech. Control C1 — the anchor that would say whether the pipeline is "
+            "calibrated at all — cannot be evaluated without TIMIT. What these results do "
+            "establish is that the path from audio to a scored Pareto point runs end to "
+            "end, that its controls bite, and that several specification questions which "
+            "would have been invisible on paper are now measured.", fill=AMBER)
+
+    h2(doc, "13.1  T1 — phone classification, across two decades of budget")
+    rows = []
+    for pt in ctx["t1"]["points"]:
+        m = [r["misaligned_accuracy"] for r in pt["runs"]]
+        off = {k: sum(x[k] for x in m) / len(m) for k in m[0]}
+        off["0"] = pt["accuracy_mean"]
+        best_k = max(off, key=off.get)
+        bw = sum(r["bandwidth_bps"] for r in pt["runs"]) / len(pt["runs"])
+        rows.append([f"{pt['achieved_lambda']:.0f}", f"{pt['rate_param']:.5g}",
+                     f"{pt['accuracy_mean']:.4f}", f"± {pt['accuracy_std']:.4f}",
+                     f"{off[best_k]:.4f} @ {best_k}", f"{bw:,.0f}"])
+    table(doc, ["Λ (events/s)", "theta", "Accuracy @ 0", "spread",
+                "at best offset", "Bandwidth (bit/s)"], rows,
+          widths=[2.6, 2.2, 2.6, 2.0, 3.0, 3.0])
+    caption(doc, f"E1, 32 channels, three split seeds. Majority floor "
+                 f"{ctx['t1']['floor']:.4f}, chance {ctx['t1']['chance']:.4f}. "
+                 f"Accuracy rises monotonically with budget, which is §6.4's argument for "
+                 f"Pareto fronts appearing in the data on its first run: an encoder emitting "
+                 f"more events performs better on every task, so a table of single-point "
+                 f"results measures event rate rather than encoding quality.")
+    body(doc, "The bandwidth column is worth dwelling on, because it is the first "
+              "quantitative version of the study's central engineering question and it does "
+              "not favour the answer the field assumes. R2's dense features cost 128,000 "
+              "bit/s. E1 only reaches 98.5 per cent of R2's accuracy at Λ = 15,343, where "
+              "its event stream costs 398,929 bit/s — **three times more than the "
+              "representation it is approximating**. The two cross at about Λ = 4,900, where "
+              "E1 sits near 92 per cent of the bound. Both figures depend on declared widths "
+              "— 20 bits of timestamp, 32 bits per mel coefficient, both generous — so this "
+              "is a statement about those widths and not about events in general. It is "
+              "reported here rather than smoothed because §6.3 requires the encoder's own "
+              "cost to be charged rather than hidden, and because a result that runs against "
+              "the expected direction is the one most worth checking early.")
+
+    h2(doc, "13.2  What control C5 found")
+    body(doc, "C5 offsets the labels by ±1 frame and expects accuracy to drop. It does not "
+              "drop. At offset −1 it *rises*, at every one of the six budget points, by 4.5 "
+              "to 6.8 accuracy points. Two independent lags are responsible and both were "
+              "separated by measurement rather than argued: turning on group-delay "
+              "compensation moves the optimum from −1 to 0 at tau_phi = 5 ms, which "
+              "identifies the gammatone bank as the first; the second is the causal "
+              "featurisation kernel itself, and it moves a further frame with tau_phi.")
+    callout(doc, "At offset zero the upper bound is below the encoder.",
+            "R2 causal scores 0.8247 at offset zero and E1 scores 0.8316 — the encoder "
+            "outscores the control that every accuracy is supposed to be reported as a gap "
+            "to. At each condition's own best offset the ordering is restored and the gap is "
+            "1.4 points. Nothing about the encoding differs between those two readings; only "
+            "which frame the labels were paired with. Since tau_phi is a shared swept axis "
+            "with each condition reported at its best value, fixing the alignment at zero "
+            "imposes a penalty that grows with tau_phi — 18.5 points at 20 ms — and then "
+            "selects the tau_phi that suffers least from it. Open as Q24.", fill=ROSE)
+
+    h2(doc, "13.3  T2, T3, and the preliminary experiments")
+    rows = [
+        ["T2 — f_0 contour", "E1 at Λ=15,343, 5 frames of context",
+         "r/utt +0.5755, RMSE 1.430 st, voicing 0.9921"],
+        ["", "R2", "r/utt +0.4991, RMSE 1.676 st, voicing 0.9939"],
+        ["T3 — boundaries", "E1 at Λ=15,343, 5 frames of context",
+         "F 0.7576, R-value +0.718, frame AUC 0.8581"],
+        ["", "R2", "F 0.6852, R-value +0.667, frame AUC 0.6888"],
+        ["", "uniform baseline at the reference rate", "F 0.5873"],
+        ["P1 — count-only", "temporal information index, equation (40)",
+         "+0.20 to +0.80 where defined; undefined at two budgets"],
+        ["P2 — corruption", "worst headroom lost, whole-utterance randomisation",
+         "T1 1.08, T2 0.69, T3 2.85"],
+        ["", "the same operator applied within each segment",
+         "T1 0.10, T2 0.30, T3 2.73"],
+    ]
+    table(doc, ["Task", "Condition", "Result"], rows,
+          widths=[3.4, 6.2, 6.8], size=9)
+    caption(doc, "All on the stand-in, three split seeds. T2's headline is the mean "
+                 "within-utterance Pearson correlation, not the pooled figure: speakers "
+                 "differ in mean f_0 far more than a contour moves within one utterance, so "
+                 "a pooled correlation is winnable by a predictor that emits one constant "
+                 "per utterance and estimates voice height. The gap between the two runs "
+                 "0.09 to 0.39, so roughly a third of the pooled figure is voice height.")
+    body(doc, "**P1 cannot be answered on this corpus and says so.** Its denominator is the "
+              "gap between the mel ceiling and a count-only probe, and on a corpus of "
+              "stationary phones a segment's count vector nearly determines its identity: "
+              "counts reach 0.9583 where the ceiling reaches 0.9722. The index is undefined "
+              "at two of six budgets and swings from −0.11 to +0.80 between adjacent ones. "
+              "That is precisely the condition §7.1 describes as *a spectral profile task "
+              "wearing a spiking costume*, correctly detected — and what it diagnoses is the "
+              "corpus, not T1. The index is also not invariant to tau_phi: with it fixed at "
+              "5 ms rather than swept as §6.1 requires, three of six points change sign, "
+              "because a count integrating a whole segment against a 5 ms kernel compares "
+              "integration windows as much as timing (Q27).")
+    callout(doc, "P2's one corpus-independent finding.",
+            "The specifications define the fourth corruption operator differently: the "
+            "proposal randomises event times *within each segment*, SPEC over the whole "
+            "utterance. Both were run. Under SPEC's version T1 falls to 0.1533 — **below its "
+            "own majority floor of 0.2020** — and under the proposal's to 0.7656, a tenth of "
+            "its headroom. The same named operator either annihilates T1 or barely touches "
+            "it, because randomising across the utterance moves events between segments and "
+            "so destroys the per-segment rate the proposal's wording explicitly says the "
+            "operator leaves intact. Unlike everything else in this section **this transfers "
+            "to TIMIT unchanged**, and it decides what P1's equation (40) is measuring as "
+            "well. Open as Q35.", fill=ROSE)
+    body(doc, "P2 is recorded as a rehearsal and not as the week-4 decision gate (D60). The "
+              "gate asks whether the three tasks degrade under different corruptions, and "
+              "the profiles here do differ — T1 is completely robust to channel shift where "
+              "T2 and T3 are not, T3 is hypersensitive to jitter where T1 is not, T1 is "
+              "destroyed by whole-utterance randomisation and not by the per-segment form. "
+              "The direction is consistent with prediction P-07. It is not evidence for it, "
+              "because a corpus whose tasks are easier and more alike than speech cannot "
+              "carry the test, and P-07 stays open.")
+
+
 def results_section(doc, ctx):
-    h1(doc, "12.  Recorded results")
+    h1(doc, "14.  Recorded results")
     body(doc, "Every figure quoted in this report that carries a manifest identifier is "
               "reproducible from the repository: the manifest names the script, the "
               "committed configuration, the commit hash the tree was at, and the seed. The "
@@ -1251,26 +1564,36 @@ def results_section(doc, ctx):
                  ".npz, which is gitignored, so numbers that reach the paper stay in the "
                  "repository while large arrays stay local.")
 
-    body(doc, "Two cautions about what these results are and are not. First, **none of them "
-              "is a task result.** No probe has been run, no corpus has been touched, and "
-              "the TIMIT licence question is still open. Everything recorded so far "
-              "characterises the encoders and the harness, not their performance on T1, T2 "
-              "or T3. Second, three seeds are the minimum for anything reported, but every "
-              "measurement here is on a deterministic stimulus through a deterministic path, "
-              "where there is nothing for a seed to vary; each config says so explicitly "
-              "rather than leaving a reader to wonder why one seed was enough.")
+    body(doc, "Two cautions about what these results are and are not. First, **six of them "
+              "are now task results** — the T1 budget sweep, R2, P1, T2, T3 and the P2 "
+              "rehearsal — but every one is on the synthetic stand-in of §12.1, and the "
+              "TIMIT licence question O2 is still open. No number here is a statement about "
+              "speech. Second, three seeds are the minimum for anything reported; the "
+              "encoder characterisations are on deterministic stimuli through deterministic "
+              "paths, where there is nothing for a seed to vary, and each of those configs "
+              "says so explicitly rather than leaving a reader to wonder why one seed was "
+              "enough. The task results vary the split seed, and what that varies — which "
+              "speakers land in test — is named on the result rather than left implied.")
+    body(doc, "Nine manifest entries are marked superseded. That is deliberate and is worth "
+              "explaining, because a superseded entry is more informative than a deleted "
+              "one: when the probes were changed to drop zero-variance features, four "
+              "recorded results named commits whose tree no longer produced them, so all "
+              "four were re-run and the old entries left visible with their values intact. "
+              "The largest movement across all four was 0.0005 at one budget point of one "
+              "of them — a fifth of one test frame — but a commit hash records provenance "
+              "only if the tree that produced the number is the tree the hash names.")
 
-    h2(doc, "12.1  Known-answer suite by block")
+    h2(doc, "14.1  Known-answer suite by block")
     rows = [
         ["F", "Front end — filterbank, envelope, group delay", "6", "0", "Complete"],
         ["T1", "E1 LIF", "3", "0", "Complete"],
         ["T2", "E2 send-on-delta", "9", "0", "Complete"],
         ["T3", "E3 temporal contrast", "6", "0", "Complete"],
-        ["T4", "E4 adaptive LIF", "3", "1", "Q10"],
-        ["T5", "E5 phase-locked", "0", "5", "Q11, Q12 — encoder not written"],
-        ["T6", "E6 time-to-first-spike", "0", "3", "Q14, Q16 — encoder not written"],
-        ["G", "Generic, parametrised over all six encoders", "28", "13", "E5 and E6 stubs"],
-        ["corrupt", "Corruption operators", "3", "1", "Q13"],
+        ["T4", "E4 adaptive LIF", "4", "0", "Complete — test_T4_3 replaced under D39"],
+        ["T5", "E5 phase-locked", "4", "1", "Q20"],
+        ["T6", "E6 time-to-first-spike", "3", "0", "Complete"],
+        ["G", "Generic, parametrised over all six encoders", "43", "1", "Q19 — test_G3[E5]"],
+        ["corrupt", "Corruption operators", "4", "0", "Complete"],
     ]
     fills = {}
     for i, r in enumerate(rows):
@@ -1278,53 +1601,100 @@ def results_section(doc, ctx):
     table(doc, ["Block", "Covers", "Passed", "Failed", "Blocked on"], rows,
           widths=[1.8, 6.4, 1.6, 1.6, 5.0], fills=fills)
     caption(doc, f"Totals: {ctx['passed']} passed, {ctx['failed']} failed, "
-                 f"{ctx['skipped']} skipped. Every failure is attributable to an open "
-                 f"question; none indicates a defect in implemented code. Continuous "
-                 f"integration runs the same suite in a clean environment on every push and "
-                 f"reports the identical failure set.")
+                 f"{ctx['skipped']} skipped, of {SUITE['collected']} collected. Both "
+                 f"failures are open specification questions raised before the encoder "
+                 f"concerned was written; neither indicates a defect in implemented code. "
+                 f"A further {ctx['n_impl_tests']} implementation-session tests cover the "
+                 f"harness, the reference, the segment machinery, T2, T3 and P2 — those are "
+                 f"this session's own and are not Layer 1.")
+    callout(doc, "Continuous integration has not run the harness tests, and that is a gap.",
+            "The workflow runs the known-answer suite and then everything else. Because the "
+            "first step exits non-zero on the two open questions above, GitHub Actions skips "
+            "the second, so no implementation-session test has ever run in the clean "
+            "environment that is CI's whole purpose. They were verified by hand instead, in "
+            "a fresh interpreter with only the declared dependencies installed, but that is "
+            "a check run by the same session that wrote the code. Open as Q25; answering "
+            "Q19 and Q20 would clear it as a side effect.", fill=ROSE)
 
 
 def questions_section(doc, ctx):
-    h1(doc, "13.  Open questions, and what each unblocks")
-    body(doc, "Nine questions are open against the design session. They are listed here in "
-              "the order that clears the most work, which is not the order they were raised. "
-              "Two pairs should be answered together: Q11 with Q12, because both bear on E5's "
-              "constructor signature, and Q14 with Q16, because making e_min relative to the "
-              "maximum frame energy would define the E_max that equation (28) needs.")
+    h1(doc, "15.  Open questions, and what each unblocks")
+    body(doc, f"{ctx['n_open']} questions are open against the design session, up from "
+              f"nine when version 1 of this report was written. That growth is the "
+              f"signature of the work having moved from encoders to the harness: an encoder "
+              f"arrives with a binding specification section and a block of known-answer "
+              f"tests written from its equations, so it either passes or it does not. The "
+              f"harness has neither — SPEC declares the pipeline deliberately unspecified — "
+              f"so it generates questions rather than consuming answers, and that is normal "
+              f"rather than a sign of being stuck.")
+    body(doc, "**Six of them are one question wearing different hats.** Q22, Q24, Q27, Q30, "
+              "Q34 and half of Q31 all ask the same thing: which free parameters is each "
+              "condition allowed to optimise, and must they be the same across conditions? "
+              "Section 6.1 already answers it for the featurisation time constant — every "
+              "encoder at its own best value. Whether that sentence generalises to context "
+              "width, label alignment offset and probe regularisation would settle all six "
+              "at once, and it is the highest-leverage answer available, because it "
+              "determines the shape of every run from here and of the week-8 screening grid.")
+    body(doc, "After that, in the order that clears the most work: **Q23**, because the "
+              "logarithmic branch of equation (10) leaves E1, E4 and E6 with no usable "
+              "operating range at all — the drive is negative everywhere, so E1 emits "
+              "nothing above threshold and saturates below it — and compression is a "
+              "declared sweep axis that half the encoder set cannot traverse. **Q35**, the "
+              "corruption operator whose two readings differ by a factor of ten and which "
+              "is the one open finding that does not depend on the corpus. **Q28**, whether "
+              "the stand-in should gain formant transitions or whether P1 and P2 simply wait "
+              "for TIMIT, which decides what work is worth doing next. **Q31**, R2's role "
+              "now that it bounds one task of three. Then **Q19 and Q20**, which are cheap, "
+              "and which are why continuous integration is red and therefore blind.")
     rows = [
-        ["Q11 + Q12", "#2, #3", "E5", "E5's declared rate parameter spans 1.04× not 4×, and "
-         "the mode with a working parameter cannot be expressed; plus two under-specifications",
-         "12 tests — E5's G block and the whole T5 block"],
-        ["Q16 + Q14", "#7, #5", "E6", "Equation (28) has no E_max and is not evaluable at "
-         "e_min = 0; test_T6_1/T6_2 unsatisfiable at hop < frame; e_min default gates nothing",
-         "8 tests — E6's G block and T6"],
-        ["Q10", "#1", "E4", "test_T4_3 asserts a monotonicity the ALIF does not have; onset "
-         "emphasis peaks near delta_a ≈ 1",
-         "1 test — but bears on prediction P-01 and on the delta_a sweep range"],
-        ["Q13", "#4", "corrupt", "Fixture yields 275 events where its own guard requires 500",
-         "1 test"],
-        ["Q15", "#6", "record", "Two figures quoted in the record do not reproduce as stated; "
-         "in both cases the metric was never defined",
-         "Nothing — corrects the record"],
-        ["Q07", "—", "release", "ON and OFF as separate channel indices, or as a polarity bit",
-         "Nothing — release-format question for Oliver"],
-        ["Q09", "—", "E3", "test_T3_6 says d[:, 0] is exactly zero; in floating point it "
-         "usually is", "Nothing"],
+        ["Q22 + Q24 + Q27\n+ Q30 + Q34", "#13, #15, #18\n#21, #25", "All tasks",
+         "Which free parameters may each condition optimise — context width, label "
+         "alignment, probe regularisation — and must they match across conditions? §6.1 "
+         "already says yes for tau_phi",
+         "The shape of every run, and the week-8 grid"],
+        ["Q23", "#14", "E1, E4, E6",
+         "The log branch of equation (10) gives a drive that is negative everywhere, so "
+         "these three have no usable operating range: E1 emits nothing at theta ≥ 0 and "
+         "saturates at the ceiling below it",
+         "The compression sweep axis, before week 8 commits compute"],
+        ["Q35", "#26", "P1, P2",
+         "SPEC and the proposal define the fourth corruption operator differently; T1 "
+         "falls to 0.1533 under one and 0.7656 under the other",
+         "P2's interpretation, and what equation (40) measures"],
+        ["Q28", "#19", "P1, P2",
+         "The stand-in has stationary phones, so counts nearly reach the ceiling and the "
+         "index is noise. Formant transitions, or wait for TIMIT?",
+         "Whether P1 and P2 work on the stand-in is worth doing"],
+        ["Q31", "#22", "R2",
+         "R2 bounds T1 but not T2 or T3 — E1 beats it on both. Is it a bound, or a "
+         "per-task reference?",
+         "How every result is framed"],
+        ["Q19 + Q20", "#10, #11", "E5",
+         "cycle_divisor spans 3.48× against D27's 4×; test_T5_3 cannot pass at the default "
+         "D40 introduces",
+         "Two tests — and CI, which is blind while they fail (Q25)"],
+        ["Q07", "#—", "Release format",
+         "ON and OFF as separate channel indices, or a polarity bit? A release-format "
+         "question for Oliver rather than a methods one",
+         "Controls C6 and C7, and the event file format"],
     ]
-    fills = {(0, 4): AMBER, (1, 4): AMBER, (2, 4): ROSE}
+    # The first row is the six-in-one cluster; shading it marks where to start.
+    fills = {(0, 4): AMBER}
     table(doc, ["Question", "Issue", "Area", "Substance", "What answering it unblocks"], rows,
           widths=[2.2, 1.4, 1.6, 7.4, 4.6], size=8.5, fills=fills)
-    callout(doc, "If only one answer comes back, Q10 is the one that matters most.",
-            "It is worth a single red test and nothing else in implementation terms, but it "
-            "is the only open item with consequences for a **pre-registered prediction**. "
-            "P-01 predicts T1 accuracy rising and T2 falling as adaptation strength "
-            "increases; if the onset emphasis underneath is non-monotone with a peak near "
-            "delta_a ≈ 1, a sweep spanning that peak could confirm or contradict P-01 "
-            "according to which side its points fall.", fill=ROSE)
+    callout(doc, "If only one answer comes back, make it the first row.",
+            "Six of the open questions are one question, and §6.1 already contains its "
+            "answer for one parameter. Everything built from here — the week-8 screening "
+            "grid, every Pareto front, the single release configuration of C10 — depends on "
+            "whether each condition is scored at its own best settings or at fixed ones, and "
+            "§13.2 shows the difference is large enough to reverse the ordering between an "
+            "encoder and the reference that is supposed to bound it. Answering it late means "
+            "re-running everything built in the meantime; answering it now costs one "
+            "sentence.", fill=ROSE)
 
 
 def predictions_section(doc, ctx):
-    h1(doc, "14.  Pre-registered predictions")
+    h1(doc, "16.  Pre-registered predictions")
     body(doc, "These were recorded and dated before any corresponding run, per §7 of the "
               "validation protocol, and are held fixed thereafter. A result contradicting one "
               "triggers a written investigation before it is used, whatever the outcome. The "
@@ -1374,14 +1744,22 @@ def build():
                          "P-07": "Probe P2", "P-08": "Front end"}.get(parts[0], "—")
                 preds.append([parts[0], parts[2], bears, parts[3]])
 
+    open_q = open_questions()
+    t1 = load("probe_e1_t1_synthetic")
+    first_run = t1["points"][0]["runs"][0]
     ctx = {
-        "date": "6 September 2026",
+        "date": "8 September 2026",
         "commit": commit(),
-        "passed": 61, "failed": 23, "skipped": 1,
+        "passed": SUITE["passed"], "failed": SUITE["failed"],
+        "skipped": SUITE["skipped"],
         "n_results": len(manifest),
-        "n_open": 9,
+        "n_open": len(open_q),
+        "n_impl_tests": 102,
         "manifest": manifest,
         "predictions": preds,
+        "t1": {"points": t1["points"],
+               "floor": first_run["majority_floor"],
+               "chance": first_run["chance"]},
     }
 
     front_matter(doc, ctx)
@@ -1396,6 +1774,8 @@ def build():
     e6(doc, ctx)
     e7_and_references(doc, ctx)
     shared_machinery(doc, ctx)
+    harness_section(doc, ctx)
+    task_results_section(doc, ctx)
     results_section(doc, ctx)
     questions_section(doc, ctx)
     predictions_section(doc, ctx)
@@ -1410,8 +1790,8 @@ def build():
     cp.modified = stamp
     cp.last_modified_by = "Simon Davidson & Claude"
     cp.author = "Simon Davidson & Claude"
-    cp.title = "spikeEncode — encoder survey"
-    cp.revision = 1
+    cp.title = f"spikeEncode — encoder survey v{REPORT_VERSION}"
+    cp.revision = REPORT_VERSION
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     doc.save(OUT)
