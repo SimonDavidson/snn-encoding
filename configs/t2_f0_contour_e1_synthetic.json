@@ -23,7 +23,15 @@
   "t2": {
     "ridge_alpha": 1.0,
     "semitone_ref_hz": 100.0,
-    "min_frames_per_utterance": 5
+    "min_frames_per_utterance": 5,
+    "ridge_alphas": [
+      1.0,
+      10.0,
+      100.0,
+      1000.0,
+      10000.0,
+      100000.0
+    ]
   },
   "contexts": [
     0,

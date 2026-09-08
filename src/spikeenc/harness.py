@@ -781,10 +781,45 @@ def _per_utterance_pearson(pred, ref, utt_index, min_frames=5):
             len(values))
 
 
+def _select_ridge_alpha(x, y, groups, alphas, seed):
+    """Choose the ridge penalty on a speaker-disjoint split *inside* training.
+
+    A single fixed penalty cannot serve every operating point. At the lowest
+    budgets events are sparse, so many features have tiny variance,
+    standardisation turns them into large spikes, and the context-stacked
+    copies of them are near-collinear; a penalty negligible against a Gram
+    diagonal of order n then leaves the small eigendirections unregularised and
+    the predictions land hundreds of octaves out. Correlation survives that,
+    being scale-free, which is exactly why RMSE has to be watched alongside it.
+
+    Selected on held-out speakers within the training set, never on test:
+    tuning a penalty against the reported number is the thing C5 and the
+    fairness constraints exist to stop. Every condition is offered the same
+    grid, which is what C4's "identical regularisation" requires — identical
+    procedure, not identical value.
+    """
+    speakers = np.unique(groups)
+    if len(speakers) < 2 or len(alphas) == 1:
+        return float(alphas[0]), {}
+    rng = np.random.default_rng(seed + 17)
+    held = set(rng.permutation(speakers)[:max(1, len(speakers) // 3)].tolist())
+    val = np.array([g in held for g in groups])
+    if val.all() or not val.any():
+        return float(alphas[0]), {}
+
+    scores = {}
+    for a in alphas:
+        probe = RidgeProbe(alpha=float(a)).fit(x[~val], y[~val])
+        err = probe.predict(x[val]) - y[val]
+        scores[str(a)] = float(np.sqrt(np.mean(err ** 2)))
+    best = min(scores, key=scores.get)
+    return float(best), scores
+
+
 def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
            test_fraction=0.3, seed=0, alpha=1e-4, ridge_alpha=1.0,
-           offsets=(-2, -1, 0), ref=SEMITONE_REF_HZ, features=None,
-           min_frames=5):
+           ridge_alphas=None, offsets=(-2, -1, 0), ref=SEMITONE_REF_HZ,
+           features=None, min_frames=5):
     """T2, fundamental frequency contour (proposal 4.2), on one operating point.
 
     Ridge regression per frame on the voiced frames for the contour, and a
@@ -809,6 +844,7 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
     train_mask = np.isin(uid, np.asarray(split.train, dtype=object))
     test_mask = np.isin(uid, np.asarray(split.test, dtype=object))
 
+    speaker_of = {u.uid: u.speaker for u in corpus}
     contours, voiced_flags, utt_ids = [], [], []
     for u in corpus:
         s, v = f0_targets(u, hop, ref=ref)
@@ -844,7 +880,12 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
             idx = np.flatnonzero(fit_rows)
             y[idx] = s[rng.permutation(idx)]
 
-        probe = RidgeProbe(alpha=ridge_alpha).fit(x[fit_rows], y[fit_rows])
+        chosen, alpha_scores = (
+            _select_ridge_alpha(x[fit_rows], y[fit_rows],
+                                np.array([speaker_of[u] for u in utt[fit_rows]]),
+                                ridge_alphas, seed)
+            if ridge_alphas else (ridge_alpha, {}))
+        probe = RidgeProbe(alpha=chosen).fit(x[fit_rows], y[fit_rows])
         pred = probe.predict(x[test_rows])
         truth = s[test_rows]
 
@@ -863,6 +904,8 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
                 "n_test_frames": int(test_rows.sum()),
                 "n_utterances_scored": n_scored,
                 "n_utterances_excluded": excluded,
+                "ridge_alpha_chosen": chosen,
+                "ridge_alpha_validation_rmse": alpha_scores,
                 "probe_settings": probe.settings}
 
     by_offset = {str(o): evaluate(o) for o in offsets}
@@ -901,8 +944,12 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
                                 if features is None else 0.0),
         "n_utterances_scored": by_offset[best]["n_utterances_scored"],
         "n_utterances_excluded": by_offset[best]["n_utterances_excluded"],
+        "ridge_alpha_chosen": by_offset[best]["ridge_alpha_chosen"],
         "settings": {"tau": tau, "hop": hop, "context": context,
-                     "ridge_alpha": ridge_alpha, "semitone_ref_hz": ref,
+                     "ridge_alpha": ridge_alpha,
+                     "ridge_alphas": list(ridge_alphas) if ridge_alphas else None,
+                     "ridge_alpha_selected_on": "held-out speakers within train",
+                     "semitone_ref_hz": ref,
                      "min_frames_per_utterance": min_frames,
                      "headline": "pearson_per_utterance"},
         "seconds": time.time() - t0,

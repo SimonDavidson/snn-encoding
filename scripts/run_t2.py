@@ -53,6 +53,7 @@ def main(config_path):
                        test_fraction=cfg["split"]["test_fraction"], seed=s,
                        alpha=cfg["probe"]["alpha"],
                        ridge_alpha=t2["ridge_alpha"],
+                       ridge_alphas=t2.get("ridge_alphas"),
                        ref=t2["semitone_ref_hz"],
                        min_frames=t2["min_frames_per_utterance"],
                        offsets=tuple(cfg["offsets"]), features=features)
@@ -71,6 +72,7 @@ def main(config_path):
                "shuffled_pearson_pooled": mean("shuffled_pearson_pooled"),
                "voicing_accuracy": mean("voicing_accuracy"),
                "voicing_floor": mean("voicing_floor"),
+               "ridge_alpha_chosen": [r["ridge_alpha_chosen"] for r in runs],
                "pearson_std": float(np.nanstd(
                    [r["pearson_per_utterance"] for r in runs], ddof=1)),
                "runs": runs}
