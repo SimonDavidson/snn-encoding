@@ -1817,3 +1817,60 @@ Q35 come back. The remaining unblocked work is the survey report's narrative,
 now stale in nine passages — it describes no harness, no R2, no P1, no T2, no
 T3 and no P2 — and that is writing rather than regeneration, so it stays
 Simon's call.
+
+## 2026-09-08 | session: implementation (eighth block)
+**Did:** Rebuilt the encoder survey report as **version 2**, at Simon's request,
+for sending to Oliver before this afternoon's meeting. Version is now a constant
+carried in the filename (`spikeEncode_encoder_survey_v2.docx`) and in the docx
+properties; v1 is left in place as the record of what Oliver already has.
+
+**Eleven passages were false, not the six I logged yesterday.** The two I had
+not counted were E6's design-parameter table — still listing `e_min` as the
+RATE_PARAM and `E_max` as "defined nowhere", both settled by D43 and D44 — and a
+sentence in E7's section calling a controllable rate parameter "the property E5
+and E6 are currently blocked on". Corrected in full: the status callout, three
+summary-table rows, the table caption asserting both encoders raise
+`NotImplementedError`, the paragraph counting "the four implemented encoders",
+E5's and E6's status callouts, R2's section, the claim that "none of them is a
+task result. No probe has been run", the known-answer block table, and the
+questions section.
+
+**E4 is 11/11, which I had not noticed.** The report said 10/11 with test_T4_3
+failing on Q10. D39 replaced that test on 2026-09-06 and the block has been
+complete since. Counted from the collected test ids rather than from memory,
+which is how it surfaced — and a reminder that a status table is a claim like
+any other.
+
+**Two new sections.** §12 the probe harness: the corpus problem and why the
+stand-in is a stand-in rather than a placeholder, the probes and why they are
+written out rather than imported, and the Layer 2 controls as a table with three
+of eight marked not evaluable and each one's blocker named. §13 first task
+results: the T1 budget sweep with the bandwidth crossover, what C5 found
+including R2 falling below E1 at offset zero, and T2, T3, P1 and P2 in one
+table with the P1 and P2 caveats stated rather than footnoted.
+
+**Two things I changed about how the report is built, both because of what went
+stale.** The open-question count is now derived from `QUESTIONS.md` instead of
+being a literal — it went from 9 to 20 in two days and is exactly the kind of
+number nobody re-checks. The suite totals and per-encoder test counts are named
+constants in one block at the top with a comment saying they must match the last
+recorded run, rather than being scattered through the narrative; running the
+suite inside the build would make the report slow and able to fail for reasons
+unrelated to the report.
+
+**Margins rather than passes.** The build is still byte-deterministic — two
+consecutive runs give the same sha256. The rebuilt document was scanned
+programmatically for eleven stale phrases and for every occurrence of "not
+implemented", "does not exist", "not started", "not been run" and "blocked on";
+the remaining matches are all legitimate (E7, R1, the nonlinear probe, the three
+unevaluable controls). One claim I checked and *kept*: E4's adaptation-ratio
+table still says "not yet registered in the manifest", and that is still true.
+
+**Tests:** unchanged, 184 passed, 2 failed, 1 skipped. No source touched.
+**Results written:** none. The report reads `results/` and the manifest; it adds
+nothing.
+**Blocked on:** the design-session round trip, expected in about two hours.
+**Next:** nothing further should be built until the free-parameter cluster
+(Q22, Q24, Q27, Q30, Q34 and half of Q31) comes back, since it could change the
+shape of every run recorded so far. §15 of the report puts that cluster first
+and says why, which is also the order Simon has for the round trip.
