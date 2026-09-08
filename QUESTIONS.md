@@ -2653,3 +2653,60 @@ be stated for the interior only, and the degradation attributed accordingly.
 **Blocking?** no, and it matters for how P2's channel-shift row is read
 whenever it is run for real. Both signs are recorded.
 **Answer:** (open)
+
+### Q38 — T2's alignment offset: the headline correlation does not resolve it, and RMSE does
+**Raised:** 2026-09-08 by implementation session
+**Context:** implementing D71. Every free parameter now selects on
+speaker-disjoint folds inside the training split. T2 has two — the ridge
+penalty and the alignment offset — and one pass of fits scores both criteria,
+so which criterion picks which parameter had to be decided rather than
+inherited. D59 already fixes the penalty on validation RMSE, because the
+468-octave failure it was raised about is invisible to a scale-free
+correlation. The offset was given the headline metric, on the principle that
+selecting on one quantity and reporting another is the fault D71 exists to
+remove.
+
+**Question:** should T2's alignment offset be selected on validation RMSE
+rather than on the mean within-utterance Pearson r that 4.2 makes the headline?
+
+**Measured**, E1 at Λ = 15343, context 5, leave-one-speaker-out folds inside
+train, three split seeds. Validation profile across offsets −4 … +1:
+
+| seed | val r, −4 → +1 | val RMSE (st), −4 → +1 | val picks | test picks |
+|---|---|---|---|---|
+| 0 | 0.493 0.505 0.513 0.522 **0.526** 0.514 | **1.379** 1.388 1.405 1.437 1.504 1.559 | r: 0, RMSE: −4 | −3 |
+| 1 | 0.485 0.508 0.521 **0.525** 0.522 0.522 | 1.579 1.557 **1.561** 1.610 1.690 1.719 | r: −1, RMSE: −3 | −1 |
+| 2 | 0.541 0.557 **0.570** 0.568 0.553 0.554 | 1.282 1.250 **1.248** 1.287 1.375 1.418 | r: −2, RMSE: −2 | −1 |
+
+The correlation profile spans 0.033 over six offsets and its maximum moves
+across all of 0, −1, −2 with the split seed. The RMSE profile has a clear
+interior minimum at −2 or −3 on every seed, and the front end's declared lag
+predicts −1 at the mean channel and −2 at the low channels — which is where f0
+lives. So the two criteria are not equally informative about the same
+quantity: one resolves the axis and agrees with a lag computed without fitting
+anything, and the other does not resolve it at all.
+
+**Why this is not obviously a free choice.** A correlation against a linear
+declination is nearly invariant to a shift of one to three frames, because
+shifting a straight line changes its intercept and not its slope. That is a
+property of *this corpus* — the stand-in's f0 is a linear declination — and it
+may well not hold on TIMIT, whose contours have accents. Choosing RMSE now
+because it happens to bite here is the kind of choice that should be made once,
+in the contract, rather than per corpus.
+
+**Options considered:**
+1. Offset on the headline correlation, as now. Consistent, and C5 honestly
+   records the axis as unresolved (the interior-maximum test fails on the
+   plateau). *Implemented as the provisional default.*
+2. Offset on validation RMSE, correlation still the reported headline. The
+   offset is a property of the encoder's lag rather than of the metric, and
+   both metrics estimate the same lag; prefer the estimator with signal.
+3. Offset fixed at the analytically predicted value and not selected at all,
+   with the sweep retained purely as the C5 control. D69 makes the offset a
+   swept axis, but D69's own argument is that the sweep is a *check* on two
+   independently computed lags.
+
+**Blocking?** no — option 1 is implemented and every T2 figure records the
+RMSE-selected offset beside the chosen one, so the alternative reading is
+recoverable from the result files without a re-run.
+**Answer:** (open)
