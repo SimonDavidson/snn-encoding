@@ -13,17 +13,33 @@
   "features": {
     "n_mels": 40,
     "frame": 0.025,
-    "hop": 0.010,
+    "hop": 0.01,
     "f_min": 50.0,
     "f_max": 8000.0,
     "context": 0
   },
-  "alignments": ["causal", "centred"],
+  "alignments": [
+    "causal",
+    "centred"
+  ],
   "bits_per_feature": 32,
-  "probe": {"alpha": 0.0001},
-  "split": {"test_fraction": 0.3},
-  "split_seeds": [0, 1, 2],
-  "control_offsets": [-2, -1, 1],
+  "probe": {
+    "alpha": 0.0001
+  },
+  "split": {
+    "test_fraction": 0.3
+  },
+  "split_seeds": [
+    0,
+    1,
+    2
+  ],
+  "control_offsets": [
+    -2,
+    -1,
+    1
+  ],
   "compare_with": "probe_e1_t1_synthetic",
-  "predictions": []
+  "predictions": [],
+  "supersede": true
 }

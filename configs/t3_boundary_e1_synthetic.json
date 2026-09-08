@@ -15,22 +15,42 @@
   },
   "featurisation": {
     "tau": 0.005,
-    "hop": 0.010,
+    "hop": 0.01,
     "n_mels": 40,
     "frame": 0.025,
     "alignment": "causal"
   },
   "t3": {
-    "tolerance": 0.020,
+    "tolerance": 0.02,
     "label_tolerance_frames": 1,
-    "min_separation": 0.020,
+    "min_separation": 0.02,
     "n_thresholds": 33
   },
-  "contexts": [0, 2, 5],
-  "target_lambdas": [400, 2500, 16000],
-  "offsets": [-1, 0],
-  "probe": {"alpha": 0.0001},
-  "split": {"test_fraction": 0.3},
-  "split_seeds": [0, 1, 2],
-  "predictions": []
+  "contexts": [
+    0,
+    2,
+    5
+  ],
+  "target_lambdas": [
+    400,
+    2500,
+    16000
+  ],
+  "offsets": [
+    -1,
+    0
+  ],
+  "probe": {
+    "alpha": 0.0001
+  },
+  "split": {
+    "test_fraction": 0.3
+  },
+  "split_seeds": [
+    0,
+    1,
+    2
+  ],
+  "predictions": [],
+  "supersede": true
 }

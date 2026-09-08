@@ -21,13 +21,40 @@
     "f_max": 8000.0,
     "spacing": "erb"
   },
-  "target_lambda": [160, 400, 1000, 2500, 6300, 16000],
-  "bracket": [0.0001, 100.0],
+  "target_lambda": [
+    160,
+    400,
+    1000,
+    2500,
+    6300,
+    16000
+  ],
+  "bracket": [
+    0.0001,
+    100.0
+  ],
   "calibration_tol": 0.05,
-  "featurisation": {"tau": 0.005, "hop": 0.010, "context": 0},
-  "probe": {"alpha": 0.0001},
-  "split": {"test_fraction": 0.3},
-  "split_seeds": [0, 1, 2],
-  "control_offsets": [-2, -1, 1],
-  "predictions": []
+  "featurisation": {
+    "tau": 0.005,
+    "hop": 0.01,
+    "context": 0
+  },
+  "probe": {
+    "alpha": 0.0001
+  },
+  "split": {
+    "test_fraction": 0.3
+  },
+  "split_seeds": [
+    0,
+    1,
+    2
+  ],
+  "control_offsets": [
+    -2,
+    -1,
+    1
+  ],
+  "predictions": [],
+  "supersede": true
 }
