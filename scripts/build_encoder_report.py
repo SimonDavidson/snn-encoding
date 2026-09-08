@@ -36,6 +36,31 @@ ROOT = Path(__file__).resolve().parent.parent
 REPORT_VERSION = 2
 OUT = ROOT / "reports" / f"spikeEncode_encoder_survey_v{REPORT_VERSION}.docx"
 
+#: Corrections and additions owed to the *next* version, recorded when they are
+#: found rather than when they can be applied — v2 had already gone to Oliver
+#: when the first of these surfaced. Printed at the end of every build, so the
+#: list is in front of whoever rebuilds at exactly the moment it is actionable
+#: rather than sitting in a notebook entry nobody re-reads.
+PENDING_NEXT_VERSION = [
+    "§1.2 and the §2 table: the Drive column has two meanings. DRIVE_KIND is "
+    "declared only as 'envelope' or 'subband' (SPEC 4.1), and §1.2 says so — "
+    "'one of two things' — but the table shows a third value, 'audio', on E7, "
+    "R1 and R2, none of which is an Encoder subclass and none of which declares "
+    "a DRIVE_KIND at all. For those rows the column silently means 'bypasses "
+    "the shared front end'. Expand §1.2 to give the signal chain "
+    "(audio -> filterbank -> x_c subband -> envelope -> u_c compressed "
+    "envelope) and name all three; correct the table caption to say what "
+    "'audio' marks. Raised by Simon, 8 September 2026, after v2 was sent.",
+    "§13 will need re-running wholesale once the free-parameter cluster (Q22, "
+    "Q24, Q27, Q30, Q34) is answered: whether each condition is scored at its "
+    "own best settings or at fixed ones changes every number in it, and §13.2 "
+    "shows the difference is large enough to reverse the ordering between an "
+    "encoder and the reference meant to bound it.",
+    "E4's adaptation-ratio table in §7 is still marked 'not yet registered in "
+    "the manifest'. It should be produced by a script under a committed config "
+    "like every other reported number (D35), or dropped.",
+]
+
 #: Known-answer suite totals at the last recorded run. Not derived, because
 #: running the suite inside the build would make the report slow and able to
 #: fail for a reason unrelated to the report; stated here so a mismatch with
@@ -1717,7 +1742,24 @@ def predictions_section(doc, ctx):
 
 
 # ==========================================================================
-def build():
+def build(force=False):
+    """Build the report. Refuses to overwrite an existing file for this version.
+
+    The front matter embeds the commit hash the tree was at, so rebuilding at a
+    later commit produces a *different* file even when no narrative has changed
+    — which means a version that has been sent is frozen, and rebuilding it
+    silently replaces the copy the recipient holds. That is not hypothetical:
+    it happened to v2 within an hour of it going to Oliver, and was caught only
+    because `git status` showed the binary as modified. Bump REPORT_VERSION for
+    a new version, or pass force to deliberately replace an unsent one.
+    """
+    if OUT.exists() and not force:
+        raise SystemExit(
+            f"{OUT.name} already exists.\n"
+            f"The commit hash is embedded, so rebuilding produces a different "
+            f"file and would replace a version that may already have been "
+            f"sent.\nBump REPORT_VERSION (currently {REPORT_VERSION}) for a new "
+            f"version, or run with --force to replace this one deliberately.")
     doc = Document()
 
     st = doc.styles["Normal"]
@@ -1797,8 +1839,14 @@ def build():
     doc.save(OUT)
     _normalise_zip_times(OUT)
     print(f"written: {OUT}")
+    if PENDING_NEXT_VERSION:
+        print(f"\n{len(PENDING_NEXT_VERSION)} item(s) owed to the next version — "
+              f"apply before bumping REPORT_VERSION:")
+        for i, item in enumerate(PENDING_NEXT_VERSION, 1):
+            print(f"  {i}. {item}")
     return OUT
 
 
 if __name__ == "__main__":
-    build()
+    import sys
+    build(force="--force" in sys.argv)

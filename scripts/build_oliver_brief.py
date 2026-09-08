@@ -38,7 +38,16 @@ from build_encoder_report import (  # noqa: E402
 OUT = ROOT / "reports" / "spikeEncode_decisions_for_Oliver.docx"
 
 
-def build():
+def build(force=False):
+    """Same overwrite guard as the survey report, for the same reason: the
+    commit hash is embedded, so a rebuild replaces a copy that may already be
+    in someone's inbox."""
+    if OUT.exists() and not force:
+        raise SystemExit(
+            f"{OUT.name} already exists. The commit hash is embedded, so "
+            f"rebuilding produces a different file and would replace a copy "
+            f"that may already have been sent. Run with --force to replace it "
+            f"deliberately.")
     doc = Document()
     st = doc.styles["Normal"]
     st.font.name = "Calibri"
@@ -142,4 +151,5 @@ def build():
 
 
 if __name__ == "__main__":
-    build()
+    import sys
+    build(force="--force" in sys.argv)
