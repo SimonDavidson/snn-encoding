@@ -2047,6 +2047,16 @@ Option 2 if the workflow is being touched anyway; option 1 if not. I have no
 strong view beyond wanting the harness tests checked somewhere I did not
 configure.
 
+**Cleared in practice on 2026-09-08, though the structural question stands.**
+The Q19/Q20 drop turned the Layer 1 step green, so "Everything else" ran for the
+first time and reported **102 passed**. Every implementation-session test has
+now been checked in an environment this session did not configure, and none
+depended on local state. The question that remains is whether the workflow
+should let the second step run regardless of the first — the blindness lasted
+from 2026-09-06 to 2026-09-08 and would return the moment any Layer 1 test goes
+red again, which on this project has been the normal state rather than the
+exception.
+
 **Blocking?** no. Nothing is blocked and every test passes locally in a clean
 environment. `.github/workflows/tests.yml` is a design-session file listed in
 CLAUDE.md, so this is raised rather than fixed, per the precedence rule.
