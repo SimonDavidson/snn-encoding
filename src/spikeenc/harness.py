@@ -556,8 +556,9 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
     best_tv, best_t = max(flat_t, key=flat_t.get)
     best_c = max(ceiling, key=ceiling.get)
     # The literal offset-zero reading, at the first tau in the sweep, kept so
-    # the strict version of equation (40) is still recoverable.
-    zero_t = temporal[f"{taus[0]}"]["0"]
+    # the strict version of equation (40) is still recoverable. None when zero
+    # is not in the sweep; see run_t2.
+    zero_t = temporal[f"{taus[0]}"].get("0")
     n_test_seg = int(np.sum(seg_test & (seg_label != UNLABELLED)))
     floor = float(np.bincount(seg_label[seg_test & (seg_label != UNLABELLED)]
                               ).max() / max(1, n_test_seg))
@@ -575,8 +576,9 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
         # Equation (40) two ways: at the literal offset zero, and with each
         # frame-based condition at its own best alignment. Reported together
         # because Q24 is open and the two readings differ.
-        "tii_at_zero": temporal_information_index(
-            zero_t, a_count, ceiling["0"]),
+        "tii_at_zero": (temporal_information_index(zero_t, a_count,
+                                                   ceiling["0"])
+                        if zero_t is not None and "0" in ceiling else None),
         "tii_at_best": temporal_information_index(
             flat_t[(best_tv, best_t)], a_count, ceiling[best_c]),
         "tii_at_best_using_rate": temporal_information_index(
@@ -584,7 +586,8 @@ def run_p1(corpus, trains, *, labelset=None, tau=0.005, hop=0.010, context=0,
         # Equation (40)'s denominator, reported because the index alone cannot
         # be judged without it: a thin denominator makes a large index that
         # reads as a strong result and is seed noise.
-        "tii_denominator_at_zero": ceiling["0"] - a_count,
+        "tii_denominator_at_zero": (ceiling["0"] - a_count
+                                    if "0" in ceiling else None),
         "tii_denominator_at_best": ceiling[best_c] - a_count,
         "majority_floor": floor,                          # C2
         "chance": labelset.chance,                        # C2
@@ -718,9 +721,12 @@ def run_t3(corpus, trains, *, tau=0.005, hop=0.010, context=0,
         "precision": by_offset[best]["precision"],
         "recall": by_offset[best]["recall"],
         "over_segmentation": by_offset[best]["over_segmentation"],
-        "f_score_at_zero": by_offset["0"]["f_score"],
+        # None when zero is not in the sweep; see run_t2.
+        "f_score_at_zero": (by_offset["0"]["f_score"]
+                            if "0" in by_offset else None),
         "frame_auc": by_offset[best]["frame_auc"],
-        "frame_auc_at_zero": by_offset["0"]["frame_auc"],
+        "frame_auc_at_zero": (by_offset["0"]["frame_auc"]
+                              if "0" in by_offset else None),
         "shuffled_f_score": shuffled["f_score"],           # C3
         "shuffled_r_value": shuffled["r_value"],           # C3
         "shuffled_frame_auc": shuffled["frame_auc"],       # C3
@@ -932,8 +938,13 @@ def run_t2(corpus, trains, *, tau=0.005, hop=0.010, context=0,
         "pearson_pooled": by_offset[best]["pearson_pooled"],
         "rmse_semitones": by_offset[best]["rmse_semitones"],
         "floor_rmse_semitones": by_offset[best]["floor_rmse_semitones"],
+        # None when the offset sweep does not include zero, which happens
+        # whenever a caller fixes the alignment rather than scanning it — P2
+        # does. Indexing "0" unconditionally assumed a sweep shape that is not
+        # guaranteed and raised a KeyError the first time one differed.
         "pearson_per_utterance_at_zero":
-            by_offset["0"]["pearson_per_utterance"],
+            (by_offset["0"]["pearson_per_utterance"]
+             if "0" in by_offset else None),
         "shuffled_pearson_per_utterance":
             shuffled["pearson_per_utterance"],                  # C3
         "shuffled_pearson_pooled": shuffled["pearson_pooled"],  # C3
