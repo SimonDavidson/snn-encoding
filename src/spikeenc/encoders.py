@@ -10,7 +10,7 @@ Equation numbers refer to docs/proposal_v2.md.
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-02
-Last modified: 2026-09-07
+Last modified: 2026-09-08
 """
 import numpy as np
 from scipy.signal import butter, sosfilt
@@ -523,7 +523,7 @@ class PhaseLocked(Encoder):
     NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND = ("E5", "cycle_divisor", -1,
                                                     "subband")
 
-    def __init__(self, n_channels, cycle_divisor=4, threshold=0.05,
+    def __init__(self, n_channels, cycle_divisor=1, threshold=0.05,
                  env_cutoff=100.0, gamma=1.0, f_lock=1500.0, refractory=0.001,
                  mode="deterministic", centre_frequencies=None,
                  lambda_max=200.0, z_0=0.0):

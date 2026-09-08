@@ -306,8 +306,8 @@ class Filterbank:
     def compress(self, env, method="log", epsilon=1e-8, exponent=0.3):
         """Compressive nonlinearity, equation (10). SPEC section 3.
 
-        "log"   : log(e_c + epsilon)   -- `epsilon` prevents the singularity
-                  in silence and applies to this branch only.
+        "log"   : log(1 + e_c/epsilon)  -- D67. `epsilon` sets the knee and
+                  applies to this branch only.
         "power" : e_c ** exponent      -- `exponent` applies to this branch only.
         "none"  : returned unchanged, for E5, whose drive is the subband
                   waveform rather than a compressed envelope.
@@ -316,7 +316,24 @@ class Filterbank:
         if method == "none":
             return e
         if method == "log":
-            return np.log(e + epsilon)
+            # log(1 + e/epsilon), not log(e + epsilon). D67, answering Q23.
+            #
+            # The two differ by the constant log(epsilon), so this is the same
+            # compression curve shifted, and it is invisible to E2 and E3,
+            # which respond to changes in the drive and cancel an additive
+            # offset exactly. What it fixes is every encoder that compares the
+            # drive against an absolute zero: under the unshifted form a
+            # peak-normalised utterance gives a drive that is negative
+            # everywhere (measured [-13.62, -0.96] on the synthetic corpus, 100
+            # per cent of samples below zero), so E1 and E4 emitted nothing at
+            # any non-negative theta and everything at any negative one, and
+            # E6's frame energy selected the *quietest* frames.
+            #
+            # log1p rather than log(1 + x): it is exact for small e/epsilon,
+            # and it returns exactly 0.0 in silence, which is what makes SPEC
+            # 4.1's all-zero-drive requirement hold by construction here rather
+            # than by every encoder's threshold happening to sit above it.
+            return np.log1p(e / epsilon)
         if method == "power":
             # Envelopes are non-negative by construction; clipping keeps a
             # fractional exponent from producing NaN if that is ever violated.
