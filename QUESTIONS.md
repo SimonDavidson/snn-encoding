@@ -2710,3 +2710,86 @@ in the contract, rather than per corpus.
 RMSE-selected offset beside the chosen one, so the alternative reading is
 recoverable from the result files without a re-run.
 **Answer:** (open)
+
+### Q39 — the 61-to-39 folding table is written from convention, not from the source
+**Raised:** 2026-09-08 by implementation session
+**Context:** implementing `timit_corpus` ahead of the licence. Proposal 4.1
+requires that "following near-universal convention on TIMIT, the 61-symbol
+label set is collapsed to 39 for scoring, and this must be stated whenever a
+figure is quoted". So the table is part of what a reported number means, and it
+is in `corpus.TIMIT_61_TO_39`.
+
+**Question:** please check the table against Lee and Hon (1989), or against
+whichever source the paper will cite, before any 39-symbol figure is reported.
+
+**Why this is being asked rather than assumed.** The table was written out from
+the convention as used in the HTK and Kaldi recipes. That paper is not on this
+machine and CLAUDE.md forbids fabricating a parameter value or a claim about
+what a source says. A folding table is precisely the artefact that is quoted
+from memory and is wrong in one row, and one wrong row is invisible: it does
+not fail, it moves a phone accuracy by a fraction of a point in a direction
+nobody can see. What the tests can check without the source, and do, is that
+the table is internally consistent — every symbol it emits is in the 39-set,
+and no symbol is mapped twice.
+
+**Two sub-questions that are not just transcription:**
+
+1. **The glottal stop.** `q` is conventionally *deleted* rather than mapped.
+   Implemented as a deletion, which leaves a gap in the segment tiling and
+   therefore frames that `label_at` reports as unlabelled and the probe
+   excludes. The alternative readings — fold `q` into `sil`, or merge it into
+   the following segment — change both the frame count and the boundary set.
+2. **Which corpus each task gets.** Folding merges adjacent segments that fold
+   together, so `h#` followed by `pcl` becomes one `sil` and the boundary
+   between them is gone. That is correct for T1 and wrong for T3, whose ground
+   truth is the hand-placed boundary set. Implemented so that `fold_to_39` is
+   an explicit call and T3 is documented as taking the unfolded corpus. Worth
+   confirming, because it is the kind of thing that gets applied globally by a
+   later script for tidiness.
+
+**Blocking?** no — it blocks reporting a 39-symbol figure, not building the
+loader, and T3 does not use the table at all.
+**Answer:** (open)
+
+### Q40 — T2 on TIMIT needs two pitch trackers, and this machine has none
+**Raised:** 2026-09-08 by implementation session
+**Context:** `timit_corpus` leaves `f0` and `voiced` as None, so T2 raises a
+named error on TIMIT rather than scoring an invented contour. TIMIT carries
+hand-placed phone labels and no pitch annotation.
+
+**Question:** which two pitch trackers, and does the two-tracker disagreement
+floor have to be measured before the first T2 figure on TIMIT, or alongside it?
+
+**Context from the proposal.** 4.2 says "the reference contour is extracted
+from the clean audio by a standard pitch tracker before encoding", and then
+adds the caveat that "an automatically extracted contour is a proxy reference,
+not ground truth. Pitch trackers make octave errors and disagree at voicing
+boundaries. Two trackers should be run and their disagreement quantified,
+giving a measured noise floor for the task before any encoder is judged
+against it."
+
+**What this costs here.** The box has numpy and scipy and nothing else — no
+`librosa`, no `praat-parselmouth`, no `pysptk` — and CI installs `.[dev]` and
+runs every file in `tests/`, so a tracker pulled in as a dependency would make
+its own tests unrunnable in the one environment that checks them
+independently. That is the D49 argument that put the linear probe in numpy.
+So both trackers have to be written here, in numpy and scipy. Two independent
+implementations is a real piece of work — the point of running two is that
+they fail differently, so they cannot share a core.
+
+**Options considered:**
+1. Autocorrelation-based (the RAPT family) and cepstral. Long-established,
+   both implementable in scipy, and they fail differently: autocorrelation
+   makes octave errors downward, cepstrum upward.
+2. YIN (difference function with cumulative mean normalisation) plus
+   autocorrelation. YIN is the stronger single tracker and is about eighty
+   lines; the pair is less independent than option 1, both being time-domain.
+3. One tracker now, the second before any TIMIT figure is reported. Gets T2
+   running on TIMIT sooner and defers the thing 4.2 asks for, which is the
+   part that makes the number interpretable.
+4. Treat the stand-in's exact contour as sufficient for the method and report
+   TIMIT T2 only at stage two. Cheapest, and abandons a third of the battery
+   on the corpus the study is anchored to.
+
+**Blocking?** T2 on TIMIT only. T1 and T3 run on TIMIT the day it arrives.
+**Answer:** (open)
