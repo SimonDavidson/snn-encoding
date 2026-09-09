@@ -3053,4 +3053,10 @@ caveats. Keep Common Voice as an optional T2-only accent check.
 
 **Blocking?** No. TIMIT work proceeds the day the data lands; T1 and T3 run
 immediately, T2 waits on Q40 regardless of corpus.
-**Answer:** (open — needs Oliver)
+**Answer:** Stage one starts on TIMIT as soon as it is available (SD,
+2026-09-09). D81. The reply to Oliver sets out the reasoning and takes up his
+suggestion in the one place it fits: Common Voice as a T2-only accent check,
+since T2 needs no annotation. Oliver's confirmation is not blocking — he
+raised the question rather than objecting to TIMIT — but the label-inventory
+caveat is now owed to the paper, and the T2 accent check is owed a decision
+once Q40 has produced a pitch tracker.
