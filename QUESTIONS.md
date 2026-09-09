@@ -2890,3 +2890,66 @@ which is the provenance §2 warns about.
 that is unchanged: reading the paper makes §5.7 accurate, it does not make E7
 implementable. Only the O3 conversation does that.
 **Answer:** (open)
+
+### Q42 — the applied E7 patch states a dictionary size and a channel count the paper does not contain
+**Raised:** 2026-09-09 by implementation session
+**Context:** the E7 drop was applied in full as D80 and is correct in every
+respect I could check bar one. Section 5.7 now reads, of intensity-to-place
+coding: *"at the paper's own settings, with K = 30, a 64-atom dictionary
+yields 1920 channels, against the few dozen this study sweeps"*, and the
+notebook entry and O3's restatement both rest on it — O3 asks Oliver to decide
+"what value of K the intensity-to-place expansion should use, since the
+paper's own setting yields a channel count an order of magnitude above the
+range this study sweeps".
+
+**Question:** please correct the figure. The substantive point survives; the
+conclusion drawn from it does not, and it is now in a decision put to Oliver.
+
+**What the paper actually contains**, checked against
+`~/Downloads/tang_2025_neural_spiketrum.pdf` and recorded as [Tang2025]:
+
+- The string `1920` does not occur anywhere in the paper.
+- `64` occurs three times, none of them a dictionary size: twice as citation
+  marker [64], and once inside a reference to a *different* group's "64 × 2
+  channel binaural silicon cochlea".
+- The only dictionary size the paper states is the hardware prototype's:
+  **40 gammatone kernels and 3 characteristic intensities, giving 120 output
+  channels** (§V, XEM7310 Artix-7). Two such cochleae.
+- K appears as K = 5 and K = 30 in the precision analysis of Fig. 2, and K = 30
+  is described as the *small* end — "Plog approaches closely with the values
+  computed by the efficient coding theory even setting K as small as K = 30".
+- The two SNN experiments have input layers of 384 and 128 units.
+
+So M = 64 is invented, and 1920 with it. **This is the failure mode §2 of the
+validation protocol describes, occurring inside the correction of an earlier
+instance of the same failure mode**, which is worth saying plainly rather than
+passing over: the drop's own notebook entry concludes that inference from
+abstracts "is safe for the technical content of a well-known method and unsafe
+for anything social". This error is neither — it is a specific numeric
+parameter, stated with a confidence the source does not support.
+
+**Why the conclusion inverts, not just the number.** At the authors' own
+deployed setting the channel count is **120**, which is not "an order of
+magnitude above the range this study sweeps" — it is inside it. D05 makes
+channel count a swept free parameter and our own runs use 32, with the
+proposal contemplating up to 700. Even at M = 40, K = 30 the count is 1200,
+which is large but is a configuration the authors describe as small in K
+rather than as their setting. So:
+
+- the C4 matched-treatment concern is real in principle and much weaker in
+  practice than 5.7 now states;
+- the third question O3 puts to Oliver — what value of K to use — may not need
+  his decision at all, since the authors' hardware answers it with K = 3.
+
+**Options considered:**
+1. Replace the sentence with the paper's own figures: hardware 40 × 3 = 120
+   channels; K = 30 shown to retain precision; note that M and K are both free
+   and that a matched channel count is therefore reachable. Restate O3's third
+   question as confirming K rather than choosing it. *Recommended.*
+2. Keep the concern, drop the numbers entirely: "the expansion multiplies the
+   channel count by K, which must be set before E7 enters".
+3. Leave as is. Not tenable: it is in a decision going to Oliver.
+
+**Blocking?** Report v3 must not quote 5.7's channel figures until this is
+settled, and O3 should not go to Oliver in its current form.
+**Answer:** (open)
