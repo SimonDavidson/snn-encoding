@@ -2457,3 +2457,72 @@ need the design session.
 **Next:** report v3, which now owes the D71 supersessions, the P1 sign change,
 the D45 correction note and the E7 rewrite. Then the compression axis, still
 gated on patch 2.
+
+## 2026-09-09 | session: implementation (report v3)
+**Did:** Built encoder survey v3. Every task figure in v2 is superseded, the
+three items `PENDING_NEXT_VERSION` had been carrying are discharged, and three
+new ones are recorded for v4.
+
+**§13 is rewritten around the D71 re-runs**, with a new §13.4 giving the
+measured size of the selection bias. That section is the reason the correction
+was worth making rather than merely being owed: T1 and R2 come out at exactly
+0.0000 at every budget and every seed, T3 with context at 0.0135 mean, T3 at
+context 0 at 0.0398 rising to 0.1280 on one seed, T2 at 0.0205 rising to
+0.1497, and P1's equation (40) changes sign at two of the three budgets where
+it is defined. v2's most uncomfortable finding — the upper bound sitting below
+the encoder it bounds — is resolved by the same change: R2 causal now scores
+0.9133 against E1's 0.8996.
+
+**§13.3 and §13.4 now read their numbers out of `results/` rather than
+carrying them inline.** That is not tidiness. Two cells of the bias table were
+wrong when I wrote them by hand, because I averaged only the E1 rows of a
+conditions list that also holds R2's. The table said 0.008/0.032 for T3 with
+context where the data says 0.0135/0.0645. Nobody would have caught it: it is
+a plausible number in a table of plausible numbers, in a document whose whole
+subject this week has been numbers that were not checked against their source.
+Deriving it removes the class.
+
+**E4's adaptation table is registered under D35, and it does not reproduce.**
+v1 and v2 reported a peak ratio of 2.45 near delta_a = 1; the registered
+measurement gives 2.00 at delta_a = 0.25 with a monotone decline above. The
+parameters behind the old table were never written down, so the discrepancy
+cannot be resolved by inspection and those numbers are withdrawn rather than
+reconciled. The qualitative claim survives — non-monotone with an interior
+peak — but the location is the part that bears on P-01, and v2 told Oliver to
+centre a delta_a sweep in the wrong place. This is the cleanest illustration of
+D35 the project has produced, and it came from the one table the report had
+left unregistered.
+
+Two implementation notes on that measurement. A fixed 200 ms steady-state
+window returns NaN at delta_a = 4 and 8, because the interval is longer than
+the window, so the measurement failed at exactly the adaptation strengths it
+exists to characterise; averaging the final five *intervals* is
+rate-independent, which is what a sweep over rate needs. And "from 8 ms to
+139 ms" in the v2 prose half-matches: my delta_a = 2 gives 138.94 ms, and
+nothing in my sweep gives 8 ms. Unresolvable without the old config, which is
+the point.
+
+**A defect older than this version: `*italic*` never rendered.** It was written
+into the narrative from v1 onward and reached Oliver with the asterisks intact,
+in v1 and v2 both. `_markup` handled `**bold**` only. Now handled, captions
+included; zero stray asterisks in the rendered text.
+
+**`build_oliver_brief.py` is now ahead of its output.** Its O3 row was
+corrected when the Spiketrum attribution was fixed, but the brief has not been
+rebuilt: the committed .docx and .pdf are the versions Simon sent on 8
+September, and rebuilding would replace a sent document. Left deliberately
+inconsistent and recorded here rather than resolved, because which of those two
+is right is Simon's call and not the builder's.
+
+**Tests:** 220 passed, 1 skipped — 84 passed, 0 failed, 1 skipped in the
+known-answer suite, 136 implementation-session tests. The suite constants in
+the builder were stale at 82/2/1 and are corrected, as were the per-encoder
+counts for E5 (now 12 of 12) and the implementation-test count (102 → 136).
+**Results written:** `e4_adaptation_ratio`, recorded twice — the first run
+superseded by the interval-counting fix.
+**Blocked on:** Q42 before §5.7's channel figures can be quoted anywhere; Q38
+to Q41 and Q43 with the design session or Oliver.
+**Next:** v4 owes the E5 span re-centred on D68's operating point, the Q42
+reconciliation, and D81's phone-inventory caveat with a citation. None is
+urgent. The next substantive work is TIMIT the day it lands: check
+`sample_coding` first, then T1 and T3 run immediately.
