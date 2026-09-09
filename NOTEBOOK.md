@@ -2526,3 +2526,35 @@ to Q41 and Q43 with the design session or Oliver.
 reconciliation, and D81's phone-inventory caveat with a citation. None is
 urgent. The next substantive work is TIMIT the day it lands: check
 `sample_coding` first, then T1 and T3 run immediately.
+
+## 2026-09-09 | session: implementation (brief v3)
+**Did:** Rebuilt the decisions brief as `spikeEncode_decisions_for_Oliver_v3`,
+versioned rather than forced over the sent copy, which stays byte-for-byte as
+it went on 8 September.
+
+**O3 was the reason for rebuilding and was not the largest change.** O2 is: the
+LDC account is accepted, so the row that led that table for three weeks comes
+out of it. Q43 takes its place — Oliver's own corpus question, answered as D81
+and returned for his confirmation — and Q31 is added, because v3 widened the
+gap it is about. A new callout tells him plainly that survey v3 replaces every
+task figure in the copy he holds.
+
+**The one-page check earned its keep.** The brief's docstring specifies that
+"one page" is verified by converting to PDF and counting `/Type /Page` rather
+than asserted, because python-docx cannot paginate. It came back at two pages
+and stayed there through five rounds of cutting. The last page turned out to
+hold nothing but a spacer paragraph: `callout` and `table` each leave one
+behind, which is right mid-document and is a blank second page at the end of a
+one-page one. Stripping trailing empties before saving fixed what prose
+compression could not, and about half of what I cut I did not need to.
+
+The lesson is narrow and worth writing down: **when a size check keeps failing
+by a little, measure what is in the overflow before compressing further.**
+`pdftotext -f 2` would have shown a form feed and nothing else, and it did, the
+moment I looked instead of trimming again.
+
+**Tests:** none run; this touched a document builder only.
+**Results written:** none.
+**Blocked on:** unchanged — Q42 before §5.7's channel figures are quoted; Q38
+to Q41 and Q43 with the design session or Oliver.
+**Next:** unchanged. TIMIT the day it lands, `sample_coding` first.
