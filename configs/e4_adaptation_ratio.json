@@ -1,0 +1,15 @@
+{
+  "id": "e4_adaptation_ratio",
+  "encoder": "E4",
+  "sample_rate": 16000,
+  "duration": 5.0,
+  "window": 0.2,
+  "drive_level": 1.0,
+  "theta_0": 0.5,
+  "tau_m": 0.02,
+  "tau_a": 0.1,
+  "refractory": 0.0,
+  "delta_a": [0, 0.25, 0.5, 1, 2, 4, 8],
+  "seed": 0,
+  "predictions": ["P-01"]
+}
