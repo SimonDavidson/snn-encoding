@@ -1,0 +1,68 @@
+{
+  "monotonic_in_delta_a": false,
+  "note": "Registers the table carried unregistered in the encoder survey since v1. Bears on P-01: a delta_a sweep straddling the peak can confirm or contradict it depending on which side its points fall. Does not reproduce the unregistered table carried in survey v1 and v2, whose parameters were never recorded; those numbers are withdrawn.",
+  "peak_delta_a": 0.25,
+  "peak_ratio": 1.9973890339425602,
+  "points": [
+    {
+      "delta_a": 0.0,
+      "isi_first_s": 0.013875,
+      "isi_ratio": 0.9999999999999994,
+      "isi_steady_s": 0.013874999999999993,
+      "n_events": 360
+    },
+    {
+      "delta_a": 0.25,
+      "isi_first_s": 0.0239375,
+      "isi_ratio": 1.9973890339425602,
+      "isi_steady_s": 0.047812500000000036,
+      "n_events": 106
+    },
+    {
+      "delta_a": 0.5,
+      "isi_first_s": 0.037312500000000005,
+      "isi_ratio": 1.9346733668341725,
+      "isi_steady_s": 0.07218750000000007,
+      "n_events": 70
+    },
+    {
+      "delta_a": 1.0,
+      "isi_first_s": 0.074375,
+      "isi_ratio": 1.4852100840336142,
+      "isi_steady_s": 0.11046250000000005,
+      "n_events": 46
+    },
+    {
+      "delta_a": 2.0,
+      "isi_first_s": 0.1389375,
+      "isi_ratio": 1.1592442645074228,
+      "isi_steady_s": 0.16106250000000005,
+      "n_events": 32
+    },
+    {
+      "delta_a": 4.0,
+      "isi_first_s": 0.2080625,
+      "isi_ratio": 1.0564734154400717,
+      "isi_steady_s": 0.2198124999999999,
+      "n_events": 23
+    },
+    {
+      "delta_a": 8.0,
+      "isi_first_s": 0.277375,
+      "isi_ratio": 1.0218566922036956,
+      "isi_steady_s": 0.28343750000000006,
+      "n_events": 18
+    }
+  ],
+  "rule": "E4 onset emphasis, ISI_ss / ISI_1",
+  "settings": {
+    "drive_level": 1.0,
+    "duration": 5.0,
+    "n_steady": 5,
+    "refractory": 0.0,
+    "sample_rate": 16000,
+    "tau_a": 0.1,
+    "tau_m": 0.02,
+    "theta_0": 0.5
+  }
+}

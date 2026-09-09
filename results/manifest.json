@@ -333,6 +333,31 @@
       "predictions": [
         "P-07"
       ]
+    },
+    {
+      "id": "e4_adaptation_ratio",
+      "script": "scripts/measure_adaptation_ratio.py",
+      "config": "configs/e4_adaptation_ratio.json",
+      "commit": "38fd47108833fb249f85723add177691dcbdbba1",
+      "seed": 0,
+      "output": "results/e4_adaptation_ratio.json",
+      "date": "2026-09-09",
+      "predictions": [
+        "P-01"
+      ],
+      "superseded_by": "e4_adaptation_ratio@2026-09-09"
+    },
+    {
+      "id": "e4_adaptation_ratio",
+      "script": "scripts/measure_adaptation_ratio.py",
+      "config": "configs/e4_adaptation_ratio.json",
+      "commit": "08499e3d9e63ebd0ab105c71750daf34e3899deb",
+      "seed": 0,
+      "output": "results/e4_adaptation_ratio.json",
+      "date": "2026-09-09",
+      "predictions": [
+        "P-01"
+      ]
     }
   ]
 }
