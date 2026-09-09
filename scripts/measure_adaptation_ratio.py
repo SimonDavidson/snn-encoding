@@ -39,9 +39,16 @@ from spikeenc.provenance import load_config, record
 def isi_ratio(delta_a, cfg):
     """(ISI_ss / ISI_1, ISI_1, ISI_ss, n_events) for one adaptation strength.
 
-    ISI_1 is the first interspike interval after onset and ISI_ss the mean over
-    the final `window` of the drive. Returns NaN where there are too few events
-    to define either, rather than a number that looks like a measurement.
+    ISI_1 is the first interspike interval after onset and ISI_ss the mean of
+    the final `n_steady` intervals. A fixed time window was tried first and is
+    wrong: at delta_a = 8 the steady interval is longer than a 200 ms window,
+    so no interval starts inside it and the ratio comes back NaN at exactly the
+    adaptation strengths the measurement is about. Counting intervals rather
+    than seconds is rate-independent, which is the property needed when the
+    rate is the thing being swept.
+
+    Returns NaN where there are too few events to define either, rather than a
+    number that looks like a measurement.
     """
     dt = 1.0 / cfg["sample_rate"]
     n = int(round(cfg["duration"] * cfg["sample_rate"]))
@@ -57,7 +64,8 @@ def isi_ratio(delta_a, cfg):
 
     isi = np.diff(t)
     first = float(isi[0])
-    late = isi[t[:-1] >= (cfg["duration"] - cfg["window"])]
+    n_steady = min(int(cfg["n_steady"]), max(1, isi.size - 1))
+    late = isi[-n_steady:]
     if late.size == 0 or first <= 0:
         return np.nan, first, np.nan, len(t)
     steady = float(np.mean(late))
@@ -91,14 +99,17 @@ def main(config_path):
                                         else None),
                          "monotonic_in_delta_a": monotonic,
                          "settings": {k: cfg[k] for k in
-                                      ("sample_rate", "duration", "window",
+                                      ("sample_rate", "duration", "n_steady",
                                        "drive_level", "theta_0", "tau_m",
                                        "tau_a", "refractory")},
                          "note": ("Registers the table carried unregistered in "
                                   "the encoder survey since v1. Bears on P-01: "
                                   "a delta_a sweep straddling the peak can "
                                   "confirm or contradict it depending on which "
-                                  "side its points fall.")},
+                                  "side its points fall. Does not reproduce "
+                                  "the unregistered table carried in survey v1 "
+                                  "and v2, whose parameters were never "
+                                  "recorded; those numbers are withdrawn.")},
                  predictions=cfg.get("predictions", []),
                  supersede=cfg.get("supersede", False))
     print(f"\n  peak at delta_a = {peak_at}, ratio {np.nanmax(values):.2f}; "
