@@ -2387,3 +2387,73 @@ the critical path.
 **Next (design session):** patch 2 — Q17, Q18, Q21, Q22, Q25, Q26, Q27, Q29,
 Q30, the compression-axis coverage gap, and the apply-time decision numbering
 now prototyped in this drop.
+
+## 2026-09-09 | session: implementation (E7 block)
+**Did:** Read the primary Spiketrum source, raised Q41, applied the design
+session's E7 drop as D80, raised Q42 against one figure in it, and corrected
+the two report builders.
+
+**Both sessions read the same paper independently and agreed.** Simon supplied
+`tang_2025_neural_spiketrum.pdf` and I wrote Q41 from it before knowing a drop
+existed; the drop landed while Q41 was being written. On the substance we
+converge: the attribution, the two-stage algorithm, the ERB-spaced gammatone
+dictionary, exact rate control. The design session found one thing I missed and
+it is the sharpest point in the drop — describing reconstruction fidelity as a
+*privacy axis* was wrong, because a representation the audio can be recovered
+from carries the same restricted content as the recording rather than a milder
+version of it. That is a category error, not a degree error, and it was in the
+proposal. I had read the same paragraph and let it stand.
+
+**I found one thing the drop got wrong, and it is a number.** §5.7 now says
+"at the paper's own settings, with K = 30, a 64-atom dictionary yields 1920
+channels". Neither `1920` nor a dictionary size of 64 occurs in the paper; the
+only configuration it states is the hardware's 40 kernels × 3 intensities =
+**120 channels**, and K = 30 is described there as the small end rather than as
+their setting. Q42. The conclusion inverts with the number: at 120 channels the
+expansion sits *inside* the range this study sweeps rather than an order of
+magnitude above it, so the C4 concern is much weaker than §5.7 states, and the
+third question O3 puts to Oliver — what K to use — may already be answered by
+the authors' own hardware.
+
+Worth recording where that leaves the pair of us. §2 of the validation protocol
+says the assistant will occasionally produce a plausible false claim and will
+not signal it, and it names the Spiketrum description as its example. The drop
+corrects that instance and introduces another, of a different kind: the drop's
+own entry concludes that inference from abstracts is "safe for the technical
+content of a well-known method and unsafe for anything social". This error is
+neither — it is a specific numeric parameter. The generalisation was drawn one
+case too narrowly. What actually caught it was not a better rule but having the
+PDF on the same machine as the checker.
+
+**Not corrected by me.** Editing a design-session document on my own judgement
+is what the precedence rule forbids, so §5.7 keeps the figure until the design
+session rules on Q42. Report v3 must not quote it and the builder does not.
+
+**The misattribution had already circulated, as the drop suspected.** Report v2
+§10.1 said "developed at Manchester by Alsakkal and Wijekoon" and the one-page
+brief framed O3 as "the approach to Wijekoon". Both are with Oliver. Generated
+documents cannot be recalled, so the fix is at the source, with a dated note in
+the report saying what v2 said and why it was wrong, per D45.
+
+**`docs/references.md` is new.** §2 requires factual claims to be traceable to
+a primary source and there was nowhere in the repository for a source to live;
+the proposal cites inline by surname only. It records read-in-full separately
+from cited-from-abstracts, because that distinction is exactly what failed
+here. `papers/` is gitignored — the PDF is licensed and the repo is public.
+
+**The apply-time decision numbering worked and should stay.** The drop shipped
+`{{D_E7}}` and allocated D80 against the highest number in `DECISIONS.md` at
+apply time, which was D79 because this session's own six had been committed
+first. That is the fix for the collision the Q09-Q16 drop hit. It also shipped
+`NOTEBOOK_APPEND.md` rather than `NOTEBOOK.md`: 59 lines added, none removed.
+
+**Tests:** not re-run; this block touched the proposal, questions, references
+and two report builders, and no library code. 220 passed, 1 skipped as of the
+previous block.
+**Results written:** none.
+**Blocked on:** Q42 with the design session, and it should be settled before
+O3 goes to Oliver. Q41 likewise. O3, Q28 and Q31 need Oliver; Q38, Q39, Q40
+need the design session.
+**Next:** report v3, which now owes the D71 supersessions, the P1 sign change,
+the D45 correction note and the E7 rewrite. Then the compression axis, still
+gated on patch 2.
