@@ -2128,3 +2128,203 @@ D61→D68, D62→D69, D63→D70, D64→D71, D65→D72, D66→D73. It will otherw
 D60 for the log branch, which is now the P2 rehearsal entry.
 **Results written:** none this block.
 **Tests:** 186 passed, 0 failed, 1 skipped.
+
+## 2026-09-09 | session: implementation
+**Did:** The D71 selection fix, its re-runs, and the TIMIT reader.
+
+**The fault, confirmed in the code rather than taken from the handover.**
+`run_t2:918`, `run_t3:696` and `run_p1:552` built their offset profile from
+*test* scores and took the argmax; `run_p1` did the same over `tau_phi`.
+`run_reference.py` and P1's ceiling had it one level up — R2's own alignment,
+and equation (40)'s denominator, were both taken at their test argmax. Only
+`_select_ridge_alpha` was right, because D59 named that one parameter.
+
+**One mechanism, not four.** `spikeenc/selection.py`: speaker-disjoint folds
+inside the training split, one recorded grid per condition, chosen value
+applied to a refit on the whole training split. `_select_ridge_alpha` is gone,
+rewritten as a call into it. D74-D79 record the six decisions this needed.
+
+**The fold count was chosen on evidence and it overrode an approved answer.**
+Simon picked 3-fold this morning; at K=3 the inner fit set is four speakers of
+seven and T2's inner RMSE sat at **3.5 semitones against 1.35 at test**, which
+is the floor — the selection was being made by models that could not do the
+task. At K=5 and K=7 the inner RMSE matches test. Leave-one-speaker-out
+everywhere, declared per run in the configs, at roughly double the cost.
+
+**How large was the bias.** This is the measurement the fix makes possible and
+it is not uniform across tasks.
+
+| condition | selection bias, three seeds |
+|---|---|
+| T1, all six budgets | **0.0000 at every point and every seed** |
+| R2 on T1, both alignments | **0.0000** |
+| T3 at context 2 and 5 | 0.000 to 0.032, mean 0.008 |
+| T3 at context 0 | 0.002 to **0.128** |
+| T2 | 0.000 to **0.150** |
+| P1 temporal | 0.000 to 0.069 |
+
+**And for P1 it reversed the conclusion.** Equation (40) at the honestly
+selected operating point against the same index computed the way the pre-D71
+code computed it:
+
+| Λ | count | ceiling | denominator | TII selected | TII at test argmax |
+|---:|---:|---:|---:|---:|---:|
+| 160 | 0.7870 | 0.9676 | +0.1806 | **+0.128** | +0.208 |
+| 397 | 0.8843 | 0.9676 | +0.0833 | **−0.056** | +0.352 |
+| 997 | 0.9306 | 0.9676 | +0.0370 | **−0.250** | +0.143 |
+| 2447 | 0.9583 | 0.9676 | +0.0093 | undefined | −0.500 |
+| 6037 | 0.9583 | 0.9676 | +0.0093 | undefined | +0.000 |
+| 15343 | 0.9491 | 0.9676 | +0.0185 | undefined | +0.667 |
+
+The index changes **sign** at two of the three budgets where it is defined at
+all. Selected on test, P1 said timing buys a third of the available headroom
+at Λ = 397; selected inside the training split it says timing buys nothing
+there and is slightly worse than counting. The reason the swing is so violent
+is in the denominator column: it collapses from 0.18 to 0.009 as the budget
+rises, because the count condition reaches 0.958 against a ceiling of 0.968.
+A thin denominator turns a small numerator bias into a large index. That is
+Q28's argument arriving as a number rather than as an argument, and it is why
+`tii_denominator` is reported beside the index.
+
+**This contradicts P-06** ("P1: temporal information index high for T2 and T3,
+moderate for T1") on its T1 clause, at five of six budget points. The
+investigation CLAUDE.md requires is the paragraph above: the contradiction is
+attributable to the corpus rather than to E1, because the stand-in's phones are
+stationary resonances so a per-channel count over a segment nearly identifies
+it, which is exactly what Q28 says and what D60 records P1 as being a rehearsal
+of. P-06 is **not** marked resolved and must not be, on this corpus.
+
+**The predicted offset is the selected offset, and R2 is the clean test of it.**
+R2's lag is a different quantity from the gammatone group delay — half a 25 ms
+analysis window against a filterbank's phase response — and it is predicted
+without fitting anything. Causal R2 selects −1 on all three seeds and is
+predicted −1; centred selects 0 and is predicted 0. E1 on T1 selects −1 at
+five of six budgets, predicted −1. The exception is Λ = 160, which selects −2
+unanimously: at that event rate the features integrate over longer, which is a
+real effect rather than noise precisely because it is unanimous.
+
+**Two places the prediction and the selection part company, both informative.**
+T3 at context 2 and 5 selects offset 0 at every budget and every seed, against
+a prediction of −1, with C5 passing — so it is a stable disagreement and not
+noise. T2's selected offset wanders over −2, 0, +1, +2 with no pattern, and C5
+fails at six of thirty (condition, seed) pairs. Q38 is raised about the second:
+T2's headline correlation does not resolve the alignment axis on this corpus,
+because the stand-in's f0 is a linear declination and shifting a straight line
+changes its intercept and not its slope. Validation RMSE does resolve it, and
+agrees with the low-channel prediction of −2, which is where f0 lives. Both
+readings are recorded in every T2 result.
+
+**T3 at context 0 is where the controls bite hardest.** Offsets −3, +1, −3
+across three seeds, C5 failing on all three, bias up to 0.128 — and at context
+2 the same condition is offset 0 on every seed with C5 passing and bias 0.006.
+A per-frame probe with no context has no representation of a boundary at all,
+so its posterior is noise and the alignment axis is genuinely undefined. Q30
+says this; the C5 column is now the evidence for it.
+
+**The bias was not uniform across conditions, so it distorted comparisons and
+not only levels.** Every figure in the v2 survey sent to Oliver is superseded,
+and the two sides of a comparison did not move together:
+
+| figure, v2 as sent | v2 | now | moved |
+|---|---:|---:|---:|
+| T2, E1 r/utt | +0.5755 | +0.5525 | −0.023 |
+| T2, R2 r/utt | +0.4991 | +0.4604 | −0.039 |
+| T3, E1 F | 0.7576 | 0.7557 | −0.002 |
+| T3, R2 F | 0.6852 | **0.5930** | **−0.092** |
+| T3, R2 frame AUC | 0.6888 | 0.7519 | +0.063 |
+| P1 index | +0.20 to +0.80 | +0.128, −0.056, −0.250 | sign |
+
+R2 on T3 lost 0.092 where E1 lost 0.002, because E1's offset was already
+pinned at 0 on every seed while R2's wandered over −1, 0, +1 — so R2 had noise
+to harvest and E1 did not. The E1-over-R2 gap on T3 therefore *widens* from
++0.072 to +0.163 under the honest procedure. A bias that differs by condition
+can move a ranking, and here it moved one in the direction that makes Q31
+harder to explain away rather than easier.
+
+**E1 beats R2 on both T2 and T3 at the highest budget**: F 0.7557 against
+0.5930 at context 5, and r/utt +0.5525 against +0.4604. Q31 is about the first
+and now has a second instance, under a selection procedure that cannot be
+flattering E1 because neither condition saw test.
+
+**T1's pre-D69 figures were lower bounds by four to five points**, as D72 said:
+0.8996 at Λ = 15343 against 0.8179 at offset zero.
+
+**P2 re-ran and its conclusions survive, with the numbers moved.** Alignment
+fixed at the clean best under the new selection — T1 −1, T2 0, T3 0 — and held
+across every corruption per D62. Worst headroom lost, against the v2 figures
+as sent:
+
+| operator | T1 | T2 | T3 |
+|---|---:|---:|---:|
+| whole-utterance randomisation, v2 | 1.08 | 0.69 | 2.85 |
+| whole-utterance randomisation, now | 1.06 | 0.77 | 2.20 |
+| per-segment randomisation, v2 | 0.10 | 0.30 | 2.73 |
+| per-segment randomisation, now | 0.21 | 0.20 | 1.99 |
+
+Q35's contrast is unchanged in substance: the two operators still support
+opposite conclusions about T1, 1.06 against 0.21, a factor of five. The second
+run reproduced the first exactly, which is worth stating because the first run
+died before recording and the two are therefore an unintended determinism
+check on the whole P2 path.
+
+One thing in the grid is asymmetric in a way worth a look later:
+`channel_shift = −2` costs T2 0.56 of its headroom while `channel_shift = +2`
+costs it −0.01, i.e. nothing. Q37 already asks whether `channel_shift` is
+translation plus truncation and whether the truncation dominates; a clean
+sign asymmetry on the task that lives in the low channels is what that would
+look like. Not investigated here.
+
+**P-07** ("the three tasks degrade under different corruption operators") is
+consistent with the grid — T3 loses 1.2 to 1.5 of its headroom to channel
+shifts that cost T1 0.01, and T1 loses everything to whole-utterance
+randomisation — but P2 is a rehearsal under D60 and P-07 is not marked
+resolved on this corpus.
+
+**P2 cost half an hour to a name collision.** The alignment scan's `clean` dict
+shadowed the corruption loop's `clean` entry, so the run completed its whole
+grid and died on its last line. Renamed and re-run. Nothing was recorded from
+the failed attempt, which is the provenance guard working as intended.
+
+**TIMIT, second half of the session.** `spikeenc/sphere.py` reads NIST SPHERE
+on numpy and scipy alone, because this box has no `soundfile`, no `sph2pipe`,
+no `sox` and no `ffmpeg`, and CI has less. Uncompressed PCM is ten lines behind
+an ASCII header. `shorten`-compressed SPHERE is a different format and is not
+read here; that case raises `UnsupportedEncoding` naming the coding string and
+naming the two tools that would decode it, because a compressed file read as
+PCM does not fail — it produces noise that runs all the way through the
+filterbank. **If LDC93S1 arrives compressed, one of those two needs
+installing, and that is the thing to check first when it lands.**
+
+`timit_corpus` implements the same three attributes as the stand-in: case
+insensitive paths, phone times from each file's own sample rate, SA sentences
+excluded by default, `f0` left as None so T2 raises by name rather than
+scoring an invented contour. `fold_to_39` is the collapse proposal 4.1 requires
+be stated wherever a figure is quoted; it merges adjacent segments that fold
+together, which deletes hand-placed boundaries by construction, so T3 takes
+the unfolded corpus.
+
+**Tests:** 220 passed, 1 skipped, from 186. Two new files: 15 in
+`tests/test_selection.py`, 19 in `tests/test_timit.py`. The selection tests
+assert a property rather than a value — the selected parameter must not change
+when the test set is destroyed — because that is the whole content of D71 and
+a test asserting a particular offset would have gone on passing throughout the
+period the offsets were being chosen against the number they reported.
+`tests/test_known_answers.py` and `conftest.py` untouched.
+**Results written:** all six superseded — `probe_e1_t1_synthetic`,
+`reference_r2_t1_synthetic`, `t2_f0_contour_e1_synthetic`,
+`t3_boundary_e1_synthetic`, `p1_count_only_e1_synthetic`,
+`p2_corruption_e1_synthetic`, each with a new manifest entry.
+**Blocked on:** Q28 and Q31 need Oliver. Q38, Q39 and Q40 are new and go to
+the design session. Patch 2 is still expected to carry Q17, Q18, Q21, Q22,
+Q25, Q26, Q27, Q29, Q30 and the compression gate gap.
+**Next:**
+1. **Report v3 is now owed three ways.** Every T1, T2, T3, P1 and P2 figure in
+   v2 is superseded, the P1 index has changed sign, and `build_encoder_report`
+   still reads `misaligned_accuracy` for its "at best offset" column, which now
+   means a neighbourhood of the selected offset rather than a full sweep.
+2. **The compression axis**, still gated on patch 2's coverage gap: no generic
+   gate exercises it because `conftest`'s drive is positive. D67 made the log
+   branch usable and §6.6 declares compression swept, so a T1 sweep under log
+   as well as power is a real experiment as soon as something tests the axis.
+3. **TIMIT the day it lands**: check `sample_coding` first, then T1 and T3 run
+   immediately. T2 waits on Q40's two pitch trackers.

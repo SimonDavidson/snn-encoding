@@ -265,7 +265,8 @@
       "date": "2026-09-08",
       "predictions": [
         "P-07"
-      ]
+      ],
+      "superseded_by": "p2_corruption_e1_synthetic@2026-09-09"
     },
     {
       "id": "probe_e1_t1_synthetic",
@@ -319,6 +320,18 @@
       "date": "2026-09-09",
       "predictions": [
         "P-06"
+      ]
+    },
+    {
+      "id": "p2_corruption_e1_synthetic",
+      "script": "scripts/run_p2.py",
+      "config": "configs/p2_corruption_e1_synthetic.json",
+      "commit": "d7f2e103498013af512a68514b031186cdf449f5",
+      "seed": 0,
+      "output": "results/p2_corruption_e1_synthetic.json",
+      "date": "2026-09-09",
+      "predictions": [
+        "P-07"
       ]
     }
   ]
