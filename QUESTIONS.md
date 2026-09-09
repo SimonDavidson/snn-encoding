@@ -2793,3 +2793,100 @@ they fail differently, so they cannot share a core.
 
 **Blocking?** T2 on TIMIT only. T1 and T3 run on TIMIT the day it arrives.
 **Answer:** (open)
+
+### Q41 — the Spiketrum paper has been read, and §5.7 is wrong in four places
+**Raised:** 2026-09-09 by implementation session
+**Context:** Simon supplied the TETCI article, which is the first of the three
+primary sources §5.7 asks for. Read in full and recorded as [Tang2025] in the
+new `docs/references.md`. §5.7 is explicit that its description "is
+reconstructed from published abstracts and citation records; the Spiketrum
+papers have not been read in full", and §2 of the validation protocol names
+that description as its worked example of the confabulation risk. It was right
+to. Four things are wrong and two are consequential.
+
+**Question:** please rewrite §5.7 from the source. The corrections below are
+evidenced; the judgements that follow from them are the design session's.
+
+**1. Attribution. §5.7 says "developed at Manchester by Alsakkal and
+Wijekoon". It is a Zhejiang-led collaboration of eight.** Huajin Tang
+(Zhejiang University) is first and corresponding author; Wijekoon and Alsakkal
+are third and fourth and are the Manchester contributors. This bears directly
+on **D09** and **O3**: approaching Wijekoon is still right for the Manchester
+end, but the corresponding author is at Zhejiang, and a request for code or
+for permission to run the encoder may have to go there or be routed by him.
+Both Manchester addresses are in the paper and are in `docs/references.md`.
+
+**2. §5.7 describes only the first of two stages, and the omitted stage is
+where the representation is actually formed.** Equations (30) and (31) are
+right as matching pursuit: Algorithm 1 of the paper, E-TMP, iterates
+`(m_i, τ_i) = argmax_{m,τ} H_i^m(τ)` with `H_i^m(τ) = ∫ R_i(t) φ_m(t+τ) dt`,
+then `R_{i+1} = R_i − H_i^{m_i}(τ_i) φ_{m_i}(t − τ_i)`, with amplitude
+`s_i = H_i^{m_i}(τ_i)`. But the codes `(m_i, τ_i, s_i)` are *not* the output.
+A second stage, **intensity-to-place (ITP) coding**, normalises all amplitudes
+to [0, 1] and routes each code to one of K neurons by
+
+> k = argmin_k |c_k − s_i|,  h = K(m_i − 1) + k   (paper's equations 3 and 4)
+
+where the characteristic intensities `c_k` are spaced **logarithmically**, not
+linearly — the paper measures log against linear and log wins on
+representational precision, because natural-sound intensity coefficients are
+log-normally distributed. So a spiketrum is a binary spike pattern over
+**M × K channels**, and amplitude is carried in the *channel index*.
+
+§5.7 currently says "the event train is the sequence of selected atom indices
+and times", which describes the first stage and makes E7 look as though it
+discards amplitude. It does the opposite: it place-codes it. This also gives
+**Q07** a third convention to consider, since spiketrum's channel index
+factorises as (kernel, quantised intensity) rather than as (channel, polarity).
+
+**3. There is a second stopping criterion, and it is the same structural trap
+as E5's.** Algorithm 1 terminates on
+
+> `n > N` **or** `‖R_i‖² / ‖R_1‖² < ε_min`
+
+so the rate parameter is capped by a residual-energy floor. §5.7 mentions only
+the atom count. This matters for **D27**, the 4× span requirement: an encoder
+whose count is bounded by a property of the drive rather than by its rate
+parameter is exactly what Q11 found for E5 and Q14 for E6. If E7 is ever run,
+its span should be measured before it is trusted, not assumed from λ = N/τ.
+
+**4. §5.0 says "all candidates except E7 share a common first stage". They
+share more than that.** The E-TMP dictionary is a set of ERB-spaced gammatone
+kernels, `g(t) = a t^(n−1) e^(−2πbt) cos(2πft + φ)` — the same functional form
+as the proposal's own equation (4), used as a matching-pursuit dictionary
+rather than as a filterbank. That makes E7 a *better* comparison than the
+proposal assumes: it differs from E1–E6 in the event rule, which is the
+single-factor contrast the study is built on, and not in the front end.
+
+**What §5.7 gets right, confirmed against the source.** The matching-pursuit
+identification; the rate parameter, which is exactly `λ = N/τ` with N the
+iteration count and τ the signal duration — the paper's equation (2), and the
+same quantity as our own Λ of equation (35); the reconstruction capability and
+therefore §5.7's observation that E7 optimises the criterion §2.2 argues
+against; and the hardware, which is a real FPGA cochlea prototype (XEM7310
+Xilinx Artix-7, 16 kHz, 43.5 ms buffered segments, **120 output channels = 40
+gammatone kernels × 3 characteristic intensities**, two cochleae).
+
+**Two facts that bear on the comparison.**
+
+- **Reported operating range.** The paper works at λ between 100 Hz and
+  1100 Hz for its structure-invariance analysis and at λ = 4 kHz for the
+  information-theoretic one. Our own E1 sweep ran Λ = 160 to 15,343 events/s
+  at 32 channels, so the ranges overlap and a matched-budget comparison is
+  feasible on its face.
+- **No phone-level task and no TIMIT.** Evaluation is on RWCP sound events and
+  MedleyDB instruments, plus natural sounds, music and speech. There is
+  therefore no published spiketrum number on anything resembling T1, T2 or T3
+  to anchor against, and control C1 cannot be extended to E7 from this paper.
+
+**Two sources still outstanding, and one of them may not exist as described.**
+§5.7 names a TCSI article on the FPGA cochlea and an evaluation paper. This
+paper cites **no** work authored by Wijekoon or Alsakkal, and it describes the
+FPGA cochlea itself in its §V. Whether those two exist as §5.7 says is
+therefore unsettled — §5.7's list of three was assembled from citation records,
+which is the provenance §2 warns about.
+
+**Blocking?** no. D09 blocks implementation whatever the description says, and
+that is unchanged: reading the paper makes §5.7 accurate, it does not make E7
+implementable. Only the O3 conversation does that.
+**Answer:** (open)

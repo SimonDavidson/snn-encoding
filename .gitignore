@@ -26,3 +26,8 @@ results/**/*.parquet
 
 # Design-session drops also arrive zipped (2026-09-06).
 *.zip
+
+# Published papers. Licensed, and this repository is public (see
+# docs/references.md). Only this directory — report PDFs under reports/ are
+# ours and are committed.
+papers/
