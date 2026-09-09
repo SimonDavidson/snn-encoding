@@ -446,7 +446,7 @@ def summary_table(doc, ctx):
         ["E4", "ALIF", "Adaptive-threshold LIF", "theta_0", "envelope", "Implemented", "11 / 11"],
         ["E5", "PhaseLocked", "Phase-locked fine structure", "cycle_divisor", "subband", "Implemented", "10 / 12"],
         ["E6", "TTFS", "Time-to-first-spike", "e_frac", "envelope", "Implemented", "9 / 10"],
-        ["E7", "Spiketrum", "Matching pursuit (third-party)", "atoms / s", "audio", "Not implemented", "—"],
+        ["E7", "Spiketrum", "Event-based temporal matching pursuit (third-party)", "atoms / s", "audio", "Not implemented", "—"],
         ["R1", "Lauscher / SHD", "Reference channel format", "—", "audio", "Not started", "—"],
         ["R2", "Mel filterbank", "Non-spiking reference", "—", "audio", "Implemented", "n/a"],
     ]
@@ -479,7 +479,7 @@ def summary_table(doc, ctx):
 
 def front_end(doc, ctx):
     h1(doc, "3.  The common front end")
-    body(doc, "All candidates except E7 share a first stage, so that differences between "
+    body(doc, "All candidates share a first stage, so that differences between "
               "them are attributable to the event-generation rule rather than to incidental "
               "differences in filtering. The stage is a gammatone filterbank, the standard "
               "computational approximation to the frequency selectivity of the basilar "
@@ -1190,16 +1190,21 @@ def e6(doc, ctx):
 def e7_and_references(doc, ctx):
     h1(doc, "10.  E7 — Spiketrum, and the two reference points")
     callout(doc, "Status: deliberately not implemented (D09).",
-            "Oliver and Simon approach Wijekoon directly; E7 will not be reimplemented from "
-            "the published description, to avoid reimplementing a colleague's algorithm "
-            "badly. Until that conversation has happened the encoder is provisional and is "
-            "excluded from the critical path.", fill=GREY)
+            "E7 will not be reimplemented from the published description, to avoid "
+            "reimplementing a colleague's algorithm badly. D80 restates O3 with a middle "
+            "course: implement the published algorithm and report it as our implementation "
+            "of it rather than as the authors' system. Until O3 is settled the encoder is "
+            "provisional and is excluded from the critical path.", fill=GREY)
 
     h2(doc, "10.1  E7 — Spiketrum")
-    body(doc, "Spiketrum is a general-purpose spike-coding algorithm developed at Manchester "
-              "by Alsakkal and Wijekoon, with published FPGA and ASIC implementations and "
-              "reported application to auditory perception tasks. From the published "
-              "abstracts it is a sparse decomposition method in the matching-pursuit family: "
+    body(doc, "Spiketrum is a general-purpose spike-coding algorithm with published FPGA "
+              "and ASIC implementations and reported application to auditory perception "
+              "tasks. It is the work of a collaboration led from Zhejiang University, "
+              "published as Tang et al., 'Neuromorphic Auditory Perception by Neural "
+              "Spiketrum', IEEE TETCI 9(1), 2025; Wijekoon and Alsakkal are two of the "
+              "eight co-authors and are at Manchester. It is a sparse decomposition method "
+              "in the matching-pursuit family, which the authors call Event-based Temporal "
+              "Matching Pursuit: "
               "the signal is approximated by iteratively selecting, from a time-frequency "
               "dictionary of atoms, the atom best correlated with the current residual, "
               "emitting an event identifying that atom and its time, and subtracting its "
@@ -1211,19 +1216,32 @@ def e7_and_references(doc, ctx):
               "parameter — which, notably, is the property that cost E5 and E6 a week each "
               "to establish, and which E5 still does not fully have. The reported properties of precisely controllable spike rate, robustness "
               "to spike loss, and signal reconstruction all follow from this structure.")
-    body(doc, "Its reconstruction capability is exactly the tension noted for E2, in sharper "
-              "form: an encoder that optimises reconstruction fidelity is optimising the "
-              "criterion the study argues is the wrong one, and is by construction the worst "
-              "case for retained speaker information. That is not a criticism of Spiketrum, "
-              "which was designed for a different purpose, but it makes the encoder an "
-              "informative extreme point and a useful upper reference for the privacy axis.")
-    callout(doc, "Caveat requiring action, carried from the proposal.",
-            "The description above is reconstructed from published abstracts and citation "
-            "records; **the Spiketrum papers have not been read in full.** Before this "
-            "encoder is described in a paper or implemented against, the primary sources "
-            "should be obtained — principally the TETCI article on neuromorphic auditory "
-            "perception, the TCSI article on the FPGA cochlea, and the evaluation paper on "
-            "the encoder.", fill=ROSE)
+    body(doc, "Its reconstruction capability makes it the direct test of the study's own "
+              "argument rather than merely an extreme point beside it: Spiketrum optimises "
+              "reconstruction fidelity deliberately and well, which is the criterion the "
+              "study argues is the wrong one for a task-oriented encoder. It should not be "
+              "described as an upper reference on a privacy axis, as an earlier version of "
+              "this section had it — a representation the audio can be recovered from "
+              "carries the same restricted content as the recording, not a milder version "
+              "of it (D80).")
+    body(doc, "Two corrections of substance, from reading the source in full. The "
+              "dictionary is ERB-spaced gammatone, so E7 does not differ from E1–E6 in its "
+              "filtering; it differs in fusing filtering with event generation, and in "
+              "selecting the globally best-explaining event rather than deciding locally. "
+              "And the amplitude of each atom is carried by place: intensity-to-place "
+              "coding expands M atoms into M×K channels, the authors' hardware using 40 "
+              "kernels and 3 intensity levels for 120 channels. The channel figures quoted "
+              "in proposal §5.7 are under query as Q42 and are deliberately not repeated "
+              "here.")
+    callout(doc, "Corrected 2026-09-09 after reading the primary source (D80).",
+            "Report v2 described Spiketrum as **developed at Manchester by Alsakkal and "
+            "Wijekoon**, following the proposal. That was wrong: the work is led from "
+            "Zhejiang University by Tang and colleagues. The error came from citation "
+            "records, which show institutions rather than who led the work, and it matters "
+            "because O3 is an approach to the authors. Two of the three primary sources "
+            "named in the proposal remain unread, and the TETCI paper cites no work by "
+            "either Manchester author, so whether they exist as described is unsettled "
+            "(Q41).", fill=ROSE)
 
     h2(doc, "10.2  R1 — Lauscher / Heidelberg reference point")
     body(doc, "Not a candidate but a fixed reference. The Spiking Heidelberg Digits dataset "

@@ -97,9 +97,16 @@ def build(force=False):
          "The event file format, and controls C6 and C7 with it. Best settled before the "
          "featurisation is fixed, since doubling the channel count changes what the decoder "
          "receives. Interacts with the SHD convention, which is unipolar."],
-        ["O3", "Spiketrum — the approach to Wijekoon.",
-         "Whether E7 enters the comparison at all. Separately: the Spiketrum papers have "
-         "not been read in full, and the survey's description is from abstracts."],
+        ["O3", "Spiketrum — who to approach, and on what terms.",
+         "Whether E7 enters the comparison at all. The primary source has now been read "
+         "and it changes the question (D80). The work is led from Zhejiang by Tang and "
+         "colleagues, who are the corresponding authors; Wijekoon and Alsakkal are two of "
+         "eight and are the Manchester end — so the approach may need to go to Tang, or be "
+         "routed by them. The algorithm is fully published and needs no code from the "
+         "authors, so what is at stake is attribution rather than feasibility: may we "
+         "implement the published algorithm and report it as our implementation of it, "
+         "explicitly not as the authors' system? Report v2 said Spiketrum was developed at "
+         "Manchester by Alsakkal and Wijekoon. That was wrong and is corrected here."],
         ["Q28", "Do we make the stand-in corpus more speech-like, or wait for TIMIT?",
          "Whether further preliminary work is worth doing. Formant transitions would let "
          "P1 and P2 rehearse properly; waiting keeps the battery question on real speech."],
