@@ -98,7 +98,10 @@ def main(config_path):
                   test_fraction=cfg["split"]["test_fraction"],
                   seed=cfg["_seed"], alpha=cfg["probe"]["alpha"],
                   offsets=probe_offsets, n_folds=n_folds)
-    clean = {
+    # `clean_runs`, not `clean`: the corruption loop below already uses that
+    # name for the clean *condition's* entry, and shadowing it here cost a
+    # completed P2 run at the final line.
+    clean_runs = {
         "T1": run_t1(corpus, trains, context=cfg["contexts"]["T1"], **common),
         "T2": run_t2(corpus, trains, context=cfg["contexts"]["T2"],
                      ridge_alphas=cfg["t2"]["ridge_alphas"], **common),
@@ -108,7 +111,7 @@ def main(config_path):
                      min_separation=cfg["t3"]["min_separation"],
                      n_thresholds=cfg["t3"]["n_thresholds"], **common),
     }
-    scan = {t: int(r["best_offset"]) for t, r in clean.items()}
+    scan = {t: int(r["best_offset"]) for t, r in clean_runs.items()}
     print(f"alignment fixed at clean best (selected on {n_folds} folds "
           f"inside train): {scan}")
 
@@ -164,7 +167,8 @@ def main(config_path):
         "n_channels": cfg["n_channels"], "front_end": source["front_end"],
         "featurisation": cfg["featurisation"], "contexts": cfg["contexts"],
         "alignment_offsets": scan,
-        "alignment_selection": {t: r["selection"] for t, r in clean.items()},
+        "alignment_selection": {t: r["selection"]
+                                for t, r in clean_runs.items()},
         "probe": cfg["probe"],
         "split": cfg["split"], "split_seeds": cfg["split_seeds"],
         "corruption_seed": cfg["corruption_seed"],

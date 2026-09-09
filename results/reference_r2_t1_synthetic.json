@@ -4,112 +4,156 @@
   "conditions": [
     {
       "accuracy_by_seed": [
-        0.7948369565217391,
-        0.8517006802721089,
-        0.8274894810659187
+        0.8817056396148556,
+        0.9476584022038568,
+        0.9105113636363636
       ],
-      "accuracy_mean": 0.8246757059532556,
-      "accuracy_std": 0.02853609586958371,
+      "accuracy_mean": 0.9132918018183588,
+      "accuracy_std": 0.03306417775543814,
       "alignment": "causal",
-      "best_offset": "-1",
-      "best_offset_accuracy": 0.9132918018183588,
+      "c5_interior_maximum_by_seed": [
+        true,
+        true,
+        true
+      ],
+      "offset_by_seed": [
+        -1,
+        -1,
+        -1
+      ],
       "offset_profile": {
         "-1": 0.9132918018183588,
         "-2": 0.8811320529012857,
-        "1": 0.722229504782728
+        "-3": 0.7921335396055101,
+        "-4": 0.6878503631077787,
+        "0": 0.8246757059532556,
+        "1": 0.722229504782728,
+        "2": 0.620607167603291
       },
+      "predicted_offset": -1,
       "runs": [
         {
-          "accuracy": 0.7948369565217391,
+          "accuracy": 0.8817056396148556,
           "bandwidth_bits": {
             "features_per_frame": 40,
             "frames_per_s": 100.0,
             "per_feature": 32
           },
+          "best_offset": -1,
+          "c5_alignment": {
+            "test": {
+              "interior_maximum": true,
+              "missing_offsets": [],
+              "neighbours": {
+                "-2": 0.8676880222841226,
+                "-3": 0.7940761636107193,
+                "0": 0.7948369565217391,
+                "1": 0.7028885832187071
+              },
+              "offsets_not_lower": [],
+              "radius": 2,
+              "score_at_selected": 0.8817056396148556,
+              "selected_offset": -1
+            },
+            "validation": {
+              "interior_maximum": true,
+              "missing_offsets": [],
+              "neighbours": {
+                "-2": 0.8732633698832595,
+                "-3": 0.7702909570478892,
+                "0": 0.7909690043707718,
+                "1": 0.6926559193283008
+              },
+              "offsets_not_lower": [],
+              "radius": 2,
+              "score_at_selected": 0.8986434074521148,
+              "selected_offset": -1
+            }
+          },
           "chance": 0.125,
           "confusion": [
             [
-              88,
-              3,
-              2,
-              4,
-              1,
-              2,
-              2,
-              1
-            ],
-            [
-              3,
-              49,
-              1,
+              96,
               2,
               0,
               1,
-              2,
+              1,
+              1,
+              1,
               0
             ],
             [
-              1,
               0,
-              21,
-              22,
+              55,
+              0,
+              0,
               0,
               1,
-              3,
+              1,
               0
             ],
             [
+              0,
+              0,
+              16,
+              29,
               1,
-              5,
+              0,
               1,
-              76,
-              0,
-              0,
-              6,
-              3
-            ],
-            [
-              31,
-              0,
-              2,
-              0,
-              31,
-              2,
-              2,
-              1
+              0
             ],
             [
               0,
               1,
-              2,
-              1,
               0,
-              92,
+              89,
+              0,
+              0,
               1,
-              8
+              0
             ],
             [
-              7,
-              2,
-              0,
+              30,
               1,
               0,
-              3,
-              92,
-              3
+              0,
+              36,
+              1,
+              1,
+              0
             ],
             [
-              5,
-              3,
-              2,
-              4,
+              0,
+              0,
               0,
               2,
+              0,
+              98,
+              0,
+              4
+            ],
+            [
+              2,
+              0,
+              0,
+              0,
+              0,
               1,
-              136
+              103,
+              0
+            ],
+            [
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              1,
+              148
             ]
           ],
-          "decoded_information_bits": 1.8395460801214951,
+          "decoded_information_bits": 2.3701971699132853,
           "feature_bandwidth_bps": 128000.0,
           "featurisation": {
             "alignment": "causal",
@@ -120,17 +164,18 @@
             "window": "hamming"
           },
           "lambda_events_per_s": 0.0,
-          "majority_floor": 0.2078804347826087,
+          "majority_floor": 0.2077028885832187,
           "misaligned_accuracy": {
-            "-1": 0.8817056396148556,
             "-2": 0.8676880222841226,
+            "-3": 0.7940761636107193,
+            "0": 0.7948369565217391,
             "1": 0.7028885832187071
           },
           "n_features": 40,
-          "n_frames_test": 736,
-          "n_frames_train": 1697,
+          "n_frames_test": 727,
+          "n_frames_train": 1676,
           "probe_converged": true,
-          "probe_iterations": 354,
+          "probe_iterations": 170,
           "probe_settings": {
             "alpha": 0.0001,
             "max_iter": 500,
@@ -141,8 +186,310 @@
             "tol": 1e-08
           },
           "reference": "R2",
-          "seconds": 35.21021628379822,
-          "shuffled_label_accuracy": 0.11141304347826086,
+          "seconds": 370.75344705581665,
+          "selection": {
+            "candidates": [
+              -4,
+              -3,
+              -2,
+              -1,
+              0,
+              1,
+              2
+            ],
+            "chosen": {
+              "offset": -1
+            },
+            "criterion": "frame accuracy",
+            "folds": [
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              }
+            ],
+            "grid": {
+              "-1": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.972972972972973
+                  },
+                  {
+                    "score": 0.9670781893004116
+                  },
+                  {
+                    "score": 0.956140350877193
+                  },
+                  {
+                    "score": 0.9621848739495799
+                  },
+                  {
+                    "score": 0.9
+                  },
+                  {
+                    "score": 0.5645161290322581
+                  },
+                  {
+                    "score": 0.9676113360323887
+                  }
+                ],
+                "score": 0.8986434074521148,
+                "scores": {
+                  "score": 0.8986434074521148
+                }
+              },
+              "-2": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.9269406392694064
+                  },
+                  {
+                    "score": 0.9291666666666667
+                  },
+                  {
+                    "score": 0.92
+                  },
+                  {
+                    "score": 0.9319148936170213
+                  },
+                  {
+                    "score": 0.8704453441295547
+                  },
+                  {
+                    "score": 0.6122448979591837
+                  },
+                  {
+                    "score": 0.9221311475409836
+                  }
+                ],
+                "score": 0.8732633698832595,
+                "scores": {
+                  "score": 0.8732633698832595
+                }
+              },
+              "-3": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.7777777777777778
+                  },
+                  {
+                    "score": 0.8354430379746836
+                  },
+                  {
+                    "score": 0.8333333333333334
+                  },
+                  {
+                    "score": 0.853448275862069
+                  },
+                  {
+                    "score": 0.7704918032786885
+                  },
+                  {
+                    "score": 0.5082644628099173
+                  },
+                  {
+                    "score": 0.8132780082987552
+                  }
+                ],
+                "score": 0.7702909570478892,
+                "scores": {
+                  "score": 0.7702909570478892
+                }
+              },
+              "-4": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6384976525821596
+                  },
+                  {
+                    "score": 0.7222222222222222
+                  },
+                  {
+                    "score": 0.7442922374429224
+                  },
+                  {
+                    "score": 0.7205240174672489
+                  },
+                  {
+                    "score": 0.6763485477178424
+                  },
+                  {
+                    "score": 0.3807531380753138
+                  },
+                  {
+                    "score": 0.7184873949579832
+                  }
+                ],
+                "score": 0.6573036014950989,
+                "scores": {
+                  "score": 0.6573036014950989
+                }
+              },
+              "0": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.8533333333333334
+                  },
+                  {
+                    "score": 0.8658536585365854
+                  },
+                  {
+                    "score": 0.8571428571428571
+                  },
+                  {
+                    "score": 0.8672199170124482
+                  },
+                  {
+                    "score": 0.7312252964426877
+                  },
+                  {
+                    "score": 0.49800796812749004
+                  },
+                  {
+                    "score": 0.864
+                  }
+                ],
+                "score": 0.7909690043707718,
+                "scores": {
+                  "score": 0.7909690043707718
+                }
+              },
+              "1": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.7387387387387387
+                  },
+                  {
+                    "score": 0.7736625514403292
+                  },
+                  {
+                    "score": 0.7631578947368421
+                  },
+                  {
+                    "score": 0.7647058823529411
+                  },
+                  {
+                    "score": 0.64
+                  },
+                  {
+                    "score": 0.42338709677419356
+                  },
+                  {
+                    "score": 0.7449392712550608
+                  }
+                ],
+                "score": 0.6926559193283008,
+                "scores": {
+                  "score": 0.6926559193283008
+                }
+              },
+              "2": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6712328767123288
+                  },
+                  {
+                    "score": 0.6875
+                  },
+                  {
+                    "score": 0.6755555555555556
+                  },
+                  {
+                    "score": 0.6808510638297872
+                  },
+                  {
+                    "score": 0.5465587044534413
+                  },
+                  {
+                    "score": 0.34285714285714286
+                  },
+                  {
+                    "score": 0.6434426229508197
+                  }
+                ],
+                "score": 0.6068568523370109,
+                "scores": {
+                  "score": 0.6068568523370109
+                }
+              }
+            },
+            "n_folds": 7,
+            "parameters": [
+              "offset"
+            ],
+            "predicted": {
+              "alignment": "causal",
+              "analysis_window_lag_s": 0.0125,
+              "by_tau": {
+                "0": {
+                  "lag_s": 0.0125,
+                  "offset": -1
+                }
+              },
+              "hop": 0.01,
+              "offset": -1,
+              "window": "hamming"
+            },
+            "selected_on": "speaker-disjoint folds within the training split",
+            "selection_bias": 0.0,
+            "test_argmax_offset": -1,
+            "test_profile": {
+              "-1": 0.8817056396148556,
+              "-2": 0.8676880222841226,
+              "-3": 0.7940761636107193,
+              "-4": 0.6885714285714286,
+              "0": 0.7948369565217391,
+              "1": 0.7028885832187071,
+              "2": 0.5905292479108635
+            },
+            "test_score_at_argmax": 0.8817056396148556,
+            "test_score_at_selected": 0.8817056396148556
+          },
+          "shuffled_label_accuracy": 0.1155433287482806,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -164,96 +511,127 @@
           }
         },
         {
-          "accuracy": 0.8517006802721089,
+          "accuracy": 0.9476584022038568,
           "bandwidth_bits": {
             "features_per_frame": 40,
             "frames_per_s": 100.0,
             "per_feature": 32
           },
+          "best_offset": -1,
+          "c5_alignment": {
+            "test": {
+              "interior_maximum": true,
+              "missing_offsets": [],
+              "neighbours": {
+                "-2": 0.9037656903765691,
+                "-3": 0.7966101694915254,
+                "0": 0.8517006802721089,
+                "1": 0.7493112947658402
+              },
+              "offsets_not_lower": [],
+              "radius": 2,
+              "score_at_selected": 0.9476584022038568,
+              "selected_offset": -1
+            },
+            "validation": {
+              "interior_maximum": true,
+              "missing_offsets": [],
+              "neighbours": {
+                "-2": 0.8728573778363693,
+                "-3": 0.7654484806403783,
+                "0": 0.7956506129648121,
+                "1": 0.7019881010103086
+              },
+              "offsets_not_lower": [],
+              "radius": 2,
+              "score_at_selected": 0.9152289893175095,
+              "selected_offset": -1
+            }
+          },
           "chance": 0.125,
           "confusion": [
             [
-              97,
-              5,
-              5,
-              4,
-              8,
-              0,
-              0,
-              2
-            ],
-            [
-              3,
-              66,
+              109,
               1,
               1,
-              2,
-              5,
+              1,
+              7,
+              0,
               0,
               0
             ],
             [
               1,
-              1,
-              64,
-              4,
-              3,
+              76,
+              0,
+              0,
+              0,
               1,
               0,
               0
             ],
             [
               0,
-              5,
-              4,
-              117,
-              3,
-              2,
-              3,
-              6
+              0,
+              63,
+              10,
+              0,
+              0,
+              0,
+              0
             ],
             [
-              4,
               0,
               2,
-              3,
-              54,
+              0,
+              134,
+              2,
               0,
               0,
               1
             ],
             [
-              5,
+              0,
+              0,
+              0,
               1,
-              1,
-              2,
-              1,
-              82,
-              1,
-              2
+              63,
+              0,
+              0,
+              0
             ],
             [
-              3,
-              1,
-              1,
               2,
               0,
-              2,
-              63,
+              1,
+              1,
+              0,
+              89,
+              0,
               0
             ],
             [
               1,
+              0,
+              0,
               1,
               0,
               1,
-              2,
-              2,
+              67,
+              0
+            ],
+            [
+              0,
               1,
-              83
+              0,
+              0,
+              0,
+              0,
+              2,
+              87
             ]
           ],
-          "decoded_information_bits": 2.0295052483599796,
+          "decoded_information_bits": 2.613881245212565,
           "feature_bandwidth_bps": 128000.0,
           "featurisation": {
             "alignment": "causal",
@@ -264,17 +642,18 @@
             "window": "hamming"
           },
           "lambda_events_per_s": 0.0,
-          "majority_floor": 0.19047619047619047,
+          "majority_floor": 0.19146005509641872,
           "misaligned_accuracy": {
-            "-1": 0.9476584022038568,
             "-2": 0.9037656903765691,
+            "-3": 0.7966101694915254,
+            "0": 0.8517006802721089,
             "1": 0.7493112947658402
           },
           "n_features": 40,
-          "n_frames_test": 735,
-          "n_frames_train": 1698,
+          "n_frames_test": 726,
+          "n_frames_train": 1677,
           "probe_converged": true,
-          "probe_iterations": 322,
+          "probe_iterations": 169,
           "probe_settings": {
             "alpha": 0.0001,
             "max_iter": 500,
@@ -285,8 +664,310 @@
             "tol": 1e-08
           },
           "reference": "R2",
-          "seconds": 29.98700976371765,
-          "shuffled_label_accuracy": 0.11428571428571428,
+          "seconds": 340.91780829429626,
+          "selection": {
+            "candidates": [
+              -4,
+              -3,
+              -2,
+              -1,
+              0,
+              1,
+              2
+            ],
+            "chosen": {
+              "offset": -1
+            },
+            "criterion": "frame accuracy",
+            "folds": [
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              }
+            ],
+            "grid": {
+              "-1": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.776824034334764
+                  },
+                  {
+                    "score": 0.9711934156378601
+                  },
+                  {
+                    "score": 0.8278688524590164
+                  },
+                  {
+                    "score": 0.97165991902834
+                  },
+                  {
+                    "score": 0.9684684684684685
+                  },
+                  {
+                    "score": 0.92
+                  },
+                  {
+                    "score": 0.9705882352941176
+                  }
+                ],
+                "score": 0.9152289893175095,
+                "scores": {
+                  "score": 0.9152289893175095
+                }
+              },
+              "-2": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.7217391304347827
+                  },
+                  {
+                    "score": 0.9375
+                  },
+                  {
+                    "score": 0.8132780082987552
+                  },
+                  {
+                    "score": 0.9016393442622951
+                  },
+                  {
+                    "score": 0.91324200913242
+                  },
+                  {
+                    "score": 0.8906882591093117
+                  },
+                  {
+                    "score": 0.9319148936170213
+                  }
+                ],
+                "score": 0.8728573778363693,
+                "scores": {
+                  "score": 0.8728573778363693
+                }
+              },
+              "-3": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6431718061674009
+                  },
+                  {
+                    "score": 0.8396624472573839
+                  },
+                  {
+                    "score": 0.7478991596638656
+                  },
+                  {
+                    "score": 0.7842323651452282
+                  },
+                  {
+                    "score": 0.7731481481481481
+                  },
+                  {
+                    "score": 0.7295081967213115
+                  },
+                  {
+                    "score": 0.8405172413793104
+                  }
+                ],
+                "score": 0.7654484806403783,
+                "scores": {
+                  "score": 0.7654484806403783
+                }
+              },
+              "-4": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.5714285714285714
+                  },
+                  {
+                    "score": 0.7350427350427351
+                  },
+                  {
+                    "score": 0.6340425531914894
+                  },
+                  {
+                    "score": 0.680672268907563
+                  },
+                  {
+                    "score": 0.647887323943662
+                  },
+                  {
+                    "score": 0.6514522821576764
+                  },
+                  {
+                    "score": 0.7292576419213974
+                  }
+                ],
+                "score": 0.6642547680847277,
+                "scores": {
+                  "score": 0.6642547680847277
+                }
+              },
+              "0": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6949152542372882
+                  },
+                  {
+                    "score": 0.8739837398373984
+                  },
+                  {
+                    "score": 0.728744939271255
+                  },
+                  {
+                    "score": 0.856
+                  },
+                  {
+                    "score": 0.8488888888888889
+                  },
+                  {
+                    "score": 0.6956521739130435
+                  },
+                  {
+                    "score": 0.8713692946058091
+                  }
+                ],
+                "score": 0.7956506129648121,
+                "scores": {
+                  "score": 0.7956506129648121
+                }
+              },
+              "1": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6094420600858369
+                  },
+                  {
+                    "score": 0.7736625514403292
+                  },
+                  {
+                    "score": 0.6311475409836066
+                  },
+                  {
+                    "score": 0.7408906882591093
+                  },
+                  {
+                    "score": 0.7612612612612613
+                  },
+                  {
+                    "score": 0.616
+                  },
+                  {
+                    "score": 0.7815126050420168
+                  }
+                ],
+                "score": 0.7019881010103086,
+                "scores": {
+                  "score": 0.7019881010103086
+                }
+              },
+              "2": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.4826086956521739
+                  },
+                  {
+                    "score": 0.6666666666666666
+                  },
+                  {
+                    "score": 0.5684647302904564
+                  },
+                  {
+                    "score": 0.639344262295082
+                  },
+                  {
+                    "score": 0.6484018264840182
+                  },
+                  {
+                    "score": 0.5101214574898786
+                  },
+                  {
+                    "score": 0.6936170212765957
+                  }
+                ],
+                "score": 0.6013178085935531,
+                "scores": {
+                  "score": 0.6013178085935531
+                }
+              }
+            },
+            "n_folds": 7,
+            "parameters": [
+              "offset"
+            ],
+            "predicted": {
+              "alignment": "causal",
+              "analysis_window_lag_s": 0.0125,
+              "by_tau": {
+                "0": {
+                  "lag_s": 0.0125,
+                  "offset": -1
+                }
+              },
+              "hop": 0.01,
+              "offset": -1,
+              "window": "hamming"
+            },
+            "selected_on": "speaker-disjoint folds within the training split",
+            "selection_bias": 0.0,
+            "test_argmax_offset": -1,
+            "test_profile": {
+              "-1": 0.9476584022038568,
+              "-2": 0.9037656903765691,
+              "-3": 0.7966101694915254,
+              "-4": 0.6881258941344778,
+              "0": 0.8517006802721089,
+              "1": 0.7493112947658402,
+              "2": 0.6569037656903766
+            },
+            "test_score_at_argmax": 0.9476584022038568,
+            "test_score_at_selected": 0.9476584022038568
+          },
+          "shuffled_label_accuracy": 0.09228650137741047,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -308,96 +989,127 @@
           }
         },
         {
-          "accuracy": 0.8274894810659187,
+          "accuracy": 0.9105113636363636,
           "bandwidth_bits": {
             "features_per_frame": 40,
             "frames_per_s": 100.0,
             "per_feature": 32
           },
+          "best_offset": -1,
+          "c5_alignment": {
+            "test": {
+              "interior_maximum": true,
+              "missing_offsets": [],
+              "neighbours": {
+                "-2": 0.8719424460431655,
+                "-3": 0.7857142857142857,
+                "0": 0.8274894810659187,
+                "1": 0.7144886363636364
+              },
+              "offsets_not_lower": [],
+              "radius": 2,
+              "score_at_selected": 0.9105113636363636,
+              "selected_offset": -1
+            },
+            "validation": {
+              "interior_maximum": true,
+              "missing_offsets": [],
+              "neighbours": {
+                "-2": 0.90179330394818,
+                "-3": 0.7733741888410045,
+                "0": 0.8314817092119868,
+                "1": 0.7305372890765031
+              },
+              "offsets_not_lower": [],
+              "radius": 2,
+              "score_at_selected": 0.9434494406009125,
+              "selected_offset": -1
+            }
+          },
           "chance": 0.125,
           "confusion": [
             [
-              106,
-              2,
-              4,
-              2,
-              12,
-              3,
-              0,
-              0
-            ],
-            [
-              5,
-              69,
-              0,
+              120,
               0,
               1,
-              6,
+              0,
+              7,
+              1,
               0,
               0
             ],
             [
               1,
-              1,
-              71,
-              15,
+              77,
               0,
-              3,
+              0,
+              0,
               2,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              70,
+              21,
+              0,
+              0,
+              0,
               0
             ],
             [
               0,
               1,
-              3,
-              47,
-              2,
+              0,
+              52,
+              1,
               0,
               0,
+              0
+            ],
+            [
+              21,
+              0,
+              1,
+              1,
+              63,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              1,
+              0,
+              141,
+              1,
               2
             ],
             [
-              16,
-              0,
-              4,
-              2,
-              64,
               0,
               0,
+              1,
+              0,
+              0,
+              0,
+              49,
               0
             ],
             [
-              6,
-              2,
-              2,
               0,
               0,
-              129,
-              3,
-              6
-            ],
-            [
-              0,
-              1,
-              1,
-              1,
-              0,
-              2,
-              43,
-              3
-            ],
-            [
-              5,
-              1,
-              1,
               0,
               0,
-              2,
               0,
-              61
+              0,
+              0,
+              69
             ]
           ],
-          "decoded_information_bits": 1.969188283857061,
+          "decoded_information_bits": 2.5016940183876795,
           "feature_bandwidth_bps": 128000.0,
           "featurisation": {
             "alignment": "causal",
@@ -408,17 +1120,18 @@
             "window": "hamming"
           },
           "lambda_events_per_s": 0.0,
-          "majority_floor": 0.20757363253856942,
+          "majority_floor": 0.2059659090909091,
           "misaligned_accuracy": {
-            "-1": 0.9105113636363636,
             "-2": 0.8719424460431655,
+            "-3": 0.7857142857142857,
+            "0": 0.8274894810659187,
             "1": 0.7144886363636364
           },
           "n_features": 40,
-          "n_frames_test": 713,
-          "n_frames_train": 1720,
+          "n_frames_test": 704,
+          "n_frames_train": 1699,
           "probe_converged": true,
-          "probe_iterations": 316,
+          "probe_iterations": 201,
           "probe_settings": {
             "alpha": 0.0001,
             "max_iter": 500,
@@ -429,8 +1142,310 @@
             "tol": 1e-08
           },
           "reference": "R2",
-          "seconds": 30.38155508041382,
-          "shuffled_label_accuracy": 0.1697054698457223,
+          "seconds": 302.3150854110718,
+          "selection": {
+            "candidates": [
+              -4,
+              -3,
+              -2,
+              -1,
+              0,
+              1,
+              2
+            ],
+            "chosen": {
+              "offset": -1
+            },
+            "criterion": "frame accuracy",
+            "folds": [
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              }
+            ],
+            "grid": {
+              "-1": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.9549180327868853
+                  },
+                  {
+                    "score": 0.948
+                  },
+                  {
+                    "score": 0.9705882352941176
+                  },
+                  {
+                    "score": 0.963963963963964
+                  },
+                  {
+                    "score": 0.8830645161290323
+                  },
+                  {
+                    "score": 0.9676113360323887
+                  },
+                  {
+                    "score": 0.916
+                  }
+                ],
+                "score": 0.9434494406009125,
+                "scores": {
+                  "score": 0.9434494406009125
+                }
+              },
+              "-2": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.9128630705394191
+                  },
+                  {
+                    "score": 0.9271255060728745
+                  },
+                  {
+                    "score": 0.9361702127659575
+                  },
+                  {
+                    "score": 0.9315068493150684
+                  },
+                  {
+                    "score": 0.8204081632653061
+                  },
+                  {
+                    "score": 0.9221311475409836
+                  },
+                  {
+                    "score": 0.8623481781376519
+                  }
+                ],
+                "score": 0.90179330394818,
+                "scores": {
+                  "score": 0.90179330394818
+                }
+              },
+              "-3": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.8361344537815126
+                  },
+                  {
+                    "score": 0.819672131147541
+                  },
+                  {
+                    "score": 0.8405172413793104
+                  },
+                  {
+                    "score": 0.7129629629629629
+                  },
+                  {
+                    "score": 0.7148760330578512
+                  },
+                  {
+                    "score": 0.8091286307053942
+                  },
+                  {
+                    "score": 0.680327868852459
+                  }
+                ],
+                "score": 0.7733741888410045,
+                "scores": {
+                  "score": 0.7733741888410045
+                }
+              },
+              "-4": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6978723404255319
+                  },
+                  {
+                    "score": 0.7053941908713693
+                  },
+                  {
+                    "score": 0.6943231441048034
+                  },
+                  {
+                    "score": 0.5868544600938967
+                  },
+                  {
+                    "score": 0.6150627615062761
+                  },
+                  {
+                    "score": 0.7184873949579832
+                  },
+                  {
+                    "score": 0.6016597510373444
+                  }
+                ],
+                "score": 0.6599505775710293,
+                "scores": {
+                  "score": 0.6599505775710293
+                }
+              },
+              "0": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.854251012145749
+                  },
+                  {
+                    "score": 0.841897233201581
+                  },
+                  {
+                    "score": 0.8547717842323651
+                  },
+                  {
+                    "score": 0.8577777777777778
+                  },
+                  {
+                    "score": 0.8047808764940239
+                  },
+                  {
+                    "score": 0.848
+                  },
+                  {
+                    "score": 0.758893280632411
+                  }
+                ],
+                "score": 0.8314817092119868,
+                "scores": {
+                  "score": 0.8314817092119868
+                }
+              },
+              "1": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.7622950819672131
+                  },
+                  {
+                    "score": 0.724
+                  },
+                  {
+                    "score": 0.7689075630252101
+                  },
+                  {
+                    "score": 0.7477477477477478
+                  },
+                  {
+                    "score": 0.7217741935483871
+                  },
+                  {
+                    "score": 0.7530364372469636
+                  },
+                  {
+                    "score": 0.636
+                  }
+                ],
+                "score": 0.7305372890765031,
+                "scores": {
+                  "score": 0.7305372890765031
+                }
+              },
+              "2": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6431535269709544
+                  },
+                  {
+                    "score": 0.5910931174089069
+                  },
+                  {
+                    "score": 0.6808510638297872
+                  },
+                  {
+                    "score": 0.639269406392694
+                  },
+                  {
+                    "score": 0.636734693877551
+                  },
+                  {
+                    "score": 0.6475409836065574
+                  },
+                  {
+                    "score": 0.4777327935222672
+                  }
+                ],
+                "score": 0.6166250836583884,
+                "scores": {
+                  "score": 0.6166250836583884
+                }
+              }
+            },
+            "n_folds": 7,
+            "parameters": [
+              "offset"
+            ],
+            "predicted": {
+              "alignment": "causal",
+              "analysis_window_lag_s": 0.0125,
+              "by_tau": {
+                "0": {
+                  "lag_s": 0.0125,
+                  "offset": -1
+                }
+              },
+              "hop": 0.01,
+              "offset": -1,
+              "window": "hamming"
+            },
+            "selected_on": "speaker-disjoint folds within the training split",
+            "selection_bias": 0.0,
+            "test_argmax_offset": -1,
+            "test_profile": {
+              "-1": 0.9105113636363636,
+              "-2": 0.8719424460431655,
+              "-3": 0.7857142857142857,
+              "-4": 0.6868537666174298,
+              "0": 0.8274894810659187,
+              "1": 0.7144886363636364,
+              "2": 0.6143884892086331
+            },
+            "test_score_at_argmax": 0.9105113636363636,
+            "test_score_at_selected": 0.9105113636363636
+          },
+          "shuffled_label_accuracy": 0.125,
           "split": {
             "n_test": 9,
             "n_train": 21,
@@ -452,7 +1467,14 @@
           }
         }
       ],
-      "seconds": 95.58603692054749
+      "seconds": 1013.9937582015991,
+      "selection_bias_by_seed": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "test_argmax_accuracy": 0.9132918018183588,
+      "test_argmax_offset": "-1"
     },
     {
       "accuracy_by_seed": [
@@ -463,13 +1485,26 @@
       "accuracy_mean": 0.9307483231721861,
       "accuracy_std": 0.028466689400158226,
       "alignment": "centred",
-      "best_offset": "0",
-      "best_offset_accuracy": 0.9307483231721861,
+      "c5_interior_maximum_by_seed": [
+        true,
+        true,
+        true
+      ],
+      "offset_by_seed": [
+        0,
+        0,
+        0
+      ],
       "offset_profile": {
         "-1": 0.8640632716751105,
         "-2": 0.7558680552906191,
-        "1": 0.8594657655711803
+        "-3": 0.6524125176833181,
+        "-4": 0.5419819408608627,
+        "0": 0.9307483231721861,
+        "1": 0.8594657655711803,
+        "2": 0.7670135301183185
       },
+      "predicted_offset": 0,
       "runs": [
         {
           "accuracy": 0.9103260869565217,
@@ -477,6 +1512,37 @@
             "features_per_frame": 40,
             "frames_per_s": 100.0,
             "per_feature": 32
+          },
+          "best_offset": 0,
+          "c5_alignment": {
+            "test": {
+              "interior_maximum": true,
+              "missing_offsets": [],
+              "neighbours": {
+                "-1": 0.8514442916093535,
+                "-2": 0.7465181058495822,
+                "1": 0.8335625859697386,
+                "2": 0.7409470752089137
+              },
+              "offsets_not_lower": [],
+              "radius": 2,
+              "score_at_selected": 0.9103260869565217,
+              "selected_offset": 0
+            },
+            "validation": {
+              "interior_maximum": true,
+              "missing_offsets": [],
+              "neighbours": {
+                "-1": 0.8282488296713327,
+                "-2": 0.7402908990107849,
+                "1": 0.8150481424192489,
+                "2": 0.7146243005820475
+              },
+              "offsets_not_lower": [],
+              "radius": 2,
+              "score_at_selected": 0.9256561445144096,
+              "selected_offset": 0
+            }
           },
           "chance": 0.125,
           "confusion": [
@@ -576,7 +1642,8 @@
           "misaligned_accuracy": {
             "-1": 0.8514442916093535,
             "-2": 0.7465181058495822,
-            "1": 0.8335625859697386
+            "1": 0.8335625859697386,
+            "2": 0.7409470752089137
           },
           "n_features": 40,
           "n_frames_test": 736,
@@ -593,7 +1660,309 @@
             "tol": 1e-08
           },
           "reference": "R2",
-          "seconds": 30.77876615524292,
+          "seconds": 332.12627935409546,
+          "selection": {
+            "candidates": [
+              -4,
+              -3,
+              -2,
+              -1,
+              0,
+              1,
+              2
+            ],
+            "chosen": {
+              "offset": 0
+            },
+            "criterion": "frame accuracy",
+            "folds": [
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              }
+            ],
+            "grid": {
+              "-1": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.9099099099099099
+                  },
+                  {
+                    "score": 0.9135802469135802
+                  },
+                  {
+                    "score": 0.9078947368421053
+                  },
+                  {
+                    "score": 0.9201680672268907
+                  },
+                  {
+                    "score": 0.824
+                  },
+                  {
+                    "score": 0.41935483870967744
+                  },
+                  {
+                    "score": 0.902834008097166
+                  }
+                ],
+                "score": 0.8282488296713327,
+                "scores": {
+                  "score": 0.8282488296713327
+                }
+              },
+              "-2": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.7579908675799086
+                  },
+                  {
+                    "score": 0.7958333333333333
+                  },
+                  {
+                    "score": 0.8222222222222222
+                  },
+                  {
+                    "score": 0.8170212765957446
+                  },
+                  {
+                    "score": 0.757085020242915
+                  },
+                  {
+                    "score": 0.4204081632653061
+                  },
+                  {
+                    "score": 0.8114754098360656
+                  }
+                ],
+                "score": 0.7402908990107849,
+                "scores": {
+                  "score": 0.7402908990107849
+                }
+              },
+              "-3": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6296296296296297
+                  },
+                  {
+                    "score": 0.679324894514768
+                  },
+                  {
+                    "score": 0.7162162162162162
+                  },
+                  {
+                    "score": 0.6853448275862069
+                  },
+                  {
+                    "score": 0.6557377049180327
+                  },
+                  {
+                    "score": 0.33884297520661155
+                  },
+                  {
+                    "score": 0.6970954356846473
+                  }
+                ],
+                "score": 0.6288845262508732,
+                "scores": {
+                  "score": 0.6288845262508732
+                }
+              },
+              "-4": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.568075117370892
+                  },
+                  {
+                    "score": 0.5598290598290598
+                  },
+                  {
+                    "score": 0.5981735159817352
+                  },
+                  {
+                    "score": 0.5545851528384279
+                  },
+                  {
+                    "score": 0.5352697095435685
+                  },
+                  {
+                    "score": 0.27615062761506276
+                  },
+                  {
+                    "score": 0.5630252100840336
+                  }
+                ],
+                "score": 0.5221583418946828,
+                "scores": {
+                  "score": 0.5221583418946828
+                }
+              },
+              "0": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.9822222222222222
+                  },
+                  {
+                    "score": 0.9878048780487805
+                  },
+                  {
+                    "score": 0.9523809523809523
+                  },
+                  {
+                    "score": 0.975103734439834
+                  },
+                  {
+                    "score": 0.932806324110672
+                  },
+                  {
+                    "score": 0.6812749003984063
+                  },
+                  {
+                    "score": 0.968
+                  }
+                ],
+                "score": 0.9256561445144096,
+                "scores": {
+                  "score": 0.9256561445144096
+                }
+              },
+              "1": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.8828828828828829
+                  },
+                  {
+                    "score": 0.897119341563786
+                  },
+                  {
+                    "score": 0.8947368421052632
+                  },
+                  {
+                    "score": 0.9117647058823529
+                  },
+                  {
+                    "score": 0.708
+                  },
+                  {
+                    "score": 0.5241935483870968
+                  },
+                  {
+                    "score": 0.8866396761133604
+                  }
+                ],
+                "score": 0.8150481424192489,
+                "scores": {
+                  "score": 0.8150481424192489
+                }
+              },
+              "2": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.776255707762557
+                  },
+                  {
+                    "score": 0.7958333333333333
+                  },
+                  {
+                    "score": 0.7911111111111111
+                  },
+                  {
+                    "score": 0.8085106382978723
+                  },
+                  {
+                    "score": 0.6356275303643725
+                  },
+                  {
+                    "score": 0.4122448979591837
+                  },
+                  {
+                    "score": 0.7827868852459017
+                  }
+                ],
+                "score": 0.7146243005820475,
+                "scores": {
+                  "score": 0.7146243005820475
+                }
+              }
+            },
+            "n_folds": 7,
+            "parameters": [
+              "offset"
+            ],
+            "predicted": {
+              "alignment": "centred",
+              "analysis_window_lag_s": 0.0,
+              "by_tau": {
+                "0": {
+                  "lag_s": 0.0,
+                  "offset": 0
+                }
+              },
+              "hop": 0.01,
+              "offset": 0,
+              "window": "hamming"
+            },
+            "selected_on": "speaker-disjoint folds within the training split",
+            "selection_bias": 0.0,
+            "test_argmax_offset": 0,
+            "test_profile": {
+              "-1": 0.8514442916093535,
+              "-2": 0.7465181058495822,
+              "-3": 0.6431593794076164,
+              "-4": 0.52,
+              "0": 0.9103260869565217,
+              "1": 0.8335625859697386,
+              "2": 0.7409470752089137
+            },
+            "test_score_at_argmax": 0.9103260869565217,
+            "test_score_at_selected": 0.9103260869565217
+          },
           "shuffled_label_accuracy": 0.11548913043478261,
           "split": {
             "n_test": 9,
@@ -621,6 +1990,37 @@
             "features_per_frame": 40,
             "frames_per_s": 100.0,
             "per_feature": 32
+          },
+          "best_offset": 0,
+          "c5_alignment": {
+            "test": {
+              "interior_maximum": true,
+              "missing_offsets": [],
+              "neighbours": {
+                "-1": 0.8870523415977961,
+                "-2": 0.7656903765690377,
+                "1": 0.8925619834710744,
+                "2": 0.806136680613668
+              },
+              "offsets_not_lower": [],
+              "radius": 2,
+              "score_at_selected": 0.963265306122449,
+              "selected_offset": 0
+            },
+            "validation": {
+              "interior_maximum": true,
+              "missing_offsets": [],
+              "neighbours": {
+                "-1": 0.8313184960057326,
+                "-2": 0.7355214316151931,
+                "1": 0.8172434366775736,
+                "2": 0.7335306023850102
+              },
+              "offsets_not_lower": [],
+              "radius": 2,
+              "score_at_selected": 0.9215339132039517,
+              "selected_offset": 0
+            }
           },
           "chance": 0.125,
           "confusion": [
@@ -720,7 +2120,8 @@
           "misaligned_accuracy": {
             "-1": 0.8870523415977961,
             "-2": 0.7656903765690377,
-            "1": 0.8925619834710744
+            "1": 0.8925619834710744,
+            "2": 0.806136680613668
           },
           "n_features": 40,
           "n_frames_test": 735,
@@ -737,7 +2138,309 @@
             "tol": 1e-08
           },
           "reference": "R2",
-          "seconds": 33.33135747909546,
+          "seconds": 315.505343914032,
+          "selection": {
+            "candidates": [
+              -4,
+              -3,
+              -2,
+              -1,
+              0,
+              1,
+              2
+            ],
+            "chosen": {
+              "offset": 0
+            },
+            "criterion": "frame accuracy",
+            "folds": [
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              }
+            ],
+            "grid": {
+              "-1": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6824034334763949
+                  },
+                  {
+                    "score": 0.9053497942386831
+                  },
+                  {
+                    "score": 0.7704918032786885
+                  },
+                  {
+                    "score": 0.8866396761133604
+                  },
+                  {
+                    "score": 0.8783783783783784
+                  },
+                  {
+                    "score": 0.78
+                  },
+                  {
+                    "score": 0.9159663865546218
+                  }
+                ],
+                "score": 0.8313184960057326,
+                "scores": {
+                  "score": 0.8313184960057326
+                }
+              },
+              "-2": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6
+                  },
+                  {
+                    "score": 0.8291666666666667
+                  },
+                  {
+                    "score": 0.6970954356846473
+                  },
+                  {
+                    "score": 0.8073770491803278
+                  },
+                  {
+                    "score": 0.730593607305936
+                  },
+                  {
+                    "score": 0.680161943319838
+                  },
+                  {
+                    "score": 0.8042553191489362
+                  }
+                ],
+                "score": 0.7355214316151931,
+                "scores": {
+                  "score": 0.7355214316151931
+                }
+              },
+              "-3": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.5198237885462555
+                  },
+                  {
+                    "score": 0.7215189873417721
+                  },
+                  {
+                    "score": 0.5882352941176471
+                  },
+                  {
+                    "score": 0.6721991701244814
+                  },
+                  {
+                    "score": 0.6388888888888888
+                  },
+                  {
+                    "score": 0.5614754098360656
+                  },
+                  {
+                    "score": 0.6896551724137931
+                  }
+                ],
+                "score": 0.627399530181272,
+                "scores": {
+                  "score": 0.627399530181272
+                }
+              },
+              "-4": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.41964285714285715
+                  },
+                  {
+                    "score": 0.5897435897435898
+                  },
+                  {
+                    "score": 0.48936170212765956
+                  },
+                  {
+                    "score": 0.5714285714285714
+                  },
+                  {
+                    "score": 0.5539906103286385
+                  },
+                  {
+                    "score": 0.4605809128630705
+                  },
+                  {
+                    "score": 0.5807860262008734
+                  }
+                ],
+                "score": 0.5236477528336086,
+                "scores": {
+                  "score": 0.5236477528336086
+                }
+              },
+              "0": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.7711864406779662
+                  },
+                  {
+                    "score": 0.9796747967479674
+                  },
+                  {
+                    "score": 0.8623481781376519
+                  },
+                  {
+                    "score": 0.98
+                  },
+                  {
+                    "score": 0.9733333333333334
+                  },
+                  {
+                    "score": 0.9090909090909091
+                  },
+                  {
+                    "score": 0.975103734439834
+                  }
+                ],
+                "score": 0.9215339132039517,
+                "scores": {
+                  "score": 0.9215339132039517
+                }
+              },
+              "1": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6995708154506438
+                  },
+                  {
+                    "score": 0.9012345679012346
+                  },
+                  {
+                    "score": 0.7581967213114754
+                  },
+                  {
+                    "score": 0.8623481781376519
+                  },
+                  {
+                    "score": 0.8873873873873874
+                  },
+                  {
+                    "score": 0.696
+                  },
+                  {
+                    "score": 0.9159663865546218
+                  }
+                ],
+                "score": 0.8172434366775736,
+                "scores": {
+                  "score": 0.8172434366775736
+                }
+              },
+              "2": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6043478260869565
+                  },
+                  {
+                    "score": 0.8083333333333333
+                  },
+                  {
+                    "score": 0.6721991701244814
+                  },
+                  {
+                    "score": 0.7868852459016393
+                  },
+                  {
+                    "score": 0.7853881278538812
+                  },
+                  {
+                    "score": 0.6477732793522267
+                  },
+                  {
+                    "score": 0.8297872340425532
+                  }
+                ],
+                "score": 0.7335306023850102,
+                "scores": {
+                  "score": 0.7335306023850102
+                }
+              }
+            },
+            "n_folds": 7,
+            "parameters": [
+              "offset"
+            ],
+            "predicted": {
+              "alignment": "centred",
+              "analysis_window_lag_s": 0.0,
+              "by_tau": {
+                "0": {
+                  "lag_s": 0.0,
+                  "offset": 0
+                }
+              },
+              "hop": 0.01,
+              "offset": 0,
+              "window": "hamming"
+            },
+            "selected_on": "speaker-disjoint folds within the training split",
+            "selection_bias": 0.0,
+            "test_argmax_offset": 0,
+            "test_profile": {
+              "-1": 0.8870523415977961,
+              "-2": 0.7656903765690377,
+              "-3": 0.6610169491525424,
+              "-4": 0.5579399141630901,
+              "0": 0.963265306122449,
+              "1": 0.8925619834710744,
+              "2": 0.806136680613668
+            },
+            "test_score_at_argmax": 0.963265306122449,
+            "test_score_at_selected": 0.963265306122449
+          },
           "shuffled_label_accuracy": 0.1469387755102041,
           "split": {
             "n_test": 9,
@@ -765,6 +2468,37 @@
             "features_per_frame": 40,
             "frames_per_s": 100.0,
             "per_feature": 32
+          },
+          "best_offset": 0,
+          "c5_alignment": {
+            "test": {
+              "interior_maximum": true,
+              "missing_offsets": [],
+              "neighbours": {
+                "-1": 0.8536931818181818,
+                "-2": 0.7553956834532374,
+                "1": 0.8522727272727273,
+                "2": 0.753956834532374
+              },
+              "offsets_not_lower": [],
+              "radius": 2,
+              "score_at_selected": 0.9186535764375876,
+              "selected_offset": 0
+            },
+            "validation": {
+              "interior_maximum": true,
+              "missing_offsets": [],
+              "neighbours": {
+                "-1": 0.8660725817204475,
+                "-2": 0.7551094454485068,
+                "1": 0.8565536909383987,
+                "2": 0.7544374817039748
+              },
+              "offsets_not_lower": [],
+              "radius": 2,
+              "score_at_selected": 0.9596931475396814,
+              "selected_offset": 0
+            }
           },
           "chance": 0.125,
           "confusion": [
@@ -864,7 +2598,8 @@
           "misaligned_accuracy": {
             "-1": 0.8536931818181818,
             "-2": 0.7553956834532374,
-            "1": 0.8522727272727273
+            "1": 0.8522727272727273,
+            "2": 0.753956834532374
           },
           "n_features": 40,
           "n_frames_test": 713,
@@ -881,7 +2616,309 @@
             "tol": 1e-08
           },
           "reference": "R2",
-          "seconds": 31.726609706878662,
+          "seconds": 305.70275712013245,
+          "selection": {
+            "candidates": [
+              -4,
+              -3,
+              -2,
+              -1,
+              0,
+              1,
+              2
+            ],
+            "chosen": {
+              "offset": 0
+            },
+            "criterion": "frame accuracy",
+            "folds": [
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              },
+              {
+                "n_fit_speakers": 6,
+                "n_fit_utterances": 18,
+                "n_val_speakers": 1,
+                "n_val_utterances": 3
+              }
+            ],
+            "grid": {
+              "-1": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.889344262295082
+                  },
+                  {
+                    "score": 0.9
+                  },
+                  {
+                    "score": 0.907563025210084
+                  },
+                  {
+                    "score": 0.8963963963963963
+                  },
+                  {
+                    "score": 0.8145161290322581
+                  },
+                  {
+                    "score": 0.8906882591093117
+                  },
+                  {
+                    "score": 0.764
+                  }
+                ],
+                "score": 0.8660725817204475,
+                "scores": {
+                  "score": 0.8660725817204475
+                }
+              },
+              "-2": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.7759336099585062
+                  },
+                  {
+                    "score": 0.8016194331983806
+                  },
+                  {
+                    "score": 0.7957446808510639
+                  },
+                  {
+                    "score": 0.6986301369863014
+                  },
+                  {
+                    "score": 0.6979591836734694
+                  },
+                  {
+                    "score": 0.8073770491803278
+                  },
+                  {
+                    "score": 0.708502024291498
+                  }
+                ],
+                "score": 0.7551094454485068,
+                "scores": {
+                  "score": 0.7551094454485068
+                }
+              },
+              "-3": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.6386554621848739
+                  },
+                  {
+                    "score": 0.6762295081967213
+                  },
+                  {
+                    "score": 0.6810344827586207
+                  },
+                  {
+                    "score": 0.5694444444444444
+                  },
+                  {
+                    "score": 0.6157024793388429
+                  },
+                  {
+                    "score": 0.7178423236514523
+                  },
+                  {
+                    "score": 0.569672131147541
+                  }
+                ],
+                "score": 0.6383686902460709,
+                "scores": {
+                  "score": 0.6383686902460709
+                }
+              },
+              "-4": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.5234042553191489
+                  },
+                  {
+                    "score": 0.5518672199170125
+                  },
+                  {
+                    "score": 0.5851528384279476
+                  },
+                  {
+                    "score": 0.49295774647887325
+                  },
+                  {
+                    "score": 0.49372384937238495
+                  },
+                  {
+                    "score": 0.6218487394957983
+                  },
+                  {
+                    "score": 0.4730290456431535
+                  }
+                ],
+                "score": 0.5345690992363313,
+                "scores": {
+                  "score": 0.5345690992363313
+                }
+              },
+              "0": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.9676113360323887
+                  },
+                  {
+                    "score": 0.9604743083003953
+                  },
+                  {
+                    "score": 0.983402489626556
+                  },
+                  {
+                    "score": 0.9733333333333334
+                  },
+                  {
+                    "score": 0.9083665338645418
+                  },
+                  {
+                    "score": 0.98
+                  },
+                  {
+                    "score": 0.9446640316205533
+                  }
+                ],
+                "score": 0.9596931475396814,
+                "scores": {
+                  "score": 0.9596931475396814
+                }
+              },
+              "1": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.889344262295082
+                  },
+                  {
+                    "score": 0.884
+                  },
+                  {
+                    "score": 0.907563025210084
+                  },
+                  {
+                    "score": 0.9099099099099099
+                  },
+                  {
+                    "score": 0.8145161290322581
+                  },
+                  {
+                    "score": 0.8785425101214575
+                  },
+                  {
+                    "score": 0.712
+                  }
+                ],
+                "score": 0.8565536909383987,
+                "scores": {
+                  "score": 0.8565536909383987
+                }
+              },
+              "2": {
+                "n_folds_scored": 7,
+                "per_fold": [
+                  {
+                    "score": 0.7925311203319502
+                  },
+                  {
+                    "score": 0.7692307692307693
+                  },
+                  {
+                    "score": 0.8085106382978723
+                  },
+                  {
+                    "score": 0.7899543378995434
+                  },
+                  {
+                    "score": 0.7428571428571429
+                  },
+                  {
+                    "score": 0.7868852459016393
+                  },
+                  {
+                    "score": 0.5910931174089069
+                  }
+                ],
+                "score": 0.7544374817039748,
+                "scores": {
+                  "score": 0.7544374817039748
+                }
+              }
+            },
+            "n_folds": 7,
+            "parameters": [
+              "offset"
+            ],
+            "predicted": {
+              "alignment": "centred",
+              "analysis_window_lag_s": 0.0,
+              "by_tau": {
+                "0": {
+                  "lag_s": 0.0,
+                  "offset": 0
+                }
+              },
+              "hop": 0.01,
+              "offset": 0,
+              "window": "hamming"
+            },
+            "selected_on": "speaker-disjoint folds within the training split",
+            "selection_bias": 0.0,
+            "test_argmax_offset": 0,
+            "test_profile": {
+              "-1": 0.8536931818181818,
+              "-2": 0.7553956834532374,
+              "-3": 0.6530612244897959,
+              "-4": 0.5480059084194978,
+              "0": 0.9186535764375876,
+              "1": 0.8522727272727273,
+              "2": 0.753956834532374
+            },
+            "test_score_at_argmax": 0.9186535764375876,
+            "test_score_at_selected": 0.9186535764375876
+          },
           "shuffled_label_accuracy": 0.11640953716690042,
           "split": {
             "n_test": 9,
@@ -904,7 +2941,14 @@
           }
         }
       ],
-      "seconds": 95.83784294128418
+      "seconds": 953.3355312347412,
+      "selection_bias_by_seed": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "test_argmax_accuracy": 0.9307483231721861,
+      "test_argmax_offset": "0"
     }
   ],
   "corpus": {
