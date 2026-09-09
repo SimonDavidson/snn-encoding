@@ -2953,3 +2953,104 @@ rather than as their setting. So:
 **Blocking?** Report v3 must not quote 5.7's channel figures until this is
 settled, and O3 should not go to Oliver in its current form.
 **Answer:** (open)
+
+### Q43 — should stage one move off TIMIT to an open corpus, given the accent mismatch?
+**Raised:** 2026-09-09 by Simon, relaying Oliver
+**Context:** the LDC account has been verified and accepted, so O2 is clearing
+and TIMIT may be imminent. Oliver asks whether an open corpus would be quicker
+and better matched, on the grounds that TIMIT is American English and "might
+have a slightly different set of phonemes to the recordings we're collecting,
+and therefore models pretrained on it might not transfer to our dataset". He
+names two candidates: openslr.org/12 and a Mozilla Data Collective dataset.
+
+**Question:** for Oliver. The analysis below is implementation-side fact; the
+decision is his and the design session's.
+
+**Nothing in this study is pretrained, so nothing can fail to transfer.** This
+is the load-bearing point and it is worth stating plainly, because the concern
+as phrased does not apply to the design as written. D06 excludes learned and
+task-trained encoders; E1 to E6 have no fitted parameters at all — they are
+LIF, send-on-delta, temporal contrast, ALIF, phase locking and
+time-to-first-spike, all fixed signal-processing rules. The only things fitted
+are the probes, and §13 of the validation protocol now requires every free
+parameter to be selected inside the training split of the corpus being scored,
+per condition (D71). Refitting on the MANCHESTER Dataset is not a concession;
+it is what the protocol mandates.
+
+What carries from stage one to stage two is therefore a **ranking of encoders
+at matched budget**, not a model. Proposal §8.2 already says so: stage two "is
+a transfer test rather than a repeat of the study: the question is whether the
+ranking established on TIMIT survives a change of speakers, accents and
+recording conditions... If it does not, that is a reportable and interesting
+finding about how corpus-dependent encoding choices are." And §8.1 already
+names the exact concern — "TIMIT is read, clean, US English at 16 kHz, so
+parameters tuned on it may not transfer to our recording conditions - which is
+exactly why stage two exists". The accent difference is the independent
+variable of stage two, not a threat to it.
+
+**The version of Oliver's concern that is real, and is not answered above.**
+The *label inventory* differs, so a T1 accuracy on TIMIT and a T1 accuracy on
+the MANCHESTER Dataset are not the same measurement even when the ranking
+transfers. TIMIT's 61-to-39 collapse is an American inventory; British English
+is non-rhotic, has the TRAP–BATH split, and does not merge cot and caught. The
+proposal's §4.1 fixes one collapse and does not contemplate a second. This
+affects T1 only: T2 is an f0 contour and T3 is boundary timing, and neither
+depends on which phones the speaker has. So the concern bites on one of three
+tasks, and it bites on cross-stage comparability rather than on validity.
+
+**What the two candidates actually are** (both pages fetched 2026-09-09):
+
+| | TIMIT | LibriSpeech (SLR12) | Common Voice 26.0 en |
+|---|---|---|---|
+| size | ~5 h | ~1000 h | 2785 h validated |
+| speakers | 630 | — | 100,172 |
+| licence | LDC, now held | CC BY 4.0 | CC0 |
+| transcripts | yes | yes | yes |
+| **hand-placed phone labels** | **yes** | **no** | **no** |
+| time alignment | phone level | segment level | none |
+| accent metadata | dialect region | not stated on the page | 17 declared varieties |
+
+**Neither alternative removes the TIMIT dependency; both remove the thing that
+makes stage one interpretable.**
+
+1. **Hand-placed phone boundaries are the whole point of TIMIT here.** They are
+   T1's labels and T3's ground truth. Without them both tasks need forced
+   alignment — and proposal §8.3 plans to validate the aligner *against
+   TIMIT's hand labels first*, "which gives a calibration figure before either
+   is trusted on our audio". So dropping TIMIT does not remove a dependency,
+   it removes the calibration that stage two was going to rely on.
+2. **Control C1 becomes permanently unevaluable.** C1 anchors R2 against
+   published TIMIT numbers — 82.68 per cent frame accuracy (Ponghiran and Roy)
+   and 15.77 per cent PER (Bittar and Garner). It is the only control that
+   distinguishes "this pipeline is calibrated" from "this pipeline is
+   self-consistent", and every result file we have written carries a caveat
+   saying it has not been evaluated. On LibriSpeech or Common Voice there is
+   no equivalent anchor for our battery.
+3. **LibriSpeech does not fix the accent concern either.** It is read
+   audiobooks from LibriVox; the SLR12 page states no accent composition, so
+   it cannot be assumed more British than TIMIT without checking. It is also
+   further from the MANCHESTER Dataset's recording conditions than TIMIT is,
+   not closer. The proposal already reached this conclusion at §10.2, naming
+   LibriSpeech as the fallback *if no licence proves obtainable* — a condition
+   that has now failed to obtain.
+4. **Common Voice has no timings at all**, so T1 and T3 are not runnable on it
+   in any form. It is crowd-sourced, so recording conditions are heterogeneous
+   by construction, and 77 per cent of speakers declare no demographics.
+
+**One constructive use for Common Voice that is worth separating from the
+above.** T2 needs no annotation: §4.2 extracts the reference contour from
+clean audio with a pitch tracker, and C4 needs only speaker identity, which
+Common Voice has. So British-accented Common Voice could give a cheap
+accent-transfer check **on T2 alone**, before the MANCHESTER Dataset exists.
+That is not a replacement for stage one; it is an extra data point on the one
+task that can be run without labels. It is gated on Q40, since no pitch
+tracker exists yet.
+
+**Recommendation, for Oliver to accept or reject:** take TIMIT now, use it as
+§8.1 specifies, and treat the accent difference as the stage-two measurement
+it already is. Add the label-inventory comparability point to the paper's
+caveats. Keep Common Voice as an optional T2-only accent check.
+
+**Blocking?** No. TIMIT work proceeds the day the data lands; T1 and T3 run
+immediately, T2 waits on Q40 regardless of corpus.
+**Answer:** (open — needs Oliver)
