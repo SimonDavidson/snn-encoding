@@ -2328,3 +2328,62 @@ Q25, Q26, Q27, Q29, Q30 and the compression gate gap.
    as well as power is a real experiment as soon as something tests the axis.
 3. **TIMIT the day it lands**: check `sample_coding` first, then T1 and T3 run
    immediately. T2 waits on Q40's two pitch trackers.
+
+## 2026-09-09 | session: design
+**Did:** Read the primary Spiketrum source in full — Tang et al., "Neuromorphic
+Auditory Perception by Neural Spiketrum", TETCI 9(1) 2025 — and corrected
+sections 2, 5.2, 5.7, 9 and 10 of the proposal accordingly. D80. No code
+changes, no results affected, no schedule change. D09 stands; O3 is restated
+and needs Oliver.
+
+**The reconstruction from abstracts was right about the algorithm and wrong
+about everything around it.** Matching pursuit, controllable rate and
+reconstruction all held up — the authors' own name for it is Event-based
+Temporal Matching Pursuit. What did not hold up: the work is led from Zhejiang
+by Tang, not developed at Manchester by Alsakkal and Wijekoon, who are two of
+eight co-authors; E7 does share the gammatone front end, since its dictionary
+is ERB-spaced gammatone atoms; and reconstruction is not a privacy axis.
+
+Worth noting which parts survived. The algorithmic reconstruction was accurate
+because matching pursuit has few degrees of freedom once identified, so
+inferring the equations from an abstract was safe. The attribution was wrong
+because citation records show institutions, not who led the work, and nothing
+in that process would have flagged the error. The lesson is not that inference
+from abstracts is unreliable in general but that it is unreliable in a
+predictable place: it is safe for the technical content of a well-known method
+and unsafe for anything social — who did it, where, and in what relation to us.
+
+**The correction strengthens the case for E7 rather than weakening it.** The
+shared front end removes the confound that made E7 look like an outsider. What
+remains is that E1 to E6 all decide locally, from state at one channel at one
+moment, while matching pursuit selects the globally best-explaining event at
+each step. E7 is not a seventh point on our continuum; it is the only member of
+a second class, and the axis separating it is the study's own independent
+variable. Leaving it out means the conclusions are about local event rules, and
+the paper has to say so.
+
+**One new obstacle, invisible before.** Intensity-to-place coding gives M x K
+channels — 1920 at the paper's settings against the few dozen we sweep. That is
+resolvable by choosing K, but it has to be settled before E7 enters, since a
+feature vector an order of magnitude longer than the other arms' is not matched
+treatment under C4.
+
+**D09 is not touched by any of this and was not treated as if it were.** Its
+reasoning is collegial rather than technical, and having the algorithm in front
+of me changes the feasibility and not the attribution. The middle course put to
+Oliver as O3 — implement the published algorithm, report it as our
+implementation of that algorithm and not as the authors' system — is offered as
+a decision for him rather than taken here.
+
+**Also corrected: the misattribution may already have circulated.** The encoder
+survey went to Oliver at v2. If that document carries the same wording, the
+error is already outside the repository and describes people he may be about to
+contact.
+
+**Tests:** none run, none affected — this touches the proposal only.
+**Results written:** none.
+**Blocked on:** O3 with Oliver, alongside Q07, Q28 and Q31. E7 remains outside
+the critical path.
+**Next (design session):** patch 2 — Q17, Q18, Q21, Q22, Q25, Q26, Q27, Q29,
+Q30, the compression-axis coverage gap, and the apply-time decision numbering
+now prototyped in this drop.
