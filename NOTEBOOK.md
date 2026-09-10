@@ -2558,3 +2558,75 @@ moment I looked instead of trimming again.
 **Blocked on:** unchanged — Q42 before §5.7's channel figures are quoted; Q38
 to Q41 and Q43 with the design session or Oliver.
 **Next:** unchanged. TIMIT the day it lands, `sample_coding` first.
+
+## 2026-09-10 | session: implementation
+**Did:** Answered a question of Simon's with a measurement instead of an
+opinion, and it turned up three blockers. He asked whether E2–E6 depend on
+TIMIT. They do not — the harness is corpus-agnostic — so the useful answer was
+to try it: can each encoder be calibrated to a target event rate on corpus
+audio? Three of five could not.
+
+| | rate param | 400 events/s | 6,000 events/s |
+|---|---|---|---|
+| E1 | `theta` | +1.7% | −0.2% |
+| E2 | `C` | +1.2% | −1.7% |
+| E3 | `theta` | +2.2% | +1.8% |
+| E4 | `theta_0` | unreachable | unreachable |
+| E5 | `cycle_divisor` | raises | raises |
+| E6 | `e_frac` | +0.8% | unreachable |
+
+Ten minutes of measurement, and it is the most useful ten minutes of the week.
+None of this would have appeared until the day TIMIT landed, when it would
+have looked like a TIMIT problem.
+
+**Three causes, not one, and separating them was most of the work.** The
+instinct after seeing three failures in a column is to call it a harness fault.
+Only one of them is.
+
+E5 raises because `cycle_divisor` is a positive integer and D50 bisects from
+1e-4 — fixed as D82, with the integer path returning the *nearest achievable*
+rate rather than raising, since a discrete parameter's reachable rates have
+gaps in them and "within tol" is not always satisfiable. But that was the
+smaller half. Sweeping the gate showed E5's real problem: at the SPEC default
+`threshold = 0.05` it reaches 497 events/s and with the gate open 20,669. **The
+default suppresses 97.6 per cent of the encoder.** That is D50's own premise
+one encoder over — SPEC defaults are calibrated to the suite's synthetic drives
+and are wrong for audio — and D50 only fixed it for the rate parameter, which
+`threshold` is not. Q44.
+
+E4's ceiling of 341 events/s is not a bug at all: adaptation caps the sustained
+rate whatever `theta_0` does, and proposal 5.4 makes `delta_a` a separate axis
+deliberately. What it means is that the two axes are coupled, so 6.4's matched
+budget has to cope with a grid that has holes. Q45.
+
+E6's ceiling is `n_channels / hop`, which its own docstring states as a
+defining property. Nothing to fix; two consequences to decide. Q46.
+
+**Q44 also revises a measurement, not just a default.** Q11 measured
+`threshold` spanning 1.04× and that is why D40 rejected it as the rate
+parameter. That was on `conftest`'s drive. On audio it spans 42×. D40's
+decision survives on its other ground — reaching a low budget by raising the
+gate silences channels and removes frequency resolution, which is the confound
+D40 exists to prevent — but the reason as stated is false on audio, and SPEC
+and the proposal both carry it.
+
+Worth noting how that was found. The span numbers behind Q11 and Q19 were
+measured with `measure_rate_parameter_span.py`, which imports the drive from
+`tests/conftest.py` on purpose, so the measurement is on the gate's own drive.
+That is right for asking "does this rule clear D27" and wrong for asking "can
+this encoder hit a budget on speech". Two different questions that look like
+one, and every span result in the manifest answers the first.
+
+**Tests:** 223 passed, 1 skipped, from 220. Three new, all on the integer
+calibration path: that it searches integers, that it returns the nearest
+achievable when no integer lands inside tolerance, and that a target outside
+the reachable range still raises rather than clamping.
+**Results written:** none — the calibration probe was read-only and nothing
+was recorded, because none of these numbers is a reportable result.
+**Blocked on:** Q44 blocks every E5 result; Q45 blocks E1-versus-E4 above 341
+events/s, which is the contrast P-01 rests on; Q46 needs a reporting decision
+only. Q38–Q43 unchanged.
+**Next:** the E2–E6 shakedown proper, once Q44 has an answer — E2 and E3 can
+be run today and E6 below its ceiling. Still not comparison results: the
+stand-in cannot exercise what E5 and E6 exist to do, so anything from it is a
+pipeline check and must be labelled as one.
