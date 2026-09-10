@@ -358,6 +358,36 @@
       "predictions": [
         "P-01"
       ]
+    },
+    {
+      "id": "probe_e6_t1_synthetic",
+      "script": "scripts/run_probe.py",
+      "config": "configs/probe_e6_t1_synthetic.json",
+      "commit": "a5aec999faa58abefbd9f9967298a8f5b65ae890",
+      "seed": 0,
+      "output": "results/probe_e6_t1_synthetic.json",
+      "date": "2026-09-10",
+      "predictions": []
+    },
+    {
+      "id": "probe_e2_t1_synthetic",
+      "script": "scripts/run_probe.py",
+      "config": "configs/probe_e2_t1_synthetic.json",
+      "commit": "a5aec999faa58abefbd9f9967298a8f5b65ae890",
+      "seed": 0,
+      "output": "results/probe_e2_t1_synthetic.json",
+      "date": "2026-09-10",
+      "predictions": []
+    },
+    {
+      "id": "probe_e3_t1_synthetic",
+      "script": "scripts/run_probe.py",
+      "config": "configs/probe_e3_t1_synthetic.json",
+      "commit": "a5aec999faa58abefbd9f9967298a8f5b65ae890",
+      "seed": 0,
+      "output": "results/probe_e3_t1_synthetic.json",
+      "date": "2026-09-11",
+      "predictions": []
     }
   ]
 }
