@@ -3060,3 +3060,131 @@ since T2 needs no annotation. Oliver's confirmation is not blocking — he
 raised the question rather than objecting to TIMIT — but the label-inventory
 caveat is now owed to the paper, and the T2 accent check is owed a decision
 once Q40 has produced a pitch tracker.
+
+### Q44 — E5's SPEC default `threshold` gates out 97.6 per cent of its events on audio
+**Raised:** 2026-09-10 by implementation session
+**Context:** Simon asked whether E2–E6 could be run before TIMIT arrives. They
+can — the harness is corpus-agnostic — so I checked whether each encoder can be
+calibrated to a target event rate on corpus audio. Three of five could not.
+This is the first of the three, and it is D50's premise arriving a second time.
+
+**Measured**, E5 at `cycle_divisor = 1`, 32 channels, on the stand-in corpus
+whose subband drive has per-channel RMS between 0.005 and 0.111:
+
+| `threshold` | Λ (events/s) |
+|---:|---:|
+| 0.5 | 0 |
+| 0.2 | 0 |
+| **0.05 (SPEC 4.6 default)** | **496.7** |
+| 0.01 | 4,401.9 |
+| 0.002 | 6,786.9 |
+| 0.0005 | 15,814.4 |
+| 0 | 20,669.3 |
+
+So at the declared default E5's entire reachable range is Λ ∈ [24, 497] over
+`cycle_divisor` ∈ [1, 256], against the 160–15,343 sweep every other encoder is
+run on. It is not that E5 is structurally sparse: open the gate and it reaches
+20,669. The default suppresses 97.6 per cent of what the encoder can emit.
+
+**This is exactly what D50 was written about**, one encoder over: "the SPEC
+defaults are calibrated to the known-answer suite's synthetic drives, which is
+right for the suite and wrong for audio". E1 at the SPEC default `theta = 1.0`
+emits nothing on audio; E5 at the SPEC default `threshold = 0.05` emits a
+fortieth of its range. D50 solved this for the *rate* parameter by calibrating
+it. `threshold` is not the rate parameter — D40 made `cycle_divisor` that, for
+a reason that still holds — so nothing calibrates it and it keeps the SPEC
+value.
+
+**It also revises the finding behind D40.** Q11 measured `threshold` spanning
+1.04×, which is why it was rejected as the rate parameter. That was measured on
+`conftest`'s drive. On audio it spans **42×**. D40's *decision* is unaffected
+and should stand: reaching a low budget by raising `threshold` silences whole
+channels and removes frequency resolution, which is the confound D40 exists to
+prevent. But the stated reason — that `threshold` cannot move the count — is
+false on audio, and the proposal and SPEC should say so.
+
+**Question:** how is `threshold` to be set? It cannot stay at a SPEC constant.
+
+**Options considered:**
+1. Calibrate it once per corpus to a declared headroom target — the smallest
+   `threshold` reaching, say, 1.5× the top of the intended Λ sweep at
+   `cycle_divisor = 1` — then fix it and sweep `cycle_divisor`. Preserves D40
+   exactly: one gate setting for every budget point, so no budget is reached by
+   changing how many channels are alive. *Recommended.*
+2. Declare it a swept front-end axis under 6.6, reported per condition.
+   Honest, but multiplies the sweep and makes E5 the only encoder whose gate
+   moves between budget points.
+3. Set it to zero and let `cycle_divisor` do everything. Simplest, and removes
+   the mechanism 4.6 introduced for suppressing phase-locked noise in silence.
+
+**Blocking?** Yes, for any E5 result. E5 cannot currently be placed on a
+matched-budget front at all.
+**Answer:** (open)
+
+### Q45 — E4's reachable event rate is a function of `delta_a`, so the rate axis and the adaptation axis are coupled
+**Raised:** 2026-09-10 by implementation session
+**Context:** the same calibration check. E4 could not be calibrated to 400
+events/s, let alone 6,000: `calibrate_rate_param` reports the reachable range
+over `theta_0` ∈ [1e-4, 100] as **[0, 340.6]** events/s at the default
+`delta_a = 0.5`, on a corpus where E1 reaches 15,343.
+
+**Why, and why it is not a bug.** Adaptation raises the threshold after every
+spike, so it caps the sustained rate whatever `theta_0` does. At `delta_a = 0`
+E4 is bit-identical to E1 by construction (test_T4_1) and reaches E1's range;
+as `delta_a` rises the ceiling falls. Proposal 5.4 deliberately makes
+`delta_a` and `tau_a` "a separate axis rather than folded into the rate
+parameter", precisely so that the adaptation contrast is not confounded with
+the budget. The consequence is that the two axes are not independent: **for a
+given `delta_a` there is a maximum reachable budget, and above it E4 has no
+operating point at all.**
+
+**Question:** how should the sweep handle a rate axis whose reachable range
+depends on another swept axis? Proposal 6.4 requires comparison at matched
+budget and says it is "meaningless otherwise", so the grid cannot simply be a
+product of the two axes with holes in it.
+
+**Options considered:**
+1. Sweep `delta_a` and, for each value, sweep Λ only over the reachable range,
+   reporting E4's front as terminating where it terminates. Truthful, and it
+   makes the ceiling a *result* — "adaptation of this strength costs you every
+   budget above X" is a finding about adaptation, which is what P-01 is about.
+   *Recommended.*
+2. Cap the whole study's Λ sweep at the lowest ceiling across encoders. Keeps
+   every front comparable at every point and throws away the two decades where
+   E1, E2 and E3 differ most.
+3. Let `delta_a` fall as the budget rises, so E4 always reaches the target.
+   Confounds exactly what 5.4 separates; noted to be rejected.
+
+**Blocking?** Not immediately — E4 runs below 341 events/s today — but it
+blocks any E1-versus-E4 comparison above that, which is the single-factor
+adaptation contrast P-01 rests on.
+**Answer:** (open)
+
+### Q46 — E6 cannot reach the top of the budget sweep, and this one is structural
+**Raised:** 2026-09-10 by implementation session
+**Context:** the same check. E6 calibrates cleanly at 400 events/s and cannot
+reach 6,000: its measured ceiling is **3,074.9** events/s at 32 channels.
+
+Unlike Q44 and Q45 this is not a default or a coupling. It is the encoder's
+defining property, stated in its own docstring: "the event budget is bounded
+exactly at `n_channels / hop` events per second, which no other encoder here
+can promise." At 32 channels and a 10 ms frame hop that is 3,200, and 3,074.9
+is what the gate leaves of it. E6 emits at most one event per channel per
+frame because all of its information is in *when* that event arrives.
+
+**Question:** two consequences need a decision.
+
+1. **E6's front stops where the others continue.** At Λ = 15,343 there is no
+   E6 point to compare against, so the top of the sweep compares five encoders
+   and not six. Is that reported as E6 being dominated, or as E6 being absent?
+   They are different claims and P-04 — "E6 dominates the low-rate end" — is
+   about the first.
+2. **The ceiling scales with channel count**, which D05 makes a swept
+   parameter. At 700 channels E6 would reach roughly 67,000 events/s. So E6's
+   reachable budget is a function of an axis the study sweeps for unrelated
+   reasons, and the channel count at which E6 is compared silently decides
+   whether it has a high-budget operating point at all.
+
+**Blocking?** No. E6 runs across the lower two-thirds of the sweep as it
+stands.
+**Answer:** (open)
