@@ -1,0 +1,66 @@
+{
+  "result_id": "probe_e3_t1_synthetic",
+  "encoder": "E3",
+  "rate_param": "theta",
+  "n_channels": 32,
+  "corpus": {
+    "kind": "synthetic",
+    "n_speakers": 10,
+    "utterances_per_speaker": 3,
+    "phones_per_utterance": 8,
+    "sample_rate": 16000,
+    "seed": 0,
+    "noise_level": 0.005
+  },
+  "front_end": {
+    "envelope": "hilbert",
+    "compression": "power",
+    "exponent": 0.3,
+    "compensate_group_delay": false,
+    "f_min": 50.0,
+    "f_max": 8000.0,
+    "spacing": "erb"
+  },
+  "target_lambda": [
+    160,
+    400,
+    1000,
+    2500,
+    6300,
+    16000
+  ],
+  "bracket": [
+    0.0001,
+    100.0
+  ],
+  "calibration_tol": 0.05,
+  "featurisation": {
+    "tau": 0.005,
+    "hop": 0.01,
+    "context": 0
+  },
+  "probe": {
+    "alpha": 0.0001
+  },
+  "split": {
+    "test_fraction": 0.3
+  },
+  "split_seeds": [
+    0,
+    1,
+    2
+  ],
+  "offsets": [
+    -4,
+    -3,
+    -2,
+    -1,
+    0,
+    1,
+    2
+  ],
+  "n_folds": 7,
+  "c5_radius": 2,
+  "predictions": [],
+  "supersede": true
+}
