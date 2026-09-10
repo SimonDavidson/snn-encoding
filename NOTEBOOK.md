@@ -2630,3 +2630,96 @@ only. Q38–Q43 unchanged.
 be run today and E6 below its ceiling. Still not comparison results: the
 stand-in cannot exercise what E5 and E6 exist to do, so anything from it is a
 pipeline check and must be labelled as one.
+
+## 2026-09-11 | session: implementation
+**Did:** Put E2, E3 and E6 through the T1 probe sweep on the stand-in corpus.
+Until now every task result in `results/` was E1 only, so three of the six
+encoders had never been through the harness at all. Three configs, three
+recorded sweeps, sixteen budget points. The other two are blocked: E5 on Q44
+and E4 above 341 events/s on Q45.
+
+The front, at matched budget, three split seeds, offsets swept over
+[-4, 2] and selected on seven speaker-disjoint folds inside train:
+
+| Λ | E1 | E2 | E3 | E6 |
+|---:|---:|---:|---:|---:|
+| ~160 | 0.5903 | 0.3761 | 0.3962* | 0.4947 |
+| ~400 | 0.7048 | 0.4436 | 0.4733* | 0.6660 |
+| ~1000 | 0.7560 | 0.5571 | 0.5956 | 0.7450 |
+| ~2500 | 0.7791 | 0.6061 | 0.6679 | 0.6305 |
+| ~6100 | 0.8414 | 0.6252 | 0.7251 | — |
+| ~15900 | 0.8996 | 0.6801 | 0.7519 | — |
+
+Majority floor 0.207 throughout; shuffled-label control 0.067 to 0.137.
+`*` marks a point whose C5 failed — see below. `—` is not a low score: E6 has
+no operating point there at all.
+
+**C5 caught a truncated sweep, which is the finding I would least have found
+by looking at the accuracies.** E3 selects alignment offset -4 at Λ=162 and
+-3 at Λ=392, and -4 is the edge of the grid. The control reports
+`interior_maximum: false` with `missing_offsets: [-6, -5]`, and the validation
+profile is still climbing at the edge: 0.2693, 0.2917, 0.3008, 0.3413, 0.3708,
+0.4053, 0.4270 across offsets +2 to -4. So E3's two sparsest accuracies are
+lower bounds in D72's sense, and the grid `[-4, 2]` — chosen for E1, where the
+optimum sits at -1 or -2 — is too narrow for E3. E1, E2 and E6 pass C5 at
+every point. Widening the grid and re-running is *choosing a parameter range
+after seeing results*, which CLAUDE.md puts on Simon's side of the line, so it
+is Q47 and not a commit.
+
+**E3's alignment optimum moves with the budget**, monotonically: -4, -3, -2,
+-2, -1, -1 as Λ rises, converging on the predicted -1 only at the top. E1's
+moves once (-2 to -1) and E2's once (0 to -1). E3 is a bandpass difference
+encoder and at high `theta` only the large excursions of d cross the lattice,
+which happens later in the excursion — so its effective latency is a function
+of its rate parameter. That is a timing bias that varies *along the budget
+axis*, and T3 is a timing task. Recorded now because it will matter there.
+
+**P-04 is contradicted, and I am not sure how much of it is real.** "E6
+dominates the low-rate end of the T1 front": E6 is below E1 at every matched
+budget and the gap is *widest* at the sparsest point, 0.4947 against 0.5903,
+which is the opposite of the prediction's direction. The investigation
+CLAUDE.md requires is Q47's first half. The short version is that E6 reaches a
+low budget by silencing channels — 11.4 live channels of 32 at Λ=155 — so at
+the sparsest matched point it is being compared against an E1 that still has
+24.4. I checked the obvious rival explanation and it is false: E1 loses
+channels too, so this is not "E6 gates and E1 does not", it is that the
+magnitude differs by more than a factor of two and nothing in the protocol
+notices. Caveat, and it is a large one: the stand-in corpus has stationary
+phones and cannot exercise what a time-to-first-spike code exists to do.
+
+**E6's front is also non-monotone**, peaking near Λ=1000 and falling to 0.6305
+at Λ=2513, where every other encoder rises. At that point every channel fires
+in every frame and E6 is against its `n_channels/hop` ceiling, so the added
+events are low-energy channel-frames at near-maximal latency. Q46 seen from
+below rather than a separate effect. The selection destabilises there too:
+selection bias 0.0 at the three sparse points, ~0.036 at that one.
+
+**A methodological note on my own error.** My pre-flight smoke test pinned
+`offsets=(0,)` and reported E3 at 0.319 against E2's 0.492 at Λ≈400 — the
+reverse of the recorded result, where E3 leads E2 at every point. Offset 0 is
+three frames from E3's optimum at that budget. A single-offset check is not a
+cheap version of the sweep; for an encoder whose latency depends on its rate
+parameter it is actively misleading, and I nearly wrote it up as an E3 result.
+
+**Unexplained and left that way:** E6's per-point cost is 29-61 s against
+E1's 464-1058 and E2's 641-775, on identical corpora, budgets, frames
+(1655/718), features (64), folds and settings, with every fit converged and
+comparable final-fit iteration counts. I ruled out the reading that mattered —
+E6 did not do less work — and stopped. The remaining candidate is that the 49
+fold fits per seed converge faster than the final fit that `probe_iterations`
+records, which would cost a re-run on a shared box to confirm and changes no
+reported number. Not a cause to quote.
+
+**Tests:** 223 passed, 1 skipped, unchanged — no source file was touched this
+session.
+**Results written:** `results/probe_e2_t1_synthetic.json`,
+`probe_e3_t1_synthetic.json`, `probe_e6_t1_synthetic.json`, with manifest
+entries against commit a5aec99.
+**Blocked on:** Q47 before E3's sparse points are more than lower bounds and
+before E6's front can be read as a comparison. Q44 still blocks all of E5,
+Q45 E4 above 341 events/s, Q46 the reporting of E6's absent points. Q38-Q43
+unchanged.
+**Next:** T2 and T3 for E2, E3 and E6, which consume the rate parameters
+calibrated here through `rate_params_from`. P-02 and P-05 both stake their
+claims on T3, so it is T3 that tests them, not this. Still a pipeline check on
+a stand-in corpus and must be labelled as one wherever it is quoted.

@@ -3188,3 +3188,92 @@ frame because all of its information is in *when* that event arrives.
 **Blocking?** No. E6 runs across the lower two-thirds of the sweep as it
 stands.
 **Answer:** (open)
+
+### Q47 — matched budget is not matched frequency resolution, and C5's grid is too narrow for E3
+**Raised:** 2026-09-11 by implementation session
+**Context:** the first T1 sweeps of E2, E3 and E6, on the stand-in corpus.
+Two findings, related only in that both are about the comparison rather than
+about any encoder. The second is a five-minute fix awaiting permission; the
+first is a design question.
+
+---
+
+**(a) E6's rate parameter is a gate, which is what D40 rejected for E5.**
+
+Live channels of 32, mean over utterances, at matched budget:
+
+| Λ | E1 | E6 |
+|---:|---:|---:|
+| ~160 | 24.4 | **11.4** |
+| ~400 | 30.0 | 20.6 |
+| ~1000 | 31.0 | 29.9 |
+| ~2500 | 32.0 | 32.0 |
+
+D40 rejected `threshold` as E5's rate parameter because reaching a low budget
+by raising a gate "silences whole channels and removes frequency resolution at
+the same time", which is a confound rather than a budget. E6's declared
+`RATE_PARAM` is `e_frac`, a strict relative gate, and it has exactly that
+property. The argument was never applied to it.
+
+**I checked the rival explanation and it is false.** This is not "E6 gates and
+E1 does not": E1 loses channels too, because any threshold rule silences a
+quiet channel as the budget falls. The finding is the magnitude — at the
+sparsest matched point E1 has 24.4 channels of frequency resolution and E6 has
+11.4 — and that the disparity is a property of the encoder, so it varies along
+the row being compared.
+
+This is also the mechanism I would nominate for **P-04 failing**. E6 is below
+E1 at every matched budget and the gap is widest at the sparsest point, 0.4947
+against 0.5903, where the prediction says E6 should dominate. If part of that
+gap is E6 being compared at 11.4 channels against E1's 24.4, then it is an
+artefact of what "matched budget" means and not a property of TTFS coding.
+
+Note that E6 may have **no clean rate knob at all**: its budget is
+`n_channels/hop` times the fraction of channel-frames above the gate, and
+gate, `n_channels` and `hop` each change something other than the budget.
+That may simply be true of a latency code and worth stating as a property.
+
+**Question:** is a Pareto front at matched Λ meaningful when the encoders
+reach that Λ with different amounts of the channel axis alive? Options:
+1. Report live-channel count beside every front point and treat it as a second
+   axis of the comparison, leaving the front as it stands. Cheapest, honest,
+   and makes the confound visible rather than removed. *Recommended.*
+2. Constrain the sweep to points where all channels are live, which cuts the
+   bottom off every front and is where P-04 lives.
+3. Match on channels-alive as well as on Λ, which means a per-encoder
+   `n_channels` and collides with D05.
+
+**Blocking?** Not for running things. It blocks reading E6's front as a
+comparison, and it blocks any verdict on P-04.
+
+---
+
+**(b) The alignment grid `[-4, 2]` is too narrow for E3, and C5 says so.**
+
+E3 selects offset -4 at Λ=162 and -3 at Λ=392. -4 is the edge of the grid, so
+D70's interior-maximum test cannot pass: the control returns
+`interior_maximum: false`, `missing_offsets: [-6, -5]`, correctly. The
+validation profile is still climbing at the edge — 0.2693, 0.2917, 0.3008,
+0.3413, 0.3708, 0.4053, 0.4270 across offsets +2 to -4 — so E3's optimum lies
+at or beyond -4 and its two sparsest accuracies are lower bounds in D72's
+sense. E1, E2 and E6 pass C5 at every point; the grid was chosen for E1, whose
+optimum sits at -1 or -2.
+
+Underlying cause: **E3's alignment optimum moves with the budget**, -4, -3, -2,
+-2, -1, -1 as Λ rises. At high `theta` only large excursions of the difference
+signal cross the lattice, and they cross later in the excursion, so E3's
+effective latency is a function of its own rate parameter. E1 moves once and
+E2 moves once.
+
+**Question:** widen `offsets` — to `[-8, 2]` on the evidence above — and re-run
+E3's sweep? It is mechanical and costs about two hours. I have not done it
+because CLAUDE.md classes "choosing parameter ranges, or extending one after
+seeing results" as generative work needing review first, and because the
+better answer may be to widen it for *every* encoder so the grid is not
+E1-shaped, which changes E1's, E2's and E6's recorded numbers as well as E3's.
+Simon can answer this one without the design session.
+
+**Blocking?** E3's two sparsest T1 points, and any T3 result for E3 — a
+latency that moves with the budget is a bigger problem for a timing task than
+for a phone task.
+**Answer:** (open)
