@@ -10,7 +10,7 @@ Equation numbers refer to docs/proposal_v2.md.
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-02
-Last modified: 2026-09-08
+Last modified: 2026-09-10
 """
 import numpy as np
 from scipy.signal import butter, sosfilt
@@ -41,6 +41,15 @@ class Encoder:
     RATE_PARAM: str = "?"
     RATE_DIRECTION: int = -1
     DRIVE_KIND: str = "envelope"
+
+    #: Whether RATE_PARAM takes integer values only. Harness metadata rather
+    #: than contract: it says nothing about what an encoder does, only how
+    #: `calibrate_rate_param` may search for a value. D50 calibrates by
+    #: bisection in log space over a continuous bracket, which for an integer
+    #: parameter fails on its first probe — E5 rejects `cycle_divisor = 1e-4`
+    #: before any events are counted. Declared here because it is a property
+    #: of the encoder and not of the run.
+    RATE_PARAM_INTEGER: bool = False
 
     #: Optional Filterbank used by `encode`. Left None, `encode` builds one
     #: with SPEC section 3 defaults at the audio's sample rate. Set it to sweep
@@ -522,6 +531,7 @@ class PhaseLocked(Encoder):
     """
     NAME, RATE_PARAM, RATE_DIRECTION, DRIVE_KIND = ("E5", "cycle_divisor", -1,
                                                     "subband")
+    RATE_PARAM_INTEGER = True
 
     def __init__(self, n_channels, cycle_divisor=1, threshold=0.05,
                  env_cutoff=100.0, gamma=1.0, f_lock=1500.0, refractory=0.001,

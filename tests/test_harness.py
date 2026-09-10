@@ -16,7 +16,7 @@ Runs on numpy and scipy alone, because CI installs `.[dev]` and nothing more.
 
 Author:        Simon Davidson & Claude
 Created:       2026-09-07
-Last modified: 2026-09-07
+Last modified: 2026-09-10
 """
 import numpy as np
 import pytest
@@ -261,3 +261,63 @@ def test_build_dataset_pairs_each_frame_with_its_own_utterance(tiny, encoded):
     for u in tiny:
         n_own = int(np.sum(uid == u.uid))
         assert n_own == len(frame_labels(u, 0.010, labelset))
+
+
+# --- rate calibration over a discrete parameter (D82) ------------------------
+
+def test_integer_rate_param_is_searched_over_integers(tiny):
+    """E5 declares `cycle_divisor` a positive integer and rejects anything
+    else. D50's log-space bisection starts at 1e-4, so it failed on its first
+    probe — before counting a single event."""
+    from spikeenc.harness import calibrate_rate_param, encoder_class
+
+    assert encoder_class("E5").RATE_PARAM_INTEGER
+    assert not encoder_class("E1").RATE_PARAM_INTEGER
+
+    k, achieved, n_eval = calibrate_rate_param(
+        tiny, "E5", 200.0, n_channels=8, front_end=FRONT_END,
+        bracket=(1, 64), encoder_params={"threshold": 0.002})
+    assert k == int(k) and k >= 1
+    assert achieved > 0.0
+    assert n_eval <= 8            # binary search over 64 integers, cached
+
+
+def test_integer_calibration_returns_the_nearest_reachable_rate(tiny):
+    """A discrete parameter cannot always land within tolerance: the
+    achievable rates are a countable set with gaps. Returning the nearest and
+    recording the residual is the contract (D82), not raising."""
+    from spikeenc.harness import calibrate_rate_param, compute_drive
+    from spikeenc.encoders import PhaseLocked
+
+    params = {"threshold": 0.002}
+    drives = [(compute_drive(u, 8, FRONT_END, "subband"), 1.0 / u.sample_rate)
+              for u in tiny]
+
+    def lam(k):
+        return sum(len(PhaseLocked(8, cycle_divisor=k, **params)
+                       .encode_from_drive(d, dt))
+                   for d, dt in drives) / tiny.total_duration
+
+    reachable = {k: lam(k) for k in range(1, 9)}
+    # A target deliberately between two achievable rates, at a tolerance no
+    # integer can meet.
+    target = 0.5 * (reachable[2] + reachable[3])
+    k, achieved, _ = calibrate_rate_param(
+        tiny, "E5", target, n_channels=8, front_end=FRONT_END,
+        bracket=(1, 8), tol=1e-9, encoder_params=params)
+
+    assert k in (2, 3), "should land on one of the two bracketing integers"
+    assert achieved == pytest.approx(reachable[k])
+    best = min(reachable, key=lambda j: abs(reachable[j] - target))
+    assert abs(achieved - target) <= abs(reachable[best] - target) + 1e-9
+
+
+def test_a_target_outside_the_integer_bracket_still_raises(tiny):
+    """Nearest-achievable applies inside the reachable range. Outside it the
+    caller has asked for something the encoder cannot do, and that is an
+    error rather than a silent clamp to the endpoint."""
+    from spikeenc.harness import calibrate_rate_param
+
+    with pytest.raises(ValueError, match="outside the reachable range"):
+        calibrate_rate_param(tiny, "E5", 1e9, n_channels=8,
+                             front_end=FRONT_END, bracket=(1, 16))

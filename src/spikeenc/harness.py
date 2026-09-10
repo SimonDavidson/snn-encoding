@@ -133,6 +133,19 @@ def calibrate_rate_param(corpus, encoder_name, target_lambda, n_channels,
 
     Bisection in log space on the bracket, oriented by the encoder's declared
     RATE_DIRECTION. Returns `(value, achieved_lambda, n_iter)`.
+
+    **An encoder declaring `RATE_PARAM_INTEGER` is searched over integers
+    instead**, and the rule for stopping is different in a way that matters.
+    A continuous parameter can be driven to within `tol` of any reachable
+    target; a discrete one cannot, because the achievable event rates are a
+    countable set with gaps in it. The integer search therefore returns the
+    **nearest achievable** rate rather than raising when no value is within
+    `tol`, and the caller is expected to record the residual — `achieved` is
+    returned for exactly that purpose. For E5 the gaps are roughly `1/k`
+    relative, so they narrow as the divisor grows: wide at the sparse end of
+    the sweep and a few per cent by `k = 16`. Whether a budget matched only to
+    that precision satisfies proposal 6.4 is a question for the design session,
+    not something this function can decide (Q44).
     """
     cls = encoder_class(encoder_name)
     drives = [(compute_drive(u, n_channels, front_end, cls.DRIVE_KIND),
@@ -146,6 +159,10 @@ def calibrate_rate_param(corpus, encoder_name, target_lambda, n_channels,
             enc = cls(n_channels, **{cls.RATE_PARAM: value}, **params)
             n += len(enc.encode_from_drive(drive, dt, seed=seed))
         return n / duration
+
+    if cls.RATE_PARAM_INTEGER:
+        return _calibrate_integer(lam, cls, encoder_name, target_lambda,
+                                  bracket)
 
     lo, hi = float(bracket[0]), float(bracket[1])
     # RATE_DIRECTION = -1 means a larger parameter gives a lower rate, so the
@@ -170,6 +187,52 @@ def calibrate_rate_param(corpus, encoder_name, target_lambda, n_channels,
         else:
             hi, lam_hi = mid, lam_mid
     return mid, lam_mid, max_iter
+
+
+def _calibrate_integer(lam, cls, encoder_name, target_lambda, bracket):
+    """Integer search for `calibrate_rate_param`. See its docstring.
+
+    Binary search on the integers in the bracket, then the nearest achievable
+    of the two that bracket the target. Every evaluation is cached, because on
+    a corpus each one re-encodes the whole thing and the search revisits
+    endpoints.
+    """
+    lo = max(1, int(np.ceil(min(bracket))))
+    hi = max(lo, int(np.floor(max(bracket))))
+    if hi <= lo:
+        raise ValueError(
+            f"integer bracket for {encoder_name}.{cls.RATE_PARAM} collapses to "
+            f"[{lo}, {hi}]; declare an integer bracket in the config, e.g. "
+            "[1, 256]")
+
+    seen = {}
+
+    def at(k):
+        if k not in seen:
+            seen[k] = lam(k)
+        return seen[k]
+
+    lam_lo, lam_hi = at(lo), at(hi)
+    if not (min(lam_lo, lam_hi) <= target_lambda <= max(lam_lo, lam_hi)):
+        raise ValueError(
+            f"target Lambda {target_lambda:g} is outside the reachable range "
+            f"[{min(lam_lo, lam_hi):g}, {max(lam_lo, lam_hi):g}] for "
+            f"{encoder_name}.{cls.RATE_PARAM} over integer bracket "
+            f"[{lo}, {hi}]")
+
+    a, b = lo, hi
+    while b - a > 1:
+        mid = (a + b) // 2
+        lam_mid = at(mid)
+        # `a` is kept on the same side of the target as `lam_lo` throughout,
+        # so the invariant holds whichever way RATE_DIRECTION points.
+        if (lam_mid < target_lambda) == (lam_lo < target_lambda):
+            a = mid
+        else:
+            b = mid
+
+    best = min(seen, key=lambda k: abs(seen[k] - target_lambda))
+    return best, seen[best], len(seen)
 
 
 def build_dataset(trains, corpus, labelset, tau, hop, context,
