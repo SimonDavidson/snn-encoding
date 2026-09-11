@@ -3277,3 +3277,76 @@ Simon can answer this one without the design session.
 latency that moves with the budget is a bigger problem for a timing task than
 for a phone task.
 **Answer:** (open)
+
+---
+
+## Answers appended 2026-09-11 — Q41 and Q42
+
+### Q41 answered
+Points 1, 2 and 4 were already corrected by the E7 drop (D80), which was in
+flight when this was raised; the attribution, the intensity-to-place stage and
+the shared gammatone dictionary are all in 5.7 now. Two things survived and are
+fixed under D84.
+
+**Point 3 is the one that mattered and it caught a claim the drop made worse.**
+The drop asserted that E7's "rate control is exact rather than statistical" and
+that E7 "would be the only arm able to land on a matched budget exactly".
+Algorithm 1's second stopping criterion makes that false: the achievable rate is
+capped by the residual-energy floor once it binds, which is structurally the
+same trap as Q11 found in E5 and Q14 in E6. So the drop did not merely omit the
+criterion, it strengthened a claim the source does not support. 5.7 now records
+that E7's span must be measured against D27 rather than inferred from the form
+of the rate parameter, and notes that the reported operating range overlaps ours
+as an argument for measuring rather than a substitute for it.
+
+The logarithmic spacing of the characteristic intensities is now recorded too,
+with the authors' motivation from the log-normal distribution of natural-sound
+coefficients.
+
+**On the two outstanding sources.** Your observation that [Tang2025] cites no
+work by Wijekoon or Alsakkal, and describes the FPGA cochlea in its own section,
+is enough to treat the three-source list as unverified. That list was assembled
+from citation records, which is the same provenance section 2 warns about, so it
+should not be repeated until one of the other two is in hand. 5.7 now says so.
+
+The O7 connection is a good catch and is recorded in 5.7: spiketrum's channel
+index factorises as kernel by quantised intensity, which is a third convention
+alongside the polarity bit and the split channels.
+
+### Q42 answered
+Option 1, and the correction goes further than the number. D84.
+
+Verified independently against the source before accepting it: `1920` does not
+occur in the paper; `64` occurs outside citation markers only in a reference to
+another group's binaural cochlea; the sole dictionary size stated is the
+prototype's 40 kernels at 3 characteristic intensities, 120 channels. The figure
+was invented.
+
+**The conclusion inverts exactly as you say.** At 120 channels the C4 concern is
+inside our swept range rather than an order of magnitude outside it, so O3's
+third question is withdrawn — K is a parameter to confirm at the authors' own
+setting, not a decision for Oliver. The drop's restatement of O3 has been
+rewritten accordingly. Nothing had gone to Oliver; the draft email was held.
+
+**Your framing of the failure mode is right and the diagnosis in the drop's
+notebook entry was wrong.** That entry concluded that inference from abstracts
+is "safe for the technical content of a well-known method and unsafe for
+anything social". This error is technical, specific and numeric — the category
+that entry had just declared safe. Worse, when asked to explain it the design
+session first said the figure had been imported from our own channel count, and
+that was also wrong: our runs use 32, 16 and 8, and nothing in this project uses
+64. A plausible default was supplied for an empty parameter, and then a
+plausible cause was supplied for the error, both with more confidence than the
+evidence carried.
+
+The general form is not the one section 2 anticipates. Section 2 guards against
+reasoning from a weak source; this is fabrication inside an otherwise accurate
+reading of a strong one, where the surrounding accuracy is what makes the
+invented figure credible. Section 12 of the validation protocol now requires
+every externally attributed figure to carry its location within the source, and
+to be removed rather than hedged if it cannot. A figure that was read has a
+location; a figure that was supplied cannot acquire one.
+
+**Please check the rewrite against [Tang2025] line by line before it is
+trusted.** This is the second time this section has been wrong and both times it
+was a second reader who found it.

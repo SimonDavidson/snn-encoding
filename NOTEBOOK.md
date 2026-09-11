@@ -2723,3 +2723,101 @@ unchanged.
 calibrated here through `rate_params_from`. P-02 and P-05 both stake their
 claims on T3, so it is T3 that tests them, not this. Still a pipeline check on
 a stand-in corpus and must be labelled as one wherever it is quoted.
+
+## 2026-09-11 | session: design
+**Did:** Answered Q41 and Q42. Corrected 5.7 against [Tang2025], retracted the
+"exact rate control" claim, withdrew O3's third question, and added a clause to
+section 12 of the validation protocol. D84. No code, no tests, no results.
+The Oliver email drafted with the drop was held and has not been sent.
+
+**Q42 is a fabrication, not an inference, and it is worth being precise about
+the difference.** A dictionary size of 64 atoms and a channel count of 1920,
+neither in the source, written in a section whose surrounding content had
+genuinely been read and was accurate. Section 2 of the protocol anticipates
+reasoning from a weak source. This is the opposite: the accuracy of the material
+around the invented number is what made it credible, to me and through review.
+
+**The explanation offered for it was itself confabulated.** Asked where 64 came
+from, the design session said it had been imported from our own channel count.
+Checked afterwards: our runs use 32, 16 and 8, and nothing in this project uses
+64. So a plausible default was supplied for an empty parameter, and then a
+plausible cause was supplied for the error. The second instance is the more
+instructive, because it happened while explicitly discussing the first, which
+rules out inattention as the explanation.
+
+**What actually generalises.** The lesson recorded two days ago — safe for
+technical content, unsafe for anything social — is wrong and has been withdrawn
+in 5.7. The distinction that holds is between what was read and what was
+supplied to fill a gap, and it does not track the technical/social boundary at
+all. The operational form is the new section 12 clause: every externally
+attributed figure carries its location in the source, and one that cannot is
+removed rather than hedged, because hedging a fabricated number still
+propagates it.
+
+**Q41's point 3 found something the drop made worse rather than merely missed.**
+The drop asserted exact rate control; Algorithm 1's residual-energy stopping
+criterion makes the achievable rate signal-dependent, which is the Q11/Q14 trap
+again. Adding a wrong claim while correcting wrong claims is a failure of a
+different order from leaving one in place.
+
+**Process note.** Both errors were caught by the implementation session reading
+the primary source independently. That is now the fifth time it has corrected
+the design session's work, and the second time on this one section. The rewrite
+should be checked the same way before it is trusted; the answer to Q42 asks for
+that explicitly.
+
+**Tests:** none run, none affected.
+**Results written:** none.
+**Blocked on:** O3 with Oliver, not urgent — Simon has decided to report less
+frequently and accumulate further progress first.
+**Next (design session):** the open-question backlog, now nineteen. Order
+proposed to Simon: Q35 (P2's fourth operator defined differently in two places,
+tenfold effect), Q45 (E4's rate axis coupled to its adaptation axis), Q47
+(matched budget is not matched frequency resolution), then the older cluster
+Q22, Q25-Q31 and the remainder.
+
+## 2026-09-11 | session: implementation
+**Did:** Applied the E7 correction drop (D84) and, as its Q42 answer asks for
+explicitly, checked the rewritten §5.7 against [Tang2025] before trusting it.
+Every numeric and attributional claim the rewrite introduces was located in the
+source. All of them hold.
+
+| claim in the rewrite | in the paper |
+|---|---|
+| `1920` not in the source | absent; zero occurrences |
+| `64` only in another group's cochlea | line 528, "64 × 2 channel binaural silicon cochlea"; otherwise citation markers |
+| prototype is 40 kernels × 3 intensities = 120 channels, §V | §V verbatim: "Each cochlea has 120 spike output channels corresponding to three discrete intensity levels ... for each of the 40 Gammatone kernels" |
+| K = 30 is the precision analysis, not a setting | "even setting K as small as K = 30"; Fig. 2 caption |
+| λ = N/τ, eq. 2 | eq. (2) exactly, τ the signal duration |
+| channel index K(m−1)+k, eqs. 3-4 | eq. (3) `k = arg min|ck − si|`, eq. (4) `h = K(mi − 1) + k` |
+| amplitudes normalised to [0, 1] | "we first normalize all scaling coefficients ... into [0,1]" |
+| intensities spaced logarithmically | "select center intensities whose logarithmic values are equally spaced from zero to a given value" |
+| motivated by log-normal, supported by measurement | "intensity coefficients of natural sounds follow a logarithmic normal distribution"; verified against a linear baseline, Fig. 2(a) |
+| Algorithm 1 has a residual-energy stop | line 8: `until (n > N or ‖R‖₂ < ε_min)` |
+| rates ~100 Hz–1.1 kHz and 4 kHz | "when λ is reduced from 1100 Hz to 100 Hz"; "different SNRs, λ = 4 kHz" |
+| cites no work by Wijekoon or Alsakkal | they appear only as authors, affiliation and biographies |
+| does not appear to release code | no repository or availability statement; Supplementary Materials only |
+
+**The retraction is correct and the reason is worth keeping.** Algorithm 1
+terminates on `n > N` *or* `‖R‖₂ < ε_min`, so E7's achievable rate is capped by
+a property of the signal once the residual floor binds. That is the third time
+the same shape has appeared — E5 capped by the carrier's crossing rate (Q11),
+E6 by channels times frame rate (Q46), E7 by the residual floor — which makes
+it a property of rate parameters in this class rather than three coincidences.
+Whether E7 clears D27 is a measurement, and it cannot be taken until we have an
+implementation, which D09 still governs.
+
+**One nuance the rewrite gets right and I nearly flagged as wrong.** §II-B says
+intensity coefficients "follow an exponential distribution"; §III-A says
+"logarithmic normal". The paper is internally inconsistent here. The rewrite
+cites the log-normal reading, which is the one attached to the ITP hypothesis
+and to Fig. 2(a), so it is the correct one to carry — but the inconsistency is
+in the source and anyone re-checking §5.7 will meet it.
+
+**Tests:** 223 passed, 1 skipped — docs-only change, nothing touched that runs.
+**Results written:** none.
+**Blocked on:** unchanged. Q47 (both parts) with Simon and the design session,
+Q44 blocking E5, Q45 blocking E1-vs-E4 above 341 events/s, Q46 reporting only.
+**Next:** unchanged — T2 and T3 for E2, E3 and E6, unless Q47(b) comes back as
+"widen the grid", which has to precede them because they inherit the rate
+parameters and the alignment selection.

@@ -278,6 +278,28 @@ have been impossible had the definition been written beside the number.
 This is the reporting counterpart of §6. §6 makes a number reproducible from
 the repository; this makes it interpretable once reproduced.
 
+**A figure attributed to an external source carries the location it came
+from.** Not the source alone — the equation, section, table or figure number
+within it. A numeric claim about someone else's system that cannot be tied to a
+specific location is removed, not softened and not hedged, because a hedge on a
+fabricated number still propagates the number.
+
+Added 2026-09-11 under D84, after the second confabulation in §5.7 of the
+proposal. The first was inference from abstracts, which §2 already describes.
+The second happened after the paper had been read, and was of a different kind:
+a dictionary size the source does not state, supplied as a plausible default
+for an empty parameter and written with the same confidence as the surrounding
+material that had genuinely been read. It survived review, reached a decision
+drafted for a collaborator, and was caught only when a second reader checked
+the claim against the source.
+
+The general form is worth stating because it is not the failure §2 anticipates.
+§2 guards against reasoning from a weak source. This is fabrication inside an
+otherwise accurate reading of a strong one, where the surrounding accuracy is
+what makes the invented figure credible. Requiring a location for every
+external number is the cheapest check that separates the two: a figure that was
+read has one, and a figure that was supplied cannot acquire one.
+
 ---
 
 ## 13. Free parameters are selected on held-out training data
