@@ -3276,7 +3276,44 @@ Simon can answer this one without the design session.
 **Blocking?** E3's two sparsest T1 points, and any T3 result for E3 — a
 latency that moves with the budget is a bigger problem for a timing task than
 for a phone task.
-**Answer:** (open)
+
+**Answer (part b), 2026-09-11, SD:** widen to `[-8, 2]` for all four encoders
+and re-run. D85.
+
+**Measured first, and it corrected the case for doing it.** E3's validation
+profile at Λ=162 was swept over offsets -16 to +2 at the config's own seven
+folds:
+
+| offset | -8 | -7 | -6 | -5 | **-4** | -3 | -2 | -1 | 0 | 2 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| validation | 0.2537 | 0.2960 | 0.3513 | 0.4018 | **0.4270** | 0.4053 | 0.3708 | 0.3413 | 0.3008 | 0.2693 |
+
+It falls monotonically below -8, to 0.1982 at -16. So **-4 is a genuine
+interior maximum**, C5 passes on the wide grid (`interior_maximum: true`,
+no missing offsets), and the accuracy is 0.3943 against the 0.3962 recorded —
+a fifth of one standard deviation, in the direction of the single seed rather
+than the widening. The recorded numbers were already right.
+
+That kills the argument that widening corrects a biased figure: it does not.
+What it buys is **verification**, and the two reasons that survive are
+structural. First, with `c5_radius = 2` the grid `[-4, 2]` can only evaluate
+C5 for selections in `[-2, 0]` — the selector could reach seven offsets and the
+control could verify three, so a selection in the outer four returned "false"
+whether or not the optimum was there. `[-8, 2]` makes `[-6, 0]` verifiable,
+which covers every offset any of the four encoders has selected, with margin.
+Second, the grid was cut when only E1 had been run and is E1-shaped, which is
+what D71 means by identical procedure rather than identical value; fixing it
+before T2 and T3 inherit it costs a third of what fixing it afterwards would.
+
+Rejected: dropping `c5_radius` to 1, which would make the existing grid
+verifiable over `[-3, 1]` at no compute cost at all, but would quietly undo
+D70 — written three days earlier expressly to require at least ±2 frames.
+
+**Note.** The T2 and T3 configs still carry `[-4, 2]`. They are E1-only and
+their recorded results point at the commit whose config had the narrow grid,
+so nothing is inconsistent; but the same widening is owed before they are next
+run, and is not done here.
+
 
 ---
 
