@@ -2821,3 +2821,59 @@ Q44 blocking E5, Q45 blocking E1-vs-E4 above 341 events/s, Q46 reporting only.
 **Next:** unchanged — T2 and T3 for E2, E3 and E6, unless Q47(b) comes back as
 "widen the grid", which has to precede them because they inherit the rate
 parameters and the alignment selection.
+
+## 2026-09-12 | session: implementation
+**Did:** Re-ran all four T1 sweeps on the widened alignment grid `[-8, 2]`
+under D85. Twenty-two budget points, three seeds each, 11 hours of compute.
+
+**Nothing moved, which is the result.** Every accuracy and every selected
+offset is bit-identical to the narrow-grid run, E3's -4 and -3 included. What
+changed is that **C5 now passes at all 22 points, against 20 of 22 before**,
+with no missing offsets anywhere. The two failures were never wrong answers;
+they were selections in a region the control could not evaluate, because at
+`c5_radius = 2` a grid of `[-4, 2]` can verify only `[-2, 0]`.
+
+**The statistical objection did not materialise.** Going from 7 offsets to 11
+gives the validation argmax more chances to land on noise, and D78 records
+selection bias precisely so that can be checked rather than assumed. It is
+unchanged: mean 0.0021, max 0.0361, nonzero in 8 of 66 seed-points, the same
+figures as on the narrow grid. The largest remains E6's saturated top point.
+
+**This vindicates measuring before re-running, and it corrected me.** I argued
+first that E3's two sparsest accuracies were lower bounds and that widening
+would raise them. The offset profile measured over -16 to +2 said otherwise —
+optimum genuinely at -4, accuracy 0.3943 against 0.3962 recorded — and the
+full re-run has now confirmed it to the last digit. Had I re-run on the
+original argument I would have reported a correction that does not exist.
+
+**Timing, and a correction to the earlier F4 note.** 10h57m against the 7.1h I
+estimated. The per-encoder ratios against the 10 September run are meaningless:
+that baseline was taken under unknown box load, and this one ran against five
+foreign CPU-bound jobs at load average 13 on 8 cores throughout. Tonight's
+per-point costs, all under those constant conditions, are the comparable
+figures — E6 529-1444 s, E1 584-1392 s, E2 2548-2845 s, E3 1593-2934 s. E1 and
+E6 cost the same per point; E2 costs about twice either, which is plausible
+given it emits bursts of several events sharing one timestamp.
+
+That reframes the anomaly I logged on 2026-09-11 as F4. I recorded it then as
+"E6 is unexplainably fast". The better statement is that **E6's 10 September
+figure of 29-61 s per point is irreproducible**: the same encoder, on a grid
+1.57x larger, now costs the same per point as E1, where on 10 September it was
+23x cheaper than E1 on the same box on the same night. Both runs produce
+bit-identical numbers, so nothing rests on it, and I am not spending further
+compute chasing a timing artefact. Recorded so that nobody quotes the old
+figure as E6's cost.
+
+**Tests:** not re-run; no source file was touched, only configs and results.
+223 passed, 1 skipped as of the previous run.
+**Results written:** all four of `probe_e1_t1_synthetic`,
+`probe_e2_t1_synthetic`, `probe_e3_t1_synthetic`, `probe_e6_t1_synthetic`
+re-recorded against commit b8ae95e, superseding the narrow-grid entries, which
+stay visible in the manifest.
+**Blocked on:** Q47(a) — matched budget is not matched frequency resolution —
+still open and still blocking any reading of E6's front as a comparison, and
+any verdict on P-04. Q44 blocks E5 entirely; Q45 blocks E1-vs-E4 above 341
+events/s; Q46 needs a reporting decision. Q38-Q43 unchanged.
+**Next:** T2 and T3 for E2, E3 and E6. Their configs still carry `[-4, 2]` and
+are owed the same widening first — more so than T1 was, because E3's optimum
+moves with the budget and T3 is the timing task.

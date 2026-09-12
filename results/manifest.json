@@ -276,7 +276,8 @@
       "seed": 0,
       "output": "results/probe_e1_t1_synthetic.json",
       "date": "2026-09-08",
-      "predictions": []
+      "predictions": [],
+      "superseded_by": "probe_e1_t1_synthetic@2026-09-11"
     },
     {
       "id": "reference_r2_t1_synthetic",
@@ -367,7 +368,8 @@
       "seed": 0,
       "output": "results/probe_e6_t1_synthetic.json",
       "date": "2026-09-10",
-      "predictions": []
+      "predictions": [],
+      "superseded_by": "probe_e6_t1_synthetic@2026-09-11"
     },
     {
       "id": "probe_e2_t1_synthetic",
@@ -377,7 +379,8 @@
       "seed": 0,
       "output": "results/probe_e2_t1_synthetic.json",
       "date": "2026-09-10",
-      "predictions": []
+      "predictions": [],
+      "superseded_by": "probe_e2_t1_synthetic@2026-09-12"
     },
     {
       "id": "probe_e3_t1_synthetic",
@@ -387,6 +390,47 @@
       "seed": 0,
       "output": "results/probe_e3_t1_synthetic.json",
       "date": "2026-09-11",
+      "predictions": [],
+      "superseded_by": "probe_e3_t1_synthetic@2026-09-12"
+    },
+    {
+      "id": "probe_e6_t1_synthetic",
+      "script": "scripts/run_probe.py",
+      "config": "configs/probe_e6_t1_synthetic.json",
+      "commit": "b8ae95e2541eb3955b2f17db4bf8916a97f5bf03",
+      "seed": 0,
+      "output": "results/probe_e6_t1_synthetic.json",
+      "date": "2026-09-11",
+      "predictions": []
+    },
+    {
+      "id": "probe_e1_t1_synthetic",
+      "script": "scripts/run_probe.py",
+      "config": "configs/probe_e1_t1_synthetic.json",
+      "commit": "b8ae95e2541eb3955b2f17db4bf8916a97f5bf03",
+      "seed": 0,
+      "output": "results/probe_e1_t1_synthetic.json",
+      "date": "2026-09-11",
+      "predictions": []
+    },
+    {
+      "id": "probe_e2_t1_synthetic",
+      "script": "scripts/run_probe.py",
+      "config": "configs/probe_e2_t1_synthetic.json",
+      "commit": "b8ae95e2541eb3955b2f17db4bf8916a97f5bf03",
+      "seed": 0,
+      "output": "results/probe_e2_t1_synthetic.json",
+      "date": "2026-09-12",
+      "predictions": []
+    },
+    {
+      "id": "probe_e3_t1_synthetic",
+      "script": "scripts/run_probe.py",
+      "config": "configs/probe_e3_t1_synthetic.json",
+      "commit": "b8ae95e2541eb3955b2f17db4bf8916a97f5bf03",
+      "seed": 0,
+      "output": "results/probe_e3_t1_synthetic.json",
+      "date": "2026-09-12",
       "predictions": []
     }
   ]
