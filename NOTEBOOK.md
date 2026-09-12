@@ -2877,3 +2877,67 @@ events/s; Q46 needs a reporting decision. Q38-Q43 unchanged.
 **Next:** T2 and T3 for E2, E3 and E6. Their configs still carry `[-4, 2]` and
 are owed the same widening first — more so than T1 was, because E3's optimum
 moves with the budget and T3 is the timing task.
+
+## 2026-09-12 | session: implementation
+**Did:** Finished the alignment-grid exercise begun under D85. Widened every
+remaining grid and re-ran T2, T3 and P1 for E1. With the four T1 sweeps from
+this morning that is every recorded task result in the project re-produced on a
+grid wide enough for its own control to evaluate.
+
+| | grid | C5 unverified before | after |
+|---|---|---|---|
+| T1, E1/E2/E3/E6 | `[-8, 2]` | 2 of 22 points | **0** |
+| T2, E1 + R2 | `[-8, 4]` | 5 of 10 conditions | **2** |
+| T3, E1 + R2 | `[-8, 4]` | 5 of 12 conditions | **1** |
+| P1, E1 | `[-8, 4]` | 13 of 36 condition-seeds | **10** |
+
+**The direction of the widening was wrong for three of the four tasks, and
+only measurement caught it.** D85 widened T1 to `[-8, 2]` because E3 selected
+the negative edge. T2 and T3 fail at the *positive* edge: all nine of T2's
+failures sat at +1 and +2 with +3 and +4 missing. Extending only to -8 would
+have fixed three of seventeen failing seed-runs. Hence `[-8, 4]` for T2, T3,
+P1 and P2, and `[-8, 2]` for R2, which matches the T1 encoders it is the
+reference for rather than being given a free parameter they lack.
+
+**Every failure that survives is a plateau, not a truncated grid, and that is
+the useful finding.** In P1 all ten remaining failures now report no missing
+offsets at all: the neighbours are present and simply are not lower. The same
+holds for T2's two and T3's one, and in each case the condition itself carries
+almost no signal — T3's surviving failure has frame AUC 0.5263 against a chance
+level of 0.500 and an offset profile spanning 0.054; T2's two have profiles
+spanning 0.117 whose "winning" spike beats offset 0 by less than the scatter
+between neighbours, three seeds disagreeing (+4, 0, +4), and a selection bias
+of 0.1137 on the seed that chose +4. **C5's interior-maximum test is therefore
+doing a second job it was not designed for: it detects conditions with no
+alignment-sensitive information.** Widening further would chase noise. These
+should stay failures.
+
+**Widening made three reported numbers worse, which is correct behaviour.**
+T2 ctx5 L=397 fell 0.3663 to 0.3258, P1's L=397 temporal accuracy 0.8796 to
+0.8704 with its index going -0.056 to -0.167. In each case validation reached
+into newly available territory and the choice did not transfer to test. The
+previous values were flattered by a grid too narrow to let the selector make
+that mistake. This is what D78 exists to measure and the first time it has
+mattered.
+
+**What did not move.** Every T1 number, ten of twelve T3 conditions, eight of
+ten T2 conditions, five of six P1 points: bit-identical. P1's index keeps its
+sign pattern at every budget, so there is no new Q27 finding.
+
+**Clerical fix.** Q41 and Q42's own `**Answer:**` fields still read "(open)"
+because the E7 drop appended its answers as a block rather than filling them
+in, so the open-question count read 22 when it was 20. Corrected to point at
+the appended block. The count matters because it is the first thing both
+sessions read.
+
+**Tests:** not re-run; no source file touched, only configs and results.
+**Results written:** `t2_f0_contour_e1_synthetic`, `t3_boundary_e1_synthetic`,
+`p1_count_only_e1_synthetic` re-recorded against commit 8aa8eaf, superseding
+their predecessors. R2 and P2 needed no re-run: R2 was clean at 0 of 6, and
+P2 holds its alignment fixed at the clean best under D62, all three inside the
+verifiable region of even the old grid.
+**Blocked on:** Q47(a) — matched budget is not matched frequency resolution —
+still the one that blocks reading E6's front as a comparison and any verdict on
+P-04. Q44 blocks E5; Q45 blocks E1-vs-E4 above 341 events/s; Q46 reporting.
+**Next:** T2 and T3 for E2, E3 and E6, now that every grid is wide enough and
+E1's reference points on those tasks are verified rather than assumed.

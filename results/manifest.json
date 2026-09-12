@@ -299,7 +299,8 @@
       "date": "2026-09-09",
       "predictions": [
         "P-03"
-      ]
+      ],
+      "superseded_by": "t2_f0_contour_e1_synthetic@2026-09-12"
     },
     {
       "id": "t3_boundary_e1_synthetic",
@@ -309,7 +310,8 @@
       "seed": 0,
       "output": "results/t3_boundary_e1_synthetic.json",
       "date": "2026-09-09",
-      "predictions": []
+      "predictions": [],
+      "superseded_by": "t3_boundary_e1_synthetic@2026-09-12"
     },
     {
       "id": "p1_count_only_e1_synthetic",
@@ -321,7 +323,8 @@
       "date": "2026-09-09",
       "predictions": [
         "P-06"
-      ]
+      ],
+      "superseded_by": "p1_count_only_e1_synthetic@2026-09-12"
     },
     {
       "id": "p2_corruption_e1_synthetic",
@@ -432,6 +435,40 @@
       "output": "results/probe_e3_t1_synthetic.json",
       "date": "2026-09-12",
       "predictions": []
+    },
+    {
+      "id": "t2_f0_contour_e1_synthetic",
+      "script": "scripts/run_t2.py",
+      "config": "configs/t2_f0_contour_e1_synthetic.json",
+      "commit": "8aa8eaf6d170fce62549ca7f558fba5867916f26",
+      "seed": 0,
+      "output": "results/t2_f0_contour_e1_synthetic.json",
+      "date": "2026-09-12",
+      "predictions": [
+        "P-03"
+      ]
+    },
+    {
+      "id": "t3_boundary_e1_synthetic",
+      "script": "scripts/run_t3.py",
+      "config": "configs/t3_boundary_e1_synthetic.json",
+      "commit": "8aa8eaf6d170fce62549ca7f558fba5867916f26",
+      "seed": 0,
+      "output": "results/t3_boundary_e1_synthetic.json",
+      "date": "2026-09-12",
+      "predictions": []
+    },
+    {
+      "id": "p1_count_only_e1_synthetic",
+      "script": "scripts/run_p1.py",
+      "config": "configs/p1_count_only_e1_synthetic.json",
+      "commit": "8aa8eaf6d170fce62549ca7f558fba5867916f26",
+      "seed": 0,
+      "output": "results/p1_count_only_e1_synthetic.json",
+      "date": "2026-09-12",
+      "predictions": [
+        "P-06"
+      ]
     }
   ]
 }

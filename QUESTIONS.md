@@ -2889,7 +2889,7 @@ which is the provenance §2 warns about.
 **Blocking?** no. D09 blocks implementation whatever the description says, and
 that is unchanged: reading the paper makes §5.7 accurate, it does not make E7
 implementable. Only the O3 conversation does that.
-**Answer:** (open)
+**Answer:** answered 2026-09-11 under D84 — see the appended block "Answers appended 2026-09-11 — Q41 and Q42" at the end of this file.
 
 ### Q42 — the applied E7 patch states a dictionary size and a channel count the paper does not contain
 **Raised:** 2026-09-09 by implementation session
@@ -2952,7 +2952,7 @@ rather than as their setting. So:
 
 **Blocking?** Report v3 must not quote 5.7's channel figures until this is
 settled, and O3 should not go to Oliver in its current form.
-**Answer:** (open)
+**Answer:** answered 2026-09-11 under D84 — see the appended block "Answers appended 2026-09-11 — Q41 and Q42" at the end of this file.
 
 ### Q43 — should stage one move off TIMIT to an open corpus, given the accent mismatch?
 **Raised:** 2026-09-09 by Simon, relaying Oliver
